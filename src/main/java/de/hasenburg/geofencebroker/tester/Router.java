@@ -1,4 +1,4 @@
-package de.hasenburg.geofencebroker.main;
+package de.hasenburg.geofencebroker.tester;
 
 import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.Context;
@@ -19,7 +19,6 @@ public class Router {
 		boolean more = true;
 		byte[] message;
 
-		// switch messages between sockets
 		while (!Thread.currentThread().isInterrupted()) {
 
 			System.out.println("Waiting for message");

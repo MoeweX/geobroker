@@ -1,4 +1,4 @@
-package de.hasenburg.geofencebroker.main;
+package de.hasenburg.geofencebroker.tester;
 
 import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.Context;

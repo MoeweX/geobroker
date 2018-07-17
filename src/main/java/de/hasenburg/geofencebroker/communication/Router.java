@@ -4,11 +4,7 @@ import de.hasenburg.geofencebroker.exceptions.RouterException;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMQException;
 
-import java.util.Random;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 /**
  * Router Messager
@@ -81,11 +77,13 @@ public class Router {
 
 
 	/**
-	 * Starts receiving and interpreting incoming envelopes..
-	 * 
+	 * Starts message reception.
+	 *
+	 * @param messageQueue - the queue to which incoming messages are added, can be null if #interpretReceivedRouterMessage should be run
+	 *
 	 * @return a Future instance if reception was not running before and operation successful, <code>null</code> otherwise
 	 */
-	public Future<?> startReceiving() throws RouterException {
+	public Future<?> startReceptionAndAddMessagesToQueue(BlockingQueue<RouterMessage> messageQueue) throws RouterException {
 		if (runnableFuture != null && !runnableFuture.isDone()) {
 			throw new RouterException("Router already running");
 		}
@@ -113,39 +111,20 @@ public class Router {
 
 		// init was successful
 		runnableFuture = executor.submit(() -> {
+
 			while (!Thread.currentThread().isInterrupted()) {
-				byte[][] messageArray = new byte[6][];
-				int index = 0;
-				boolean messageFine = true;
+				byte[][] messageArray = ZeroMQHelper.receiveMessageArray(6, socket);
 
-				try {
-					boolean more = true;
-					while (more) {
-						byte[] bytes = socket.recv(0);
-
-						if (index >= 6) {
-							System.out.println("Received more multipart messages than expected, "
-									+ "dismissing: " + new String(bytes));
-							messageFine = false;
-						}
-
-						messageArray[index] = bytes;
-						more = socket.hasReceiveMore();
-						index++;
-					}
-				} catch (ZMQException e) {
-					System.out.println("Context was terminated, thread is dying");
-					return;
-				}
-
-				if (!messageFine) {
-					System.out.println("Message broken");
-				} else {
+				if (messageArray != null) {
 					try {
+						// A complete message was received -> store in queue
 						RouterMessage message = RouterMessage.build(messageArray);
 						incrementNumberOfReceivedMessages();
 						System.out.println("Received complete message from client " + message.getIdentity());
-						interpretReceivedRouterMessage(message);
+
+						if (!messageQueue.offer(message)) {
+							System.out.println("Could not add message to queue, dropping it.");
+						}
 					} catch (RouterException e) {
 						System.out.println(e.getMessage());
 						e.printStackTrace();
@@ -153,7 +132,7 @@ public class Router {
 				}
 			}
 		});
-		System.out.println("Started receiving incoming messages.");
+		System.out.println("Started message reception, storing messages in given queue");
 		return runnableFuture;
 	}
 
@@ -181,35 +160,8 @@ public class Router {
 		return runnableFuture != null && !runnableFuture.isDone();
 	}
 
-	/**
-	 * Gets automatically called after a complete message was received.
-	 * 
-	 * @param message - the received message
-	 */
-	public void interpretReceivedRouterMessage(RouterMessage message) {
-		System.out.println(message.toString());
-
-		Random random = new Random();
-
-		if (random.nextBoolean()) {
-			System.out.println("Sending bad id");
-			socket.sendMore("badId");
-			System.out.println("Sending bad delimiter");
-			socket.sendMore("");
-			System.out.println("Sending bad payload");
-			socket.send("Broker Answer Impossible");
-		} else {
-			socket.sendMore(message.getIdentity());
-			socket.sendMore("");
-			socket.send("Broker Answer");
-		}
-
-	}
-
 	public void sendMessageToClient(RouterMessage routerMessage) {
 		System.out.println("Sending message to " + routerMessage.getIdentity());
-
-
 	}
 
 }
