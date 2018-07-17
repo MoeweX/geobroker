@@ -4,7 +4,7 @@ import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.Context;
 import org.zeromq.ZMQ.Socket;
 
-public class Dealer {
+public class Router {
 
 	public static void main(String[] args) {
 		// prepare our context and sockets
@@ -13,7 +13,7 @@ public class Dealer {
 		Socket socket = context.socket(ZMQ.ROUTER);
 		socket.bind("tcp://*:5559");
 
-		System.out.println("Launch and connect broker.");
+		System.out.println("Launched and bind router broker.");
 
 
 		boolean more = true;

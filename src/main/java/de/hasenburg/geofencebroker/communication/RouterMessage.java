@@ -1,16 +1,15 @@
-package de.hasenburg.geofencebroker.main.communication;
-
-import de.hasenburg.geofencebroker.main.exceptions.DealerException;
+package de.hasenburg.geofencebroker.communication;
 
 import java.util.Objects;
+import de.hasenburg.geofencebroker.exceptions.RouterException;
 
 /**
- * DealerMessages contain the five frames of each valid message processed by the Dealer, excluding the empty delimiter.
+ * RouterMessages contain the five frames of each valid message processed by the Router, excluding the empty delimiter.
  * 
  * @author jonathanhasenburg
  *
  */
-public class DealerMessage {
+public class RouterMessage {
 
 	private String identity;
 
@@ -22,7 +21,7 @@ public class DealerMessage {
 
 	private String payload;
 
-	public DealerMessage(String identity,
+	public RouterMessage(String identity,
 						 ControlPacketType controlPacketType, String topic, String geofence, String payload) {
 
 		this.identity = identity;
@@ -32,10 +31,10 @@ public class DealerMessage {
 		this.payload = payload;
 	}
 
-	public static DealerMessage build(byte[][] messageArray) throws DealerException {
+	public static RouterMessage build(byte[][] messageArray) throws RouterException {
 
 		if (messageArray.length != 6 ) {
-			throw new DealerException("Could not create DealerMessage as message array needs 6 fields but has " + messageArray.length);
+			throw new RouterException("Could not create RouterMessage as message array needs 6 fields but has " + messageArray.length);
 		}
 
 		try {
@@ -44,9 +43,9 @@ public class DealerMessage {
 			String topic = new String(messageArray[3]);
 			String geofence = new String(messageArray[4]);
 			String payload = new String(messageArray[5]);
-			return new DealerMessage(identity, controlPacketType, topic, geofence, payload);
+			return new RouterMessage(identity, controlPacketType, topic, geofence, payload);
 		} catch(Exception e) {
-			throw new DealerException("Exception while converting message array content to DealerMessage", e);
+			throw new RouterException("Exception while converting message array content to RouterMessage", e);
 		}
 
 	}
@@ -57,7 +56,7 @@ public class DealerMessage {
 
 	@Override
 	public String toString() {
-		return "DealerMessage{" +
+		return "RouterMessage{" +
 				"identity='" + identity + '\'' +
 				", controlPacketType=" + controlPacketType +
 				", topic='" + topic + '\'' +
@@ -111,10 +110,10 @@ public class DealerMessage {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof DealerMessage)) {
+		if (!(o instanceof RouterMessage)) {
 			return false;
 		}
-		DealerMessage that = (DealerMessage) o;
+		RouterMessage that = (RouterMessage) o;
 		return Objects.equals(getIdentity(), that.getIdentity()) &&
 				getControlPacketType() == that.getControlPacketType() &&
 				Objects.equals(getTopic(), that.getTopic()) &&

@@ -1,6 +1,6 @@
-package de.hasenburg.geofencebroker.main.communication;
+package de.hasenburg.geofencebroker.communication;
 
-import de.hasenburg.geofencebroker.main.exceptions.DealerException;
+import de.hasenburg.geofencebroker.exceptions.RouterException;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMQException;
 
@@ -11,12 +11,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 /**
- * Dealer Messager
+ * Router Messager
  * 
  * @author jonathanhasenburg
  *
  */
-public class Dealer {
+public class Router {
 
 	/**
 	 * The address used for the reception of messages.
@@ -46,7 +46,7 @@ public class Dealer {
 	private ZMQ.Context context = null;
 	private ZMQ.Socket socket = null;
 
-	public Dealer(String address, int port) {
+	public Router(String address, int port) {
 		this.address = address;
 		this.port = port;
 	}
@@ -85,9 +85,9 @@ public class Dealer {
 	 * 
 	 * @return a Future instance if reception was not running before and operation successful, <code>null</code> otherwise
 	 */
-	public Future<?> startReceiving() throws DealerException {
+	public Future<?> startReceiving() throws RouterException {
 		if (runnableFuture != null && !runnableFuture.isDone()) {
-			throw new DealerException("Dealer already running");
+			throw new RouterException("Router already running");
 		}
 
 		Future<Boolean> fut = executor.submit(() -> {
@@ -105,10 +105,10 @@ public class Dealer {
 
 		try {
 			if (!fut.get()) {
-				throw new DealerException("Dealer could not be initialized");
+				throw new RouterException("Router could not be initialized");
 			}
 		} catch (InterruptedException | ExecutionException e) {
-			throw new DealerException("Initialization was interrupted", e);
+			throw new RouterException("Initialization was interrupted", e);
 		}
 
 		// init was successful
@@ -142,11 +142,11 @@ public class Dealer {
 					System.out.println("Message broken");
 				} else {
 					try {
-						DealerMessage message = DealerMessage.build(messageArray);
+						RouterMessage message = RouterMessage.build(messageArray);
 						incrementNumberOfReceivedMessages();
 						System.out.println("Received complete message from client " + message.getIdentity());
-						interpretReceivedDealerMessage(message);
-					} catch (DealerException e) {
+						interpretReceivedRouterMessage(message);
+					} catch (RouterException e) {
 						System.out.println(e.getMessage());
 						e.printStackTrace();
 					}
@@ -186,7 +186,7 @@ public class Dealer {
 	 * 
 	 * @param message - the received message
 	 */
-	public void interpretReceivedDealerMessage(DealerMessage message) {
+	public void interpretReceivedRouterMessage(RouterMessage message) {
 		System.out.println(message.toString());
 
 		Random random = new Random();
@@ -206,8 +206,8 @@ public class Dealer {
 
 	}
 
-	public void sendMessageToClient(DealerMessage dealerMessage) {
-		System.out.println("Sending message to " + dealerMessage.getIdentity());
+	public void sendMessageToClient(RouterMessage routerMessage) {
+		System.out.println("Sending message to " + routerMessage.getIdentity());
 
 
 	}

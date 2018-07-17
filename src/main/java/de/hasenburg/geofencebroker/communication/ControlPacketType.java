@@ -1,4 +1,4 @@
-package de.hasenburg.geofencebroker.main.communication;
+package de.hasenburg.geofencebroker.communication;
 
 @SuppressWarnings("SpellCheckingInspection")
 public enum ControlPacketType {
