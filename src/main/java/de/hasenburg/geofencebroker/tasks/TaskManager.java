@@ -1,6 +1,8 @@
 package de.hasenburg.geofencebroker.tasks;
 
+import de.hasenburg.geofencebroker.communication.RouterCommunicator;
 import org.zeromq.ZMsg;
+import zmq.socket.reqrep.Router;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -84,8 +86,8 @@ public class TaskManager {
 		return pool.submit(new SleepTask(this, time));
 	}
 
-	public Future<Boolean> runMessageProcessorTask(BlockingQueue<ZMsg> messageQueue) {
-		return pool.submit(new MessageProcessorTask(this, messageQueue));
+	public Future<Boolean> runMessageProcessorTask(BlockingQueue<ZMsg> messageQueue, RouterCommunicator routerCommunicator) {
+		return pool.submit(new MessageProcessorTask(this, messageQueue, routerCommunicator));
 	}
 
 }
