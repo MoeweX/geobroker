@@ -1,10 +1,14 @@
 package de.hasenburg.geofencebroker.tasks;
 
 import de.hasenburg.geofencebroker.exceptions.TaskException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.concurrent.Callable;
 
 public abstract class Task<V> implements Callable<V> {
+
+	private static final Logger logger = LogManager.getLogger();
 
 	protected TaskManager.TaskName name;
 	private TaskManager taskManager;
@@ -16,11 +20,11 @@ public abstract class Task<V> implements Callable<V> {
 
 	@Override
 	public V call() throws TaskException {
-		System.out.println("Executing task " + name);
+		logger.debug("Executing task " + name);
 		taskManager.registerTask(name);
 		V answer = executeFunctionality();
 		taskManager.deregisterTask(name);
-		System.out.println("Ending Task " + name + " completed");
+		logger.debug("Ending Task " + name + " completed");
 		return answer;
 	}
 

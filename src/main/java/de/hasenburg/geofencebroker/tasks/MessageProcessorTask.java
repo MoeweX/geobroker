@@ -1,6 +1,8 @@
 package de.hasenburg.geofencebroker.tasks;
 
 import de.hasenburg.geofencebroker.communication.RouterCommunicator;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.zeromq.ZMsg;
 import zmq.socket.reqrep.Router;
 
@@ -14,6 +16,8 @@ import java.util.concurrent.BlockingQueue;
  *
  */
 class MessageProcessorTask extends Task<Boolean> {
+
+	private static final Logger logger = LogManager.getLogger();
 
 	BlockingQueue<ZMsg> messageQueue;
 	RouterCommunicator routerCommunicator;
@@ -31,7 +35,7 @@ class MessageProcessorTask extends Task<Boolean> {
 
 		while (!Thread.currentThread().isInterrupted()) {
 			if (queuedMessages != messageQueue.size()) {
-				System.out.println("Number of queued messages: " + messageQueue.size());
+				logger.debug("Number of queued messages: " + messageQueue.size());
 				queuedMessages = messageQueue.size();
 			}
 
@@ -42,7 +46,7 @@ class MessageProcessorTask extends Task<Boolean> {
 					ZMsg message = messageQueue.remove();
 					message.pollLast(); // remove last element
 					message.addString("Dealer, this is Router");
-					System.out.println(message.toString());
+					logger.trace(message.toString());
 
 					routerCommunicator.sendMessage(message);
 				}

@@ -1,6 +1,8 @@
 package de.hasenburg.geofencebroker.communication;
 
 import de.hasenburg.geofencebroker.exceptions.CommunicatorException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
 
@@ -11,6 +13,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 public abstract class ZMQCommunicator {
+
+	private static final Logger logger = LogManager.getLogger();
 
 	/*****************************************************************
 	 * Fields
@@ -65,22 +69,22 @@ public abstract class ZMQCommunicator {
 			while (!Thread.currentThread().isInterrupted()) {
 
 				ZMsg message = ZMsg.recvMsg(socket);
-				System.out.println("Received message " + message.toString());
+				logger.trace("Received message " + message.toString());
 
 				if (!messageQueue.offer(message)) {
-					System.out.println("Could not add message to queue, dropping it.");
+					logger.warn("Could not add message to queue, dropping it.");
 				}
 				numberOfReceivedMessages++;
 			}
 		});
 
-		System.out.println("Started receiving messages, messages are stored in given queue");
+		logger.debug("Started receiving messages, messages are stored in given queue");
 	}
 
 	public void stopReceiving() {
 		runnableFuture.cancel(true);
 		runnableFuture = null;
-		System.out.println("Reception of incoming messages is stopped."
+		logger.debug("Reception of incoming messages is stopped."
 				+ (executor.isTerminated() ? "" : " Some tasks may still be running."));
 	}
 
@@ -94,9 +98,9 @@ public abstract class ZMQCommunicator {
 
 	public void sendMessage(ZMsg message) {
 		if (socket.getType() == ZMQ.DEALER) {
-			System.out.println("Sending message to Server");
+			logger.trace("Sending message to Server");
 		} else if (socket.getType() == ZMQ.ROUTER) {
-			System.out.println("Sending message to " + message.getFirst().toString());
+			logger.trace("Sending message to " + message.getFirst().toString());
 		}
 
 		message.send(socket);

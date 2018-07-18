@@ -1,5 +1,8 @@
 package de.hasenburg.geofencebroker.tasks;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 /**
  * A task that sleeps a given amount of time.
  * 
@@ -8,6 +11,7 @@ package de.hasenburg.geofencebroker.tasks;
  */
 class SleepTask extends Task<Boolean> {
 
+	private static final Logger logger = LogManager.getLogger();
 	private int time;
 
 	protected SleepTask(TaskManager taskManager, int time) {
@@ -25,7 +29,7 @@ class SleepTask extends Task<Boolean> {
 				return false;
 			}
 		} else {
-			System.out.println("Sleep time must be greater than 0, but is " + time + ".");
+			logger.error("Sleep time must be greater than 0, but is " + time + ".");
 		}
 		return true;
 	}

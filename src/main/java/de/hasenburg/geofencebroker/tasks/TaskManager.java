@@ -1,6 +1,8 @@
 package de.hasenburg.geofencebroker.tasks;
 
 import de.hasenburg.geofencebroker.communication.RouterCommunicator;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.zeromq.ZMsg;
 import zmq.socket.reqrep.Router;
 
@@ -13,6 +15,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TaskManager {
+
+	private static final Logger logger = LogManager.getLogger();
 
 	private final ExecutorService pool = Executors.newCachedThreadPool();
 
