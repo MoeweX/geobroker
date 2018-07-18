@@ -1,6 +1,7 @@
 package de.hasenburg.geofencebroker.tasks;
 
 import de.hasenburg.geofencebroker.communication.RouterCommunicator;
+import de.hasenburg.geofencebroker.model.connections.ConnectionManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.ZMsg;
@@ -90,8 +91,8 @@ public class TaskManager {
 		return pool.submit(new SleepTask(this, time));
 	}
 
-	public Future<Boolean> runMessageProcessorTask(BlockingQueue<ZMsg> messageQueue, RouterCommunicator routerCommunicator) {
-		return pool.submit(new MessageProcessorTask(this, messageQueue, routerCommunicator));
+	public Future<Boolean> runMessageProcessorTask(BlockingQueue<ZMsg> messageQueue, RouterCommunicator routerCommunicator, ConnectionManager connectionManager) {
+		return pool.submit(new MessageProcessorTask(this, messageQueue, routerCommunicator, connectionManager));
 	}
 
 }

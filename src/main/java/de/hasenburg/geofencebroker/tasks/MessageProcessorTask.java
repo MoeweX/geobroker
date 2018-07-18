@@ -1,13 +1,18 @@
 package de.hasenburg.geofencebroker.tasks;
 
 import de.hasenburg.geofencebroker.communication.RouterCommunicator;
+import de.hasenburg.geofencebroker.model.RouterMessage;
+import de.hasenburg.geofencebroker.model.connections.ConnectionManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.ZMsg;
 import zmq.socket.reqrep.Router;
 
+import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A Task that continuously processes messages.
@@ -21,11 +26,13 @@ class MessageProcessorTask extends Task<Boolean> {
 
 	BlockingQueue<ZMsg> messageQueue;
 	RouterCommunicator routerCommunicator;
+	ConnectionManager connectionManager;
 
-	protected MessageProcessorTask(TaskManager taskManager, BlockingQueue<ZMsg> messageQueue, RouterCommunicator routerCommunicator) {
+	protected MessageProcessorTask(TaskManager taskManager, BlockingQueue<ZMsg> messageQueue, RouterCommunicator routerCommunicator, ConnectionManager connectionManager) {
 		super(TaskManager.TaskName.MESSAGE_PROCESSOR_TASK, taskManager);
 		this.messageQueue = messageQueue;
 		this.routerCommunicator = routerCommunicator;
+		this.connectionManager = connectionManager;
 	}
 
 	@Override
@@ -35,24 +42,26 @@ class MessageProcessorTask extends Task<Boolean> {
 
 		while (!Thread.currentThread().isInterrupted()) {
 			if (queuedMessages != messageQueue.size()) {
-				logger.debug("Number of queued messages: " + messageQueue.size());
+				logger.trace("Number of queued messages: " + messageQueue.size());
 				queuedMessages = messageQueue.size();
 			}
 
-			Random random = new Random();
-			if (random.nextBoolean()) {
-				// let's process a message
-				if (messageQueue.size() > 0) {
-					ZMsg message = messageQueue.remove();
-					message.pollLast(); // remove last element
-					message.addString("Dealer, this is Router");
-					logger.trace(message.toString());
-
-					routerCommunicator.sendMessage(message);
+			Optional<RouterMessage> messageO = RouterMessage.buildRouterMessage(messageQueue.poll());
+			if (messageO.isPresent()) {
+				RouterMessage message = messageO.get();
+				switch (message.getControlPacketType()) {
+					case CONNECT:
+						connectionManager.processCONNECT(message);
+						break;
+					case DISCONNECT:
+						connectionManager.processDISCONNECT(message);
+						break;
+					default:
+						logger.debug("Cannot process message {}", message.toString());
 				}
 			}
 
-			// sleep 2 seconds
+			// sleep 0.1s
 			try { Thread.sleep(100); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
 		}
 

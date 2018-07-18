@@ -1,10 +1,9 @@
 package de.hasenburg.geofencebroker.communication;
 
-import de.hasenburg.geofencebroker.exceptions.CommunicatorException;
+import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
 
-import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -33,7 +32,7 @@ public class DealerCommunicator extends ZMQCommunicator {
 		dealer.startReceiving(blockingQueue);
 
 		while (!Thread.currentThread().isInterrupted()) {
-			dealer.sendMessage(ZMsg.newStringMsg("Hello", "World"));
+			dealer.sendMessage(ZMsg.newStringMsg("CONNECT", "geofence", "topic", "payload"));
 			Thread.sleep(1000);
 		}
 	}

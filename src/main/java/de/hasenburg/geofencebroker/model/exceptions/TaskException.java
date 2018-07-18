@@ -1,4 +1,4 @@
-package de.hasenburg.geofencebroker.exceptions;
+package de.hasenburg.geofencebroker.model.exceptions;
 
 public class TaskException extends Exception {
 

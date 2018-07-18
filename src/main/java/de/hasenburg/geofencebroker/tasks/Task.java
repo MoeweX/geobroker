@@ -1,6 +1,6 @@
 package de.hasenburg.geofencebroker.tasks;
 
-import de.hasenburg.geofencebroker.exceptions.TaskException;
+import de.hasenburg.geofencebroker.model.exceptions.TaskException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
