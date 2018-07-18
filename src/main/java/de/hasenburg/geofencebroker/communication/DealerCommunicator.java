@@ -1,5 +1,7 @@
 package de.hasenburg.geofencebroker.communication;
 
+import de.hasenburg.geofencebroker.model.DealerMessage;
+import de.hasenburg.geofencebroker.model.RouterMessage;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
@@ -22,6 +24,16 @@ public class DealerCommunicator extends ZMQCommunicator {
 		if (identity != null) { socket.setIdentity(identity.getBytes()); }
 
 		socket.connect(address + ":" + port);
+	}
+
+	public void sendCONNECT() {
+		DealerMessage message = new DealerMessage(ControlPacketType.CONNECT);
+		sendMessage(message.getZmsg());
+	}
+
+	public void sendDICONNECT() {
+		DealerMessage message = new DealerMessage(ControlPacketType.DISCONNECT);
+		sendMessage(message.getZmsg());
 	}
 
 	public static void main(String[] args) throws CommunicatorException, InterruptedException {

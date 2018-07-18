@@ -35,4 +35,9 @@ public class Topic {
 
 		return Objects.hash(getTopic());
 	}
+
+	@Override
+	public String toString() {
+		return getTopic();
+	}
 }

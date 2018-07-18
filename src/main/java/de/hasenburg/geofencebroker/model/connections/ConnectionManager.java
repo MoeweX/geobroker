@@ -60,7 +60,7 @@ public class ConnectionManager {
 			return Optional.empty();
 		}
 
-		// get connection or create new
+		// get connection
 		Connection connection = connections.get(message.getClientIdentifier());
 		if (connection == null) {
 			return Optional.empty();
