@@ -36,6 +36,11 @@ public class DealerCommunicator extends ZMQCommunicator {
 		sendMessage(message.getZmsg());
 	}
 
+	public void sendPINGREQ() {
+		DealerMessage message = new DealerMessage(ControlPacketType.PINGREQ);
+		sendMessage(message.getZmsg());
+	}
+
 	public static void main(String[] args) throws CommunicatorException, InterruptedException {
 		DealerCommunicator dealer = new DealerCommunicator("tcp://localhost", 5559);
 		Random random = new Random();

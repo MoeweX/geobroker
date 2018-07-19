@@ -4,6 +4,7 @@ package de.hasenburg.geofencebroker.communication;
 public enum ReasonCode {
 
 	NormalDisconnection,
-	ProtocolError
+	ProtocolError,
+	NotConnected
 
 }

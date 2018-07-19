@@ -22,7 +22,7 @@ public class BasicClient {
 	public BasicClient(String identifier, String address, int port) throws CommunicatorException {
 		if (identifier == null) {
 			Random random = new Random();
-			identifier = "RandomClient-" + System.nanoTime();
+			identifier = "BasicClient-" + System.nanoTime();
 		}
 
 		dealer = new DealerCommunicator(address, port);
@@ -42,6 +42,11 @@ public class BasicClient {
 		dealer.sendCONNECT();
 	}
 
+	public void sendPINGREQ() {
+		logger.trace("Pinging with client " + getIdentity());
+		dealer.sendPINGREQ();
+	}
+
 	public void sendDISCONNECT() {
 		logger.trace("Disconnecting with client " + getIdentity());
 		dealer.sendDICONNECT();
@@ -54,10 +59,12 @@ public class BasicClient {
 	public static void main(String[] args) throws CommunicatorException, InterruptedException {
 		BasicClient client = new BasicClient(null, "tcp://localhost", 5559);
 		client.sendCONNECT();
+		client.sendPINGREQ();
 
 		Thread.sleep(3000);
 
 		client.sendDISCONNECT();
+		client.sendPINGREQ();
 		for (ZMsg message : client.blockingQueue) {
 			logger.info(DealerMessage.buildDealerMessage(message).get().toString());
 		}

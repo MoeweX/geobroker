@@ -58,6 +58,9 @@ class MessageProcessorTask extends Task<Boolean> {
 						case DISCONNECT:
 							connectionManager.processDISCONNECT(message);
 							break;
+						case PINGREQ:
+							connectionManager.processPINGREQ(message);
+							break;
 						default:
 							logger.debug("Cannot process message {}", message.toString());
 					}

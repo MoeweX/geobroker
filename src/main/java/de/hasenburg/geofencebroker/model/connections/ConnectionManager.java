@@ -17,6 +17,10 @@ public class ConnectionManager {
 	private final HashMap<String, Connection> connections = new HashMap<>();
 	private RouterCommunicator routerCommunicator;
 
+	/*****************************************************************
+	 * Constructor and Co
+	 ****************************************************************/
+
 	public ConnectionManager(RouterCommunicator router) {
 		this.routerCommunicator = router;
 	}
@@ -29,9 +33,11 @@ public class ConnectionManager {
 		return connections.values().stream().filter(c -> !c.isActive()).collect(Collectors.toList());
 	}
 
+	/*****************************************************************
+	 * Message Processing
+	 ****************************************************************/
+
 	/**
-	 * Processes {@link de.hasenburg.geofencebroker.communication.ControlPacketType#CONNECT} messages and updates connections accordingly.
-	 *
 	 * @return Optional<Connection>, is empty when invalid ControlPacketType
 	 */
 	public Optional<Connection> processCONNECT(RouterMessage message) {
@@ -60,8 +66,6 @@ public class ConnectionManager {
 	}
 
 	/**
-	 * Processes {@link de.hasenburg.geofencebroker.communication.ControlPacketType#DISCONNECT} messages and updates connections accordingly.
-	 *
 	 * @return Optional<Connection>, is empty when invalid ControlPacketType or connection for clientIdentifier does not exist
 	 */
 	public Optional<Connection> processDISCONNECT(RouterMessage message) {
@@ -82,6 +86,24 @@ public class ConnectionManager {
 		return Optional.of(connection);
 	}
 
+	public void processPINGREQ(RouterMessage message) {
+		if (message.getControlPacketType() != ControlPacketType.PINGREQ) {
+			return;
+		}
+
+		// check connection
+		Connection connection = connections.get(message.getClientIdentifier());
+		if (connection != null && connection.isActive()) {
+			logger.trace("Received PINGREQ from active client {}", connection.getClientIdentifier());
+			routerCommunicator.sendPINGRESP(message.getClientIdentifier());
+			// TODO read in location and update property of Connection
+		} else {
+			logger.trace("Received PINGREQ from inactive client {}", message.getClientIdentifier());
+			routerCommunicator.sendPINGRESP(message.getClientIdentifier(), ReasonCode.NotConnected);
+		}
+
+	}
+
 	/**
 	 * Processes {@link de.hasenburg.geofencebroker.communication.ControlPacketType#SUBSCRIBE} messages and updates connections accordingly.
 	 */
@@ -97,6 +119,10 @@ public class ConnectionManager {
 		// TODO Implement
 		return Optional.empty();
 	}
+
+	/*****************************************************************
+	 * Generated Code
+	 ****************************************************************/
 
 	@Override
 	public String toString() {

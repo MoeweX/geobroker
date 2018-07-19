@@ -36,7 +36,7 @@ public abstract class ZMQCommunicator {
 	private int numberOfReceivedMessages = 0;
 
 	/*****************************************************************
-	 * Constructors and co
+	 * Constructors and Co
 	 ****************************************************************/
 
 	public ZMQCommunicator(String address, int port) {

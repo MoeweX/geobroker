@@ -36,6 +36,16 @@ public class RouterCommunicator extends ZMQCommunicator {
 		sendMessage(message.getZmsg());
 	}
 
+	public void sendPINGRESP(String clientIdentifier) {
+		RouterMessage message = new RouterMessage(clientIdentifier, ControlPacketType.PINGRESP);
+		sendMessage(message.getZmsg());
+	}
+
+	public void sendPINGRESP(String clientIdentifier, ReasonCode reasonCode) {
+		RouterMessage message = new RouterMessage(clientIdentifier, ControlPacketType.PINGRESP, reasonCode.name());
+		sendMessage(message.getZmsg());
+	}
+
 	public static void main(String[] args) throws CommunicatorException {
 		RouterCommunicator router = new RouterCommunicator("tcp://localhost", 5559);
 		router.init(null);
