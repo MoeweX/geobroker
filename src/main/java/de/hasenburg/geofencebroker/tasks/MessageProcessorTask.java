@@ -48,8 +48,8 @@ class MessageProcessorTask extends Task<Boolean> {
 			}
 
 			Optional<RouterMessage> messageO = RouterMessage.buildRouterMessage(messageQueue.poll());
-			if (messageO.isPresent()) {
-				RouterMessage message = messageO.get();
+
+			messageO.ifPresent(message -> {
 				switch (message.getControlPacketType()) {
 					case CONNECT:
 						connectionManager.processCONNECT(message);
@@ -60,7 +60,7 @@ class MessageProcessorTask extends Task<Boolean> {
 					default:
 						logger.debug("Cannot process message {}", message.toString());
 				}
-			}
+			});
 
 			Utility.sleepNoLog(0, 10); // when interrupted, the task will end which is fine
 		}

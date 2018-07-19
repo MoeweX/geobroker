@@ -4,17 +4,16 @@ import de.hasenburg.geofencebroker.client.BasicClient;
 import de.hasenburg.geofencebroker.communication.ControlPacketType;
 import de.hasenburg.geofencebroker.communication.RouterCommunicator;
 import de.hasenburg.geofencebroker.model.DealerMessage;
-import de.hasenburg.geofencebroker.model.RouterMessage;
-import de.hasenburg.geofencebroker.model.connections.Connection;
 import de.hasenburg.geofencebroker.model.connections.ConnectionManager;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
 import de.hasenburg.geofencebroker.tasks.TaskManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.zeromq.ZMsg;
 
-import javax.naming.ldap.Control;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -25,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class ConnectAndDisconnectTest {
 
