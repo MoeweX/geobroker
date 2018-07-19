@@ -1,6 +1,7 @@
 package de.hasenburg.geofencebroker.tasks;
 
 import de.hasenburg.geofencebroker.communication.RouterCommunicator;
+import de.hasenburg.geofencebroker.main.Utility;
 import de.hasenburg.geofencebroker.model.RouterMessage;
 import de.hasenburg.geofencebroker.model.connections.ConnectionManager;
 import org.apache.logging.log4j.LogManager;
@@ -61,8 +62,7 @@ class MessageProcessorTask extends Task<Boolean> {
 				}
 			}
 
-			// sleep 0.1s
-			try { Thread.sleep(100); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+			Utility.sleepNoLog(0, 10); // when interrupted, the task will end which is fine
 		}
 
 		return true;

@@ -1,5 +1,6 @@
 package de.hasenburg.geofencebroker.communication;
 
+import de.hasenburg.geofencebroker.main.Utility;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,7 +36,7 @@ public abstract class ZMQCommunicator {
 	private int numberOfReceivedMessages = 0;
 
 	/*****************************************************************
-	 * Constructors and (De-)Initializer
+	 * Constructors and co
 	 ****************************************************************/
 
 	public ZMQCommunicator(String address, int port) {
@@ -49,9 +50,19 @@ public abstract class ZMQCommunicator {
 	public abstract void init(String identity);
 
 	public void tearDown() {
-		stopReceiving();
-		socket.close();
-		context.term();
+		executor.shutdown();
+		if (this.runnableFuture != null) {
+			this.runnableFuture = null;
+			socket.close();
+			context.term();
+		}
+
+		this.executor.shutdownNow();
+		logger.info("Tear down completed, communicator cannot be reused." + (executor.isTerminated() ? "" : " Some tasks may still be running."));
+	}
+
+	public String getIdentity() {
+		return new String(socket.getIdentity());
 	}
 
 	/*****************************************************************
@@ -59,6 +70,10 @@ public abstract class ZMQCommunicator {
 	 ****************************************************************/
 
 	public void startReceiving(BlockingQueue<ZMsg> messageQueue) throws CommunicatorException {
+
+		if (executor.isShutdown()) {
+			throw new CommunicatorException("ZMQCommunicator shutdown, cannot be reused.");
+		}
 
 		if (isReceiving()) {
 			throw new CommunicatorException("ZMQCommunicator already receives messages.");
@@ -80,13 +95,6 @@ public abstract class ZMQCommunicator {
 		logger.debug("Started receiving messages, messages are stored in given queue");
 	}
 
-	public void stopReceiving() {
-		runnableFuture.cancel(true);
-		runnableFuture = null;
-		logger.debug("Reception of incoming messages is stopped."
-				+ (executor.isTerminated() ? "" : " Some tasks may still be running."));
-	}
-
 	public boolean isReceiving() {
 		return runnableFuture != null && !runnableFuture.isDone();
 	}
@@ -95,7 +103,8 @@ public abstract class ZMQCommunicator {
 	 * Sending Messages
 	 ****************************************************************/
 
-	public void sendMessage(ZMsg message) {
+	public synchronized void sendMessage(ZMsg message) {
+		Utility.sleep(0, 10);
 		if (socket.getType() == ZMQ.DEALER) {
 			logger.trace("Sending message to Server");
 		} else if (socket.getType() == ZMQ.ROUTER) {

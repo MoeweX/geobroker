@@ -22,27 +22,33 @@ public class BasicClient {
 	public BasicClient(String identifier, String address, int port) throws CommunicatorException {
 		if (identifier == null) {
 			Random random = new Random();
-			identifier = "RandomClient-" + random.nextInt(10000);
+			identifier = "RandomClient-" + System.nanoTime();
 		}
 
 		dealer = new DealerCommunicator(address, port);
 		dealer.init(identifier);
 		blockingQueue = new LinkedBlockingDeque<>();
 		dealer.startReceiving(blockingQueue);
-		logger.info("Started BasicClient.");
+		logger.info("Started BasicClient " + getIdentity());
 	}
 
 	public void tearDown() {
-		dealer.stopReceiving();
+		dealer.tearDown();
 		logger.info("Stopped BasicClient.");
 	}
 
 	public void sendCONNECT() {
+		logger.trace("Connecting with client " + getIdentity());
 		dealer.sendCONNECT();
 	}
 
 	public void sendDISCONNECT() {
+		logger.trace("Disconnecting with client " + getIdentity());
 		dealer.sendDICONNECT();
+	}
+
+	public String getIdentity() {
+		return dealer.getIdentity();
 	}
 
 	public static void main(String[] args) throws CommunicatorException, InterruptedException {

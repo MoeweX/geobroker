@@ -8,6 +8,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ConnectionManager {
 
@@ -18,6 +19,14 @@ public class ConnectionManager {
 
 	public ConnectionManager(RouterCommunicator router) {
 		this.routerCommunicator = router;
+	}
+
+	public List<Connection> getActiveConnections() {
+		return connections.values().stream().filter(c -> c.isActive()).collect(Collectors.toList());
+	}
+
+	public List<Connection> getInactiveConnections() {
+		return connections.values().stream().filter(c -> !c.isActive()).collect(Collectors.toList());
 	}
 
 	/**
