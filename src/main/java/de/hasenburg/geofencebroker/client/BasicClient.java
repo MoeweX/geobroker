@@ -2,12 +2,12 @@ package de.hasenburg.geofencebroker.client;
 
 import de.hasenburg.geofencebroker.communication.DealerCommunicator;
 import de.hasenburg.geofencebroker.model.DealerMessage;
+import de.hasenburg.geofencebroker.model.Location;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.ZMsg;
 
-import java.util.Iterator;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -44,7 +44,8 @@ public class BasicClient {
 
 	public void sendPINGREQ() {
 		logger.trace("Pinging with client " + getIdentity());
-		dealer.sendPINGREQ();
+		Location location = Location.random();
+		dealer.sendPINGREQ(location.toString());
 	}
 
 	public void sendDISCONNECT() {

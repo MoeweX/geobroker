@@ -36,8 +36,8 @@ public class DealerCommunicator extends ZMQCommunicator {
 		sendMessage(message.getZmsg());
 	}
 
-	public void sendPINGREQ() {
-		DealerMessage message = new DealerMessage(ControlPacketType.PINGREQ);
+	public void sendPINGREQ(String location) {
+		DealerMessage message = new DealerMessage(ControlPacketType.PINGREQ, location);
 		sendMessage(message.getZmsg());
 	}
 

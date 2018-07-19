@@ -3,11 +3,15 @@ package de.hasenburg.geofencebroker.model.connections;
 import de.hasenburg.geofencebroker.communication.ControlPacketType;
 import de.hasenburg.geofencebroker.communication.ReasonCode;
 import de.hasenburg.geofencebroker.communication.RouterCommunicator;
+import de.hasenburg.geofencebroker.model.Location;
 import de.hasenburg.geofencebroker.model.RouterMessage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class ConnectionManager {
@@ -96,7 +100,12 @@ public class ConnectionManager {
 		if (connection != null && connection.isActive()) {
 			logger.trace("Received PINGREQ from active client {}", connection.getClientIdentifier());
 			routerCommunicator.sendPINGRESP(message.getClientIdentifier());
-			// TODO read in location and update property of Connection
+
+			Location.fromString(message.getPayload()).ifPresentOrElse(location -> {
+				connection.updateLocation(location);
+				connections.put(connection.getClientIdentifier(), connection);
+			}, () -> logger.warn("Could not create location from {}", message.getPayload()));
+
 		} else {
 			logger.trace("Received PINGREQ from inactive client {}", message.getClientIdentifier());
 			routerCommunicator.sendPINGRESP(message.getClientIdentifier(), ReasonCode.NotConnected);
@@ -129,6 +138,8 @@ public class ConnectionManager {
 		StringBuilder s = new StringBuilder("\n");
 		for (Map.Entry<String, Connection> entry : connections.entrySet()) {
 			s.append("\t").append(entry.getKey()).append(", is active: ").append(entry.getValue().isActive());
+			s.append("\t\tLocation: ").append(entry.getValue().getLocation().get().toString());
+			s.append("\n");
 		}
 		return s.toString();
 	}

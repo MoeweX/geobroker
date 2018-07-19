@@ -1,13 +1,16 @@
 package de.hasenburg.geofencebroker.model.connections;
 
+import de.hasenburg.geofencebroker.model.Location;
 import de.hasenburg.geofencebroker.model.Topic;
 
 import java.util.HashMap;
+import java.util.Optional;
 
 public class Connection {
 
 	private boolean active = false;
 	private String clientIdentifier;
+	private Location location = null;
 
 	private final HashMap<Topic, Subscription> subscriptions = new HashMap<>();
 
@@ -17,6 +20,14 @@ public class Connection {
 
 	public void addSubscription(Subscription subscription) {
 		subscriptions.put(subscription.getTopic(), subscription);
+	}
+
+	public void updateLocation(Location location) {
+		this.location = location;
+	}
+
+	public Optional<Location> getLocation() {
+		return Optional.ofNullable(location);
 	}
 
 	public String getClientIdentifier() {
