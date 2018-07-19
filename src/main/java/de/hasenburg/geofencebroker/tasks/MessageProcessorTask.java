@@ -42,27 +42,32 @@ class MessageProcessorTask extends Task<Boolean> {
 		int queuedMessages = 0;
 
 		while (!Thread.currentThread().isInterrupted()) {
-			if (queuedMessages != messageQueue.size()) {
-				logger.trace("Number of queued messages: " + messageQueue.size());
-				queuedMessages = messageQueue.size();
+			try {
+
+				if (queuedMessages != messageQueue.size()) {
+					logger.trace("Number of queued messages: " + messageQueue.size());
+					queuedMessages = messageQueue.size();
+				}
+
+				Optional<RouterMessage> messageO = RouterMessage.buildRouterMessage(messageQueue.poll(10, TimeUnit.SECONDS));
+				messageO.ifPresentOrElse(message -> {
+					switch (message.getControlPacketType()) {
+						case CONNECT:
+							connectionManager.processCONNECT(message);
+							break;
+						case DISCONNECT:
+							connectionManager.processDISCONNECT(message);
+							break;
+						default:
+							logger.debug("Cannot process message {}", message.toString());
+					}
+				}, () -> logger.debug("Did not receive a message for 10 seconds"));
+
+			} catch (InterruptedException e) {
+				logger.info("Task was interrupted, ending it.");
+				Thread.currentThread().interrupt(); // when interrupted, the task will end which is fine
 			}
 
-			Optional<RouterMessage> messageO = RouterMessage.buildRouterMessage(messageQueue.poll());
-
-			messageO.ifPresent(message -> {
-				switch (message.getControlPacketType()) {
-					case CONNECT:
-						connectionManager.processCONNECT(message);
-						break;
-					case DISCONNECT:
-						connectionManager.processDISCONNECT(message);
-						break;
-					default:
-						logger.debug("Cannot process message {}", message.toString());
-				}
-			});
-
-			Utility.sleepNoLog(0, 10); // when interrupted, the task will end which is fine
 		}
 
 		return true;
