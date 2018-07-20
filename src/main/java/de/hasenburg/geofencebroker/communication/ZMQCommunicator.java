@@ -103,7 +103,7 @@ public abstract class ZMQCommunicator {
 	 * Sending Messages
 	 ****************************************************************/
 
-	public synchronized void sendMessage(ZMsg message) {
+	protected synchronized void sendMessage(ZMsg message) {
 		Utility.sleep(0, 10);
 		if (socket.getType() == ZMQ.DEALER) {
 			logger.trace("Sending message to Server");

@@ -5,6 +5,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.ZMsg;
 
+import javax.swing.text.html.Option;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -15,7 +16,7 @@ public class DealerMessage {
 	private ControlPacketType controlPacketType;
 	private Topic topic;
 	private String geofence;
-	private String payload;
+	private Payload payload;
 
 	public static Optional<DealerMessage> buildDealerMessage(ZMsg msg) {
 		if (msg == null) {
@@ -34,7 +35,14 @@ public class DealerMessage {
 			message.controlPacketType = ControlPacketType.valueOf(msg.popString());
 			message.topic = new Topic(msg.popString());
 			message.geofence = msg.popString();
-			message.payload = msg.popString();
+			String s = new String(msg.pop().getData());
+			switch (message.controlPacketType) {
+				case PINGREQ:
+					message.payload = JSONable.fromJSON(s, PayloadPINGREQ.class).orElseGet(PayloadPINGREQ::new);
+					break;
+				default:
+					message.payload = JSONable.fromJSON(s, Payload.class).orElseGet(Payload::new);
+			}
 		} catch (Exception e) {
 			logger.error("Cannot parse message, due to exception.", e);
 			message = null;
@@ -51,17 +59,17 @@ public class DealerMessage {
 		this.controlPacketType = controlPacketType;
 		this.topic = new Topic("");
 		this.geofence = "";
-		this.payload = "";
+		this.payload = new Payload();
 	}
 
-	public DealerMessage(ControlPacketType controlPacketType, String payload) {
+	public DealerMessage(ControlPacketType controlPacketType, Payload payload) {
 		this.controlPacketType = controlPacketType;
 		this.topic = new Topic("");
 		this.geofence = "";
 		this.payload = payload;
 	}
 
-	public DealerMessage(ControlPacketType controlPacketType, Topic topic, String geofence, String payload) {
+	public DealerMessage(ControlPacketType controlPacketType, Topic topic, String geofence, Payload payload) {
 		this.controlPacketType = controlPacketType;
 		this.topic = topic;
 		this.geofence = geofence;
@@ -69,7 +77,9 @@ public class DealerMessage {
 	}
 
 	public ZMsg getZmsg() {
-		return ZMsg.newStringMsg(controlPacketType.name(), topic.getTopic(), geofence, payload);
+		ZMsg msg = ZMsg.newStringMsg(controlPacketType.name(), topic.getTopic(), geofence);
+		msg.add(JSONable.toJSON(payload).getBytes()); // cannot just add string, encoding fails
+		return msg;
 	}
 
 	/*****************************************************************
@@ -88,7 +98,7 @@ public class DealerMessage {
 		return geofence;
 	}
 
-	public String getPayload() {
+	public Payload getPayload() {
 		return payload;
 	}
 

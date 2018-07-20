@@ -1,6 +1,8 @@
 package de.hasenburg.geofencebroker.communication;
 
 import de.hasenburg.geofencebroker.model.DealerMessage;
+import de.hasenburg.geofencebroker.model.Location;
+import de.hasenburg.geofencebroker.model.PayloadPINGREQ;
 import de.hasenburg.geofencebroker.model.RouterMessage;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
 import org.zeromq.ZMQ;
@@ -26,18 +28,7 @@ public class DealerCommunicator extends ZMQCommunicator {
 		socket.connect(address + ":" + port);
 	}
 
-	public void sendCONNECT() {
-		DealerMessage message = new DealerMessage(ControlPacketType.CONNECT);
-		sendMessage(message.getZmsg());
-	}
-
-	public void sendDICONNECT() {
-		DealerMessage message = new DealerMessage(ControlPacketType.DISCONNECT);
-		sendMessage(message.getZmsg());
-	}
-
-	public void sendPINGREQ(String location) {
-		DealerMessage message = new DealerMessage(ControlPacketType.PINGREQ, location);
+	public void sendDealerMessage(DealerMessage message) {
 		sendMessage(message.getZmsg());
 	}
 

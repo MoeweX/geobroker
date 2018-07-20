@@ -6,16 +6,17 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class TestLocation {
+public class LocationTest {
 
 	private static final Logger logger = LogManager.getLogger();
 
 	@Test
-	public void testLocation() {
-		logger.info("RUNNING testOneClient TEST");
+	public void testStringLocation() {
+		logger.info("RUNNING testLocation TEST");
 		Location location = Location.random();
 		logger.debug(location.toString());
 		assertEquals(location, Location.fromString(location.toString()).get());
 		logger.info("FINISHED TEST");
 	}
+
 }

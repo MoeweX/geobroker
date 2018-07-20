@@ -1,8 +1,10 @@
 package de.hasenburg.geofencebroker.client;
 
+import de.hasenburg.geofencebroker.communication.ControlPacketType;
 import de.hasenburg.geofencebroker.communication.DealerCommunicator;
 import de.hasenburg.geofencebroker.model.DealerMessage;
 import de.hasenburg.geofencebroker.model.Location;
+import de.hasenburg.geofencebroker.model.PayloadPINGREQ;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -39,18 +41,17 @@ public class BasicClient {
 
 	public void sendCONNECT() {
 		logger.trace("Connecting with client " + getIdentity());
-		dealer.sendCONNECT();
+		dealer.sendDealerMessage(new DealerMessage(ControlPacketType.CONNECT));
 	}
 
 	public void sendPINGREQ() {
 		logger.trace("Pinging with client " + getIdentity());
-		Location location = Location.random();
-		dealer.sendPINGREQ(location.toString());
+		dealer.sendDealerMessage(new DealerMessage(ControlPacketType.PINGREQ, new PayloadPINGREQ(Location.random())));
 	}
 
 	public void sendDISCONNECT() {
 		logger.trace("Disconnecting with client " + getIdentity());
-		dealer.sendDICONNECT();
+		dealer.sendDealerMessage(new DealerMessage(ControlPacketType.DISCONNECT));
 	}
 
 	public String getIdentity() {
