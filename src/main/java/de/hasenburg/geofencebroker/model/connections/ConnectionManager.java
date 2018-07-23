@@ -10,7 +10,6 @@ import org.apache.logging.log4j.Logger;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class ConnectionManager {
@@ -68,7 +67,7 @@ public class ConnectionManager {
 			connection.setActive(false);
 			response = new RouterMessage(
 					message.getClientIdentifier(), ControlPacketType.DISCONNECT,
-					new PayloadDISCONNECT(ReasonCode.ProtocolError));
+					new Payload(ReasonCode.ProtocolError));
 		} else {
 			logger.debug("Connection is now active, acknowledging.");
 			connection.setActive(true);
@@ -120,7 +119,7 @@ public class ConnectionManager {
 
 		} else {
 			response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.PINGRESP,
-					new PayloadPINGRESP(ReasonCode.NotConnected));
+					new Payload(ReasonCode.NotConnected));
 		}
 
 		routerCommunicator.sendRouterMessage(response);

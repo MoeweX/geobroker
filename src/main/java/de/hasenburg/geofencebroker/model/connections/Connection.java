@@ -48,7 +48,7 @@ public class Connection {
 
 	/**
 	 * Checks whether a connection is active and not null -> is connected
-	 * @param c - the connection to be checked
+	 * @param connection - the connection to be checked
 	 * @return boolean indicating above
 	 */
 	public static boolean isConnected(Connection connection) {

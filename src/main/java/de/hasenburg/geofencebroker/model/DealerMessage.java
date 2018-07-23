@@ -1,6 +1,7 @@
 package de.hasenburg.geofencebroker.model;
 
 import de.hasenburg.geofencebroker.communication.ControlPacketType;
+import de.hasenburg.geofencebroker.main.Utility;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.ZMsg;
@@ -36,13 +37,7 @@ public class DealerMessage {
 			message.topic = new Topic(msg.popString());
 			message.geofence = msg.popString();
 			String s = new String(msg.pop().getData());
-			switch (message.controlPacketType) {
-				case PINGREQ:
-					message.payload = JSONable.fromJSON(s, PayloadPINGREQ.class).orElseGet(PayloadPINGREQ::new);
-					break;
-				default:
-					message.payload = JSONable.fromJSON(s, Payload.class).orElseGet(Payload::new);
-			}
+			message.payload = Utility.buildPayloadFromString(s, message.controlPacketType);
 		} catch (Exception e) {
 			logger.error("Cannot parse message, due to exception.", e);
 			message = null;

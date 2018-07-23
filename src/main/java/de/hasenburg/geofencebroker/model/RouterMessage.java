@@ -1,6 +1,7 @@
 package de.hasenburg.geofencebroker.model;
 
 import de.hasenburg.geofencebroker.communication.ControlPacketType;
+import de.hasenburg.geofencebroker.main.Utility;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.ZMsg;
@@ -37,16 +38,7 @@ public class RouterMessage {
 			message.topic = new Topic(msg.popString());
 			message.geofence = msg.popString();
 			String s = new String(msg.pop().getData());
-			switch (message.controlPacketType) {
-				case PINGRESP:
-					message.payload = JSONable.fromJSON(s, PayloadPINGRESP.class).orElseGet(PayloadPINGRESP::new);
-					break;
-				case DISCONNECT:
-					message.payload = JSONable.fromJSON(s, PayloadDISCONNECT.class).orElseGet(PayloadDISCONNECT::new);
-					break;
-				default:
-					message.payload = JSONable.fromJSON(s, Payload.class).orElseGet(Payload::new);
-			}
+			message.payload = Utility.buildPayloadFromString(s, message.controlPacketType);
 		} catch (Exception e) {
 			logger.error("Cannot parse message, due to exception.", e);
 			message = null;
@@ -74,7 +66,7 @@ public class RouterMessage {
 		this.controlPacketType = controlPacketType;
 		this.topic = new Topic("");
 		this.geofence = "";
-		this.payload = new Payload();
+		this.payload = payload;
 	}
 
 	public RouterMessage(String clientIdentifier,
@@ -83,7 +75,7 @@ public class RouterMessage {
 		this.controlPacketType = controlPacketType;
 		this.topic = topic;
 		this.geofence = geofence;
-		this.payload = new Payload();
+		this.payload = payload;
 	}
 
 	public ZMsg getZmsg() {

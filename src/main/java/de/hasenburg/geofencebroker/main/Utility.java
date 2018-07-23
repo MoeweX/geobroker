@@ -1,5 +1,7 @@
 package de.hasenburg.geofencebroker.main;
 
+import de.hasenburg.geofencebroker.communication.ControlPacketType;
+import de.hasenburg.geofencebroker.model.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -21,6 +23,16 @@ public class Utility {
 			Thread.sleep(millis, nanos);
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
+		}
+	}
+
+	public static Payload buildPayloadFromString(String s, ControlPacketType controlPacketType) {
+		switch (controlPacketType) {
+			case PINGREQ:
+				return JSONable.fromJSON(s, PayloadPINGREQ.class).orElseGet(PayloadPINGREQ::new);
+			default:
+				// all messages that have only have a reason code can use the standard payload
+				return JSONable.fromJSON(s, Payload.class).orElseGet(Payload::new);
 		}
 	}
 
