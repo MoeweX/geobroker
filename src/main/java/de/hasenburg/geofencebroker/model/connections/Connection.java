@@ -2,11 +2,15 @@ package de.hasenburg.geofencebroker.model.connections;
 
 import de.hasenburg.geofencebroker.model.Location;
 import de.hasenburg.geofencebroker.model.Topic;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
 import java.util.Optional;
 
 public class Connection {
+
+	private static final Logger logger = LogManager.getLogger();
 
 	private boolean active = false;
 	private String clientIdentifier;
@@ -40,6 +44,20 @@ public class Connection {
 
 	public boolean isActive() {
 		return this.active;
+	}
+
+	/**
+	 * Checks whether a connection is active and not null -> is connected
+	 * @param c - the connection to be checked
+	 * @return boolean indicating above
+	 */
+	public static boolean isConnected(Connection connection) {
+		if (connection != null && connection.isActive()) {
+			logger.trace("Received message from active client");
+			return true;
+		}
+		logger.trace("Received message from not connected client");
+		return false;
 	}
 
 }

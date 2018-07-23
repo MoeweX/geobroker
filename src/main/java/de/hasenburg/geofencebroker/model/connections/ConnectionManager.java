@@ -40,12 +40,19 @@ public class ConnectionManager {
 	 * Message Processing
 	 ****************************************************************/
 
-	/**
-	 * @return Optional<Connection>, is empty when invalid ControlPacketType
-	 */
-	public Optional<Connection> processCONNECT(RouterMessage message) {
-		if (message.getControlPacketType() != ControlPacketType.CONNECT) {
-			return Optional.empty();
+	public boolean notExpectedMessage(RouterMessage message, ControlPacketType expectedType) {
+		if (message.getControlPacketType() != expectedType) {
+			logger.warn("Stopping processing of message from client {} as it has not expected ControlPacketType {}, instead {}",
+					message.getClientIdentifier(), expectedType, message.getControlPacketType());
+			return true;
+		}
+		logger.trace("Processing {} message from client {}", expectedType, message.getClientIdentifier());
+		return false;
+	}
+
+	public void processCONNECT(RouterMessage message) {
+		if (notExpectedMessage(message, ControlPacketType.CONNECT)) {
+			return;
 		}
 
 		// get connection or create new
@@ -57,13 +64,13 @@ public class ConnectionManager {
 		RouterMessage response;
 
 		if (connection.isActive()) {
-			logger.debug("Connection of {} was already active, so protocol error. Closing now.", connection.getClientIdentifier());
+			logger.debug("Connection already active, so protocol error. Closing now.");
 			connection.setActive(false);
 			response = new RouterMessage(
 					message.getClientIdentifier(), ControlPacketType.DISCONNECT,
 					new PayloadDISCONNECT(ReasonCode.ProtocolError));
 		} else {
-			logger.debug("Connection of {} is now active, acknowledging.", connection.getClientIdentifier());
+			logger.debug("Connection is now active, acknowledging.");
 			connection.setActive(true);
 			response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.CONNACK);
 		}
@@ -71,22 +78,18 @@ public class ConnectionManager {
 		routerCommunicator.sendRouterMessage(response);
 
 		connections.put(connection.getClientIdentifier(), connection);
-		return Optional.of(connection);
 	}
 
-	/**
-	 * @return Optional<Connection>, is empty when invalid ControlPacketType or connection for clientIdentifier does not exist
-	 */
-	public Optional<Connection> processDISCONNECT(RouterMessage message) {
-		if (message.getControlPacketType() != ControlPacketType.DISCONNECT) {
-			return Optional.empty();
+	public void processDISCONNECT(RouterMessage message) {
+		if (notExpectedMessage(message, ControlPacketType.DISCONNECT)) {
+			return;
 		}
 
 		// get connection
 		Connection connection = connections.get(message.getClientIdentifier());
 		if (connection == null) {
 			logger.debug("Connection of {} did not exist", message.getClientIdentifier());
-			return Optional.empty();
+			return;
 		}
 
 		// set to inactive
@@ -94,20 +97,17 @@ public class ConnectionManager {
 		connection.setActive(false);
 
 		connections.put(connection.getClientIdentifier(), connection);
-		return Optional.of(connection);
 	}
 
 	public void processPINGREQ(RouterMessage message) {
-		if (message.getControlPacketType() != ControlPacketType.PINGREQ) {
+		if (notExpectedMessage(message, ControlPacketType.PINGREQ)) {
 			return;
 		}
 
 		Connection connection = connections.get(message.getClientIdentifier());
 		RouterMessage response;
 
-		// only if connection exists and is active
-		if (connection != null && connection.isActive()) {
-			logger.trace("Received PINGREQ from active client {}", connection.getClientIdentifier());
+		if (Connection.isConnected(connection)) {
 			response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.PINGRESP);
 
 			// update location
@@ -115,10 +115,10 @@ public class ConnectionManager {
 			payloadPINGREQ.getLocation().ifPresentOrElse(location -> {
 				connection.updateLocation(location);
 				connections.put(connection.getClientIdentifier(), connection);
-			}, () -> logger.warn("No location send with message from client {}", connection.getClientIdentifier()));
+				logger.debug("Updated location to {}", location.toString());
+			}, () -> logger.warn("Message misses location"));
 
 		} else {
-			logger.trace("Received PINGREQ from not connected client {}", message.getClientIdentifier());
 			response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.PINGRESP,
 					new PayloadPINGRESP(ReasonCode.NotConnected));
 		}
@@ -127,20 +127,12 @@ public class ConnectionManager {
 
 	}
 
-	/**
-	 * Processes {@link de.hasenburg.geofencebroker.communication.ControlPacketType#SUBSCRIBE} messages and updates connections accordingly.
-	 */
-	public Optional<Subscription> processSUBSCRIBEforConnection(RouterMessage message) {
+	public void processSUBSCRIBEforConnection(RouterMessage message) {
 		// TODO Implement
-		return Optional.empty();
 	}
 
-	/**
-	 * Processes {@link de.hasenburg.geofencebroker.communication.ControlPacketType#UNSUBSCRIBE} messages and updates connections accordingly.
-	 */
-	public Optional<Subscription> processUNSUBSCRIBEforConnection(RouterMessage message) {
+	public void processUNSUBSCRIBEforConnection(RouterMessage message) {
 		// TODO Implement
-		return Optional.empty();
 	}
 
 	/*****************************************************************
@@ -152,6 +144,7 @@ public class ConnectionManager {
 		StringBuilder s = new StringBuilder("\n");
 		for (Map.Entry<String, Connection> entry : connections.entrySet()) {
 			s.append("\t").append(entry.getKey()).append(", is active: ").append(entry.getValue().isActive());
+			//noinspection ConstantConditions
 			s.append("\t\tLocation: ").append(entry.getValue().getLocation().get().toString());
 			s.append("\n");
 		}

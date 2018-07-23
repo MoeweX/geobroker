@@ -106,9 +106,9 @@ public abstract class ZMQCommunicator {
 	protected synchronized void sendMessage(ZMsg message) {
 		Utility.sleep(0, 10);
 		if (socket.getType() == ZMQ.DEALER) {
-			logger.trace("Sending message to Server");
+			logger.trace("Sending DealerMessage: {}", message.toString());
 		} else if (socket.getType() == ZMQ.ROUTER) {
-			logger.trace("Sending message to " + message.getFirst().toString());
+			logger.trace("Sending RouterMessage: {}", message.toString());
 		}
 
 		message.send(socket);
