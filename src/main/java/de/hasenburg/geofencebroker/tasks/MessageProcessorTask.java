@@ -57,6 +57,9 @@ class MessageProcessorTask extends Task<Boolean> {
 						case PINGREQ:
 							connectionManager.processPINGREQ(message);
 							break;
+						case SUBSCRIBE:
+							connectionManager.processSUBSCRIBEforConnection(message);
+							break;
 						default:
 							logger.debug("Cannot process message {}", message.toString());
 					}

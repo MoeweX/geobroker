@@ -2,9 +2,7 @@ package de.hasenburg.geofencebroker.client;
 
 import de.hasenburg.geofencebroker.communication.ControlPacketType;
 import de.hasenburg.geofencebroker.communication.DealerCommunicator;
-import de.hasenburg.geofencebroker.model.DealerMessage;
-import de.hasenburg.geofencebroker.model.Location;
-import de.hasenburg.geofencebroker.model.PayloadPINGREQ;
+import de.hasenburg.geofencebroker.model.*;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -54,6 +52,11 @@ public class BasicClient {
 		dealer.sendDealerMessage(new DealerMessage(ControlPacketType.DISCONNECT));
 	}
 
+	public void sendSUBSCRIBE(Topic topic) {
+		logger.trace("Subscribing with client {} to topic {}", getIdentity(), topic);
+		dealer.sendDealerMessage(new DealerMessage(ControlPacketType.SUBSCRIBE, topic, "", new Payload()));
+	}
+
 	public String getIdentity() {
 		return dealer.getIdentity();
 	}
@@ -62,6 +65,7 @@ public class BasicClient {
 		BasicClient client = new BasicClient(null, "tcp://localhost", 5559);
 		client.sendCONNECT();
 		client.sendPINGREQ();
+		client.sendSUBSCRIBE(new Topic("Test Topic"));
 
 		Thread.sleep(3000);
 

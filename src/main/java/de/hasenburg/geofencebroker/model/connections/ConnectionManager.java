@@ -49,6 +49,15 @@ public class ConnectionManager {
 		return false;
 	}
 
+	public boolean topicSet(RouterMessage message) {
+		if (message.getTopic() != null) {
+			logger.trace("Message has a valid topic");
+			return true;
+		}
+		logger.warn("Message misses a topic");
+		return false;
+	}
+
 	public void processCONNECT(RouterMessage message) {
 		if (notExpectedMessage(message, ControlPacketType.CONNECT)) {
 			return;
@@ -127,11 +136,38 @@ public class ConnectionManager {
 	}
 
 	public void processSUBSCRIBEforConnection(RouterMessage message) {
-		// TODO Implement
+		if (notExpectedMessage(message, ControlPacketType.SUBSCRIBE)) {
+			return;
+		}
+
+		RouterMessage response;
+
+		if (topicSet(message)) {
+			Connection connection = connections.get(message.getClientIdentifier());
+
+			if (Connection.isConnected(connection)) {
+				Subscription subscription = new Subscription(message.getTopic(), message.getGeofence());
+				connection.putSubscription(subscription);
+				connections.put(connection.getClientIdentifier(), connection);
+				logger.debug("Client {} subscribed to topic {}", message.getClientIdentifier(), message.getTopic());
+				response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.SUBACK,
+						new Payload(ReasonCode.GrantedQoS0));
+			} else {
+				response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.SUBACK,
+						new Payload(ReasonCode.NotConnected));
+			}
+
+		} else {
+			response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.SUBACK,
+					new Payload(ReasonCode.ProtocolError));
+		}
+
+		routerCommunicator.sendRouterMessage(response);
+
 	}
 
 	public void processUNSUBSCRIBEforConnection(RouterMessage message) {
-		// TODO Implement
+		throw new RuntimeException("Not yet implemented");
 	}
 
 	/*****************************************************************
@@ -142,10 +178,7 @@ public class ConnectionManager {
 	public String toString() {
 		StringBuilder s = new StringBuilder("\n");
 		for (Map.Entry<String, Connection> entry : connections.entrySet()) {
-			s.append("\t").append(entry.getKey()).append(", is active: ").append(entry.getValue().isActive());
-			//noinspection ConstantConditions
-			s.append("\t\tLocation: ").append(entry.getValue().getLocation().get().toString());
-			s.append("\n");
+			s.append("\t").append(entry.getValue().toString());
 		}
 		return s.toString();
 	}

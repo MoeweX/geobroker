@@ -5,6 +5,6 @@ public enum ReasonCode {
 
 	NormalDisconnection,
 	ProtocolError,
-	NotConnected
-
+	NotConnected,
+	GrantedQoS0
 }

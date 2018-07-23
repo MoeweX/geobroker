@@ -22,7 +22,7 @@ public class Connection {
 		this.clientIdentifier = clientIdentifier;
 	}
 
-	public void addSubscription(Subscription subscription) {
+	public void putSubscription(Subscription subscription) {
 		subscriptions.put(subscription.getTopic(), subscription);
 	}
 
@@ -60,4 +60,13 @@ public class Connection {
 		return false;
 	}
 
+	@Override
+	public String toString() {
+		return "Connection{" +
+				"active=" + active +
+				", clientIdentifier='" + clientIdentifier + '\'' +
+				", location=" + location +
+				", subscriptions=" + subscriptions.keySet() +
+				'}';
+	}
 }
