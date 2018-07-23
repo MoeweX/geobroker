@@ -31,10 +31,6 @@ public class ConnectionManager {
 		return connections.values().stream().filter(c -> c.isActive()).collect(Collectors.toList());
 	}
 
-	public List<Connection> getInactiveConnections() {
-		return connections.values().stream().filter(c -> !c.isActive()).collect(Collectors.toList());
-	}
-
 	/*****************************************************************
 	 * Message Processing
 	 ****************************************************************/
@@ -72,13 +68,13 @@ public class ConnectionManager {
 		RouterMessage response;
 
 		if (connection.isActive()) {
-			logger.debug("Connection already active, so protocol error. Closing now.");
-			connection.setActive(false);
+			logger.debug("Connection already exists for {}, so protocol error. Disconnecting.", message.getClientIdentifier());
+			connections.remove(message.getClientIdentifier());
 			response = new RouterMessage(
 					message.getClientIdentifier(), ControlPacketType.DISCONNECT,
 					new Payload(ReasonCode.ProtocolError));
 		} else {
-			logger.debug("Connection is now active, acknowledging.");
+			logger.debug("Created connection for client {}, acknowledging.", message.getClientIdentifier());
 			connection.setActive(true);
 			response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.CONNACK);
 		}
@@ -96,15 +92,13 @@ public class ConnectionManager {
 		// get connection
 		Connection connection = connections.get(message.getClientIdentifier());
 		if (connection == null) {
-			logger.debug("Connection of {} did not exist", message.getClientIdentifier());
+			logger.trace("Connection for {} did not exist", message.getClientIdentifier());
 			return;
 		}
 
-		// set to inactive
-		logger.debug("Connection of {} is now inactive", message.getClientIdentifier());
-		connection.setActive(false);
-
-		connections.put(connection.getClientIdentifier(), connection);
+		// remove connection
+		logger.debug("Disconnected client {}", message.getClientIdentifier());
+		connections.remove(connection.getClientIdentifier());
 	}
 
 	public void processPINGREQ(RouterMessage message) {
@@ -115,18 +109,20 @@ public class ConnectionManager {
 		Connection connection = connections.get(message.getClientIdentifier());
 		RouterMessage response;
 
-		if (Connection.isConnected(connection)) {
+		if (connection != null) {
 			response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.PINGRESP);
+			connection.setActive(true);
 
 			// update location
 			PayloadPINGREQ payloadPINGREQ = (PayloadPINGREQ) message.getPayload();
 			payloadPINGREQ.getLocation().ifPresentOrElse(location -> {
 				connection.updateLocation(location);
 				connections.put(connection.getClientIdentifier(), connection);
-				logger.debug("Updated location to {}", location.toString());
-			}, () -> logger.warn("Message misses location"));
+				logger.debug("Updated location of {} to {}", message.getClientIdentifier(), location.toString());
+			}, () -> logger.warn("Message from {} misses location", message.getClientIdentifier()));
 
 		} else {
+			logger.trace("Client {} is not connected", message.getClientIdentifier());
 			response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.PINGRESP,
 					new Payload(ReasonCode.NotConnected));
 		}
@@ -145,7 +141,8 @@ public class ConnectionManager {
 		if (topicSet(message)) {
 			Connection connection = connections.get(message.getClientIdentifier());
 
-			if (Connection.isConnected(connection)) {
+			if (connection != null) {
+				connection.setActive(true);
 				Subscription subscription = new Subscription(message.getTopic(), message.getGeofence());
 				connection.putSubscription(subscription);
 				connections.put(connection.getClientIdentifier(), connection);
@@ -177,6 +174,7 @@ public class ConnectionManager {
 
 		if (topicSet(message)) {
 			List<Connection> activeConnections = getActiveConnections();
+			logger.debug("Publishing topic {} to all subscribers", message.getTopic());
 
 			// send message to every connection that has topic
 			for (Connection connection : activeConnections) {

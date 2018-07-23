@@ -71,7 +71,7 @@ public class ConnectAndDisconnectTest {
 
 		// check if connection is inactive
 		Thread.sleep(100);
-		assertEquals("Connection of client should be inactive", client.getIdentity(), connectionManager.getInactiveConnections().get(0).getClientIdentifier());
+		assertEquals("No connection should exist", 0, connectionManager.getActiveConnections().size());
 
 		client.tearDown();
 		logger.info("FINISHED TEST");
@@ -113,9 +113,8 @@ public class ConnectAndDisconnectTest {
 		}
 
 		Thread.sleep(100);
-		// check number of active and inactive connections
+		// check number of active connections
 		assertEquals("Wrong number of active connections", activeConnections, connectionManager.getActiveConnections().size());
-		assertEquals("Wrong number of inactive connections", clients.size() - activeConnections, connectionManager.getInactiveConnections().size());
 
 		// tear down clients
 		clients.forEach(c -> c.tearDown());

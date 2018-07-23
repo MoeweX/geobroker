@@ -42,6 +42,7 @@ public class Connection {
 		this.active = active;
 	}
 
+	// TODO change to heartbeat mechanism
 	public boolean isActive() {
 		return this.active;
 	}
@@ -49,20 +50,6 @@ public class Connection {
 	// TODO add geofence check
 	public boolean subscribedToTopic(Topic topic) {
 		return subscriptions.containsKey(topic);
-	}
-
-	/**
-	 * Checks whether a connection is active and not null -> is connected
-	 * @param connection - the connection to be checked
-	 * @return boolean indicating above
-	 */
-	public static boolean isConnected(Connection connection) {
-		if (connection != null && connection.isActive()) {
-			logger.trace("Received message from active client");
-			return true;
-		}
-		logger.trace("Received message from not connected client");
-		return false;
 	}
 
 	@Override
