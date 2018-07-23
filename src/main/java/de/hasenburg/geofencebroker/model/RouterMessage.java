@@ -16,7 +16,7 @@ public class RouterMessage {
 	private ControlPacketType controlPacketType;
 	private Topic topic;
 	private String geofence;
-	private String payload;
+	private Payload payload;
 
 	public static Optional<RouterMessage> buildRouterMessage(ZMsg msg) {
 		if (msg == null) {
@@ -36,7 +36,17 @@ public class RouterMessage {
 			message.controlPacketType = ControlPacketType.valueOf(msg.popString());
 			message.topic = new Topic(msg.popString());
 			message.geofence = msg.popString();
-			message.payload = msg.popString();
+			String s = new String(msg.pop().getData());
+			switch (message.controlPacketType) {
+				case PINGRESP:
+					message.payload = JSONable.fromJSON(s, PayloadPINGRESP.class).orElseGet(PayloadPINGRESP::new);
+					break;
+				case DISCONNECT:
+					message.payload = JSONable.fromJSON(s, PayloadDISCONNECT.class).orElseGet(PayloadDISCONNECT::new);
+					break;
+				default:
+					message.payload = JSONable.fromJSON(s, Payload.class).orElseGet(Payload::new);
+			}
 		} catch (Exception e) {
 			logger.error("Cannot parse message, due to exception.", e);
 			message = null;
@@ -55,29 +65,31 @@ public class RouterMessage {
 		this.controlPacketType = controlPacketType;
 		this.topic = new Topic("");
 		this.geofence = "";
-		this.payload = "";
+		this.payload = new Payload();
 	}
 
 	public RouterMessage(String clientIdentifier,
-						 ControlPacketType controlPacketType, String payload) {
+						 ControlPacketType controlPacketType, Payload payload) {
 		this.clientIdentifier = clientIdentifier;
 		this.controlPacketType = controlPacketType;
 		this.topic = new Topic("");
 		this.geofence = "";
-		this.payload = payload;
+		this.payload = new Payload();
 	}
 
 	public RouterMessage(String clientIdentifier,
-						 ControlPacketType controlPacketType, Topic topic, String geofence, String payload) {
+						 ControlPacketType controlPacketType, Topic topic, String geofence, Payload payload) {
 		this.clientIdentifier = clientIdentifier;
 		this.controlPacketType = controlPacketType;
 		this.topic = topic;
 		this.geofence = geofence;
-		this.payload = payload;
+		this.payload = new Payload();
 	}
 
 	public ZMsg getZmsg() {
-		return ZMsg.newStringMsg(clientIdentifier, controlPacketType.name(), topic.getTopic(), geofence, payload);
+		ZMsg msg = ZMsg.newStringMsg(clientIdentifier, controlPacketType.name(), topic.getTopic(), geofence);
+		msg.add(JSONable.toJSON(payload).getBytes()); // cannot just add string, encoding fails
+		return msg;
 	}
 
 	/*****************************************************************
@@ -100,7 +112,7 @@ public class RouterMessage {
 		return geofence;
 	}
 
-	public String getPayload() {
+	public Payload getPayload() {
 		return payload;
 	}
 

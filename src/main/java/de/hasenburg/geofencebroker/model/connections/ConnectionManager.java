@@ -3,8 +3,7 @@ package de.hasenburg.geofencebroker.model.connections;
 import de.hasenburg.geofencebroker.communication.ControlPacketType;
 import de.hasenburg.geofencebroker.communication.ReasonCode;
 import de.hasenburg.geofencebroker.communication.RouterCommunicator;
-import de.hasenburg.geofencebroker.model.Location;
-import de.hasenburg.geofencebroker.model.RouterMessage;
+import de.hasenburg.geofencebroker.model.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -55,15 +54,21 @@ public class ConnectionManager {
 			connection = new Connection(message.getClientIdentifier());
 		}
 
+		RouterMessage response;
+
 		if (connection.isActive()) {
 			logger.debug("Connection of {} was already active, so protocol error. Closing now.", connection.getClientIdentifier());
 			connection.setActive(false);
-			routerCommunicator.sendDISCONNECT(message.getClientIdentifier(), ReasonCode.ProtocolError);
+			response = new RouterMessage(
+					message.getClientIdentifier(), ControlPacketType.DISCONNECT,
+					new PayloadDISCONNECT(ReasonCode.ProtocolError));
 		} else {
 			logger.debug("Connection of {} is now active, acknowledging.", connection.getClientIdentifier());
 			connection.setActive(true);
-			routerCommunicator.sendCONNACK(message.getClientIdentifier());
+			response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.CONNACK);
 		}
+
+		routerCommunicator.sendRouterMessage(response);
 
 		connections.put(connection.getClientIdentifier(), connection);
 		return Optional.of(connection);
@@ -80,10 +85,12 @@ public class ConnectionManager {
 		// get connection
 		Connection connection = connections.get(message.getClientIdentifier());
 		if (connection == null) {
+			logger.debug("Connection of {} did not exist", message.getClientIdentifier());
 			return Optional.empty();
 		}
 
 		// set to inactive
+		logger.debug("Connection of {} is now inactive", message.getClientIdentifier());
 		connection.setActive(false);
 
 		connections.put(connection.getClientIdentifier(), connection);
@@ -95,21 +102,28 @@ public class ConnectionManager {
 			return;
 		}
 
-		// check connection
 		Connection connection = connections.get(message.getClientIdentifier());
+		RouterMessage response;
+
+		// only if connection exists and is active
 		if (connection != null && connection.isActive()) {
 			logger.trace("Received PINGREQ from active client {}", connection.getClientIdentifier());
-			routerCommunicator.sendPINGRESP(message.getClientIdentifier());
+			response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.PINGRESP);
 
-			Location.fromString(message.getPayload()).ifPresentOrElse(location -> {
+			// update location
+			PayloadPINGREQ payloadPINGREQ = (PayloadPINGREQ) message.getPayload();
+			payloadPINGREQ.getLocation().ifPresentOrElse(location -> {
 				connection.updateLocation(location);
 				connections.put(connection.getClientIdentifier(), connection);
-			}, () -> logger.warn("Could not create location from {}", message.getPayload()));
+			}, () -> logger.warn("No location send with message from client {}", connection.getClientIdentifier()));
 
 		} else {
-			logger.trace("Received PINGREQ from inactive client {}", message.getClientIdentifier());
-			routerCommunicator.sendPINGRESP(message.getClientIdentifier(), ReasonCode.NotConnected);
+			logger.trace("Received PINGREQ from not connected client {}", message.getClientIdentifier());
+			response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.PINGRESP,
+					new PayloadPINGRESP(ReasonCode.NotConnected));
 		}
+
+		routerCommunicator.sendRouterMessage(response);
 
 	}
 

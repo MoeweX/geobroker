@@ -1,17 +1,13 @@
 package de.hasenburg.geofencebroker.tasks;
 
 import de.hasenburg.geofencebroker.communication.RouterCommunicator;
-import de.hasenburg.geofencebroker.main.Utility;
 import de.hasenburg.geofencebroker.model.RouterMessage;
 import de.hasenburg.geofencebroker.model.connections.ConnectionManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.ZMsg;
-import zmq.socket.reqrep.Router;
 
-import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 

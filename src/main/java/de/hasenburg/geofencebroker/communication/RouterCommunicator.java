@@ -1,5 +1,6 @@
 package de.hasenburg.geofencebroker.communication;
 
+import de.hasenburg.geofencebroker.model.DealerMessage;
 import de.hasenburg.geofencebroker.model.RouterMessage;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
 import org.zeromq.ZMQ;
@@ -26,23 +27,7 @@ public class RouterCommunicator extends ZMQCommunicator {
 		socket.bind(address + ":" + port);
 	}
 
-	public void sendDISCONNECT(String clientIdentifier, ReasonCode reasonCode) {
-		RouterMessage message = new RouterMessage(clientIdentifier, ControlPacketType.DISCONNECT, reasonCode.name());
-		sendMessage(message.getZmsg());
-	}
-
-	public void sendCONNACK(String clientIdentifier) {
-		RouterMessage message = new RouterMessage(clientIdentifier, ControlPacketType.CONNACK);
-		sendMessage(message.getZmsg());
-	}
-
-	public void sendPINGRESP(String clientIdentifier) {
-		RouterMessage message = new RouterMessage(clientIdentifier, ControlPacketType.PINGRESP);
-		sendMessage(message.getZmsg());
-	}
-
-	public void sendPINGRESP(String clientIdentifier, ReasonCode reasonCode) {
-		RouterMessage message = new RouterMessage(clientIdentifier, ControlPacketType.PINGRESP, reasonCode.name());
+	public void sendRouterMessage(RouterMessage message) {
 		sendMessage(message.getZmsg());
 	}
 
