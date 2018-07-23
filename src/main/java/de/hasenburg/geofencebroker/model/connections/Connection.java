@@ -12,6 +12,7 @@ public class Connection {
 
 	private static final Logger logger = LogManager.getLogger();
 
+	private long heartbeat;
 	private boolean active = false;
 	private String clientIdentifier;
 	private Location location = null;
@@ -19,14 +20,17 @@ public class Connection {
 	private final HashMap<Topic, Subscription> subscriptions = new HashMap<>();
 
 	public Connection(String clientIdentifier) {
+		updateHeartbeat();
 		this.clientIdentifier = clientIdentifier;
 	}
 
 	public void putSubscription(Subscription subscription) {
+		updateHeartbeat();
 		subscriptions.put(subscription.getTopic(), subscription);
 	}
 
 	public void updateLocation(Location location) {
+		updateHeartbeat();
 		this.location = location;
 	}
 
@@ -38,13 +42,8 @@ public class Connection {
 		return clientIdentifier;
 	}
 
-	public void setActive(boolean active) {
-		this.active = active;
-	}
-
-	// TODO change to heartbeat mechanism
-	public boolean isActive() {
-		return this.active;
+	public void updateHeartbeat() {
+		heartbeat = System.currentTimeMillis();
 	}
 
 	// TODO add geofence check
@@ -55,7 +54,7 @@ public class Connection {
 	@Override
 	public String toString() {
 		return "Connection{" +
-				"active=" + active +
+				"heartbeat=" + heartbeat +
 				", clientIdentifier='" + clientIdentifier + '\'' +
 				", location=" + location +
 				", subscriptions=" + subscriptions.keySet() +

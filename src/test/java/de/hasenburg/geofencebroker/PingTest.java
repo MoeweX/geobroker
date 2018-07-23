@@ -38,6 +38,7 @@ public class PingTest {
 	ConnectionManager connectionManager;
 	TaskManager taskManager;
 
+	@SuppressWarnings("Duplicates")
 	@Before
 	public void setUp() throws Exception {
 		logger.info("Running test setUp");

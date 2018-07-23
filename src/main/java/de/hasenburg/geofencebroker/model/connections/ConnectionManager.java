@@ -3,14 +3,16 @@ package de.hasenburg.geofencebroker.model.connections;
 import de.hasenburg.geofencebroker.communication.ControlPacketType;
 import de.hasenburg.geofencebroker.communication.ReasonCode;
 import de.hasenburg.geofencebroker.communication.RouterCommunicator;
-import de.hasenburg.geofencebroker.model.*;
+import de.hasenburg.geofencebroker.model.Payload;
+import de.hasenburg.geofencebroker.model.PayloadPINGREQ;
+import de.hasenburg.geofencebroker.model.RouterMessage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class ConnectionManager {
 
@@ -28,7 +30,7 @@ public class ConnectionManager {
 	}
 
 	public List<Connection> getActiveConnections() {
-		return connections.values().stream().filter(c -> c.isActive()).collect(Collectors.toList());
+		return new ArrayList<>(connections.values());
 	}
 
 	/*****************************************************************
@@ -59,29 +61,24 @@ public class ConnectionManager {
 			return;
 		}
 
-		// get connection or create new
-		Connection connection = connections.get(message.getClientIdentifier());
-		if (connection == null) {
-			connection = new Connection(message.getClientIdentifier());
-		}
-
 		RouterMessage response;
 
-		if (connection.isActive()) {
+		// get connection or create new
+		Connection connection = connections.get(message.getClientIdentifier());
+		if (connection != null) {
 			logger.debug("Connection already exists for {}, so protocol error. Disconnecting.", message.getClientIdentifier());
 			connections.remove(message.getClientIdentifier());
 			response = new RouterMessage(
 					message.getClientIdentifier(), ControlPacketType.DISCONNECT,
 					new Payload(ReasonCode.ProtocolError));
 		} else {
+			connection = new Connection(message.getClientIdentifier());
 			logger.debug("Created connection for client {}, acknowledging.", message.getClientIdentifier());
-			connection.setActive(true);
 			response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.CONNACK);
+			connections.put(connection.getClientIdentifier(), connection);
 		}
 
 		routerCommunicator.sendRouterMessage(response);
-
-		connections.put(connection.getClientIdentifier(), connection);
 	}
 
 	public void processDISCONNECT(RouterMessage message) {
@@ -111,16 +108,18 @@ public class ConnectionManager {
 
 		if (connection != null) {
 			response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.PINGRESP);
-			connection.setActive(true);
 
 			// update location
 			PayloadPINGREQ payloadPINGREQ = (PayloadPINGREQ) message.getPayload();
 			payloadPINGREQ.getLocation().ifPresentOrElse(location -> {
 				connection.updateLocation(location);
-				connections.put(connection.getClientIdentifier(), connection);
 				logger.debug("Updated location of {} to {}", message.getClientIdentifier(), location.toString());
-			}, () -> logger.warn("Message from {} misses location", message.getClientIdentifier()));
+			}, () -> {
+				connection.updateHeartbeat();
+				logger.warn("Message from {} misses location", message.getClientIdentifier());
+			});
 
+			connections.put(connection.getClientIdentifier(), connection);
 		} else {
 			logger.trace("Client {} is not connected", message.getClientIdentifier());
 			response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.PINGRESP,
@@ -142,7 +141,6 @@ public class ConnectionManager {
 			Connection connection = connections.get(message.getClientIdentifier());
 
 			if (connection != null) {
-				connection.setActive(true);
 				Subscription subscription = new Subscription(message.getTopic(), message.getGeofence());
 				connection.putSubscription(subscription);
 				connections.put(connection.getClientIdentifier(), connection);

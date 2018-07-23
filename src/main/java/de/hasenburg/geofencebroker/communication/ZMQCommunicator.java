@@ -53,6 +53,7 @@ public abstract class ZMQCommunicator {
 		executor.shutdown();
 		if (this.runnableFuture != null) {
 			this.runnableFuture = null;
+			socket.setLinger(0);
 			socket.close();
 			context.term();
 		}
