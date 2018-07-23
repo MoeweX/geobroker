@@ -30,6 +30,8 @@ public class Utility {
 		switch (controlPacketType) {
 			case PINGREQ:
 				return JSONable.fromJSON(s, PayloadPINGREQ.class).orElseGet(PayloadPINGREQ::new);
+			case PUBLISH:
+				return JSONable.fromJSON(s, PayloadPUBLISH.class).orElseGet(PayloadPUBLISH::new);
 			default:
 				// all messages that have only have a reason code can use the standard payload
 				return JSONable.fromJSON(s, Payload.class).orElseGet(Payload::new);

@@ -170,6 +170,26 @@ public class ConnectionManager {
 		throw new RuntimeException("Not yet implemented");
 	}
 
+	public void processPublish(RouterMessage message) {
+		if (notExpectedMessage(message, ControlPacketType.PUBLISH)) {
+			return;
+		}
+
+		if (topicSet(message)) {
+			List<Connection> activeConnections = getActiveConnections();
+
+			// send message to every connection that has topic
+			for (Connection connection : activeConnections) {
+				if (connection.subscribedToTopic(message.getTopic())) {
+					RouterMessage toPublish = new RouterMessage(connection.getClientIdentifier(),
+							ControlPacketType.PUBLISH, message.getTopic(), message.getGeofence(), message.getPayload());
+					routerCommunicator.sendRouterMessage(toPublish);
+				}
+			}
+		}
+
+	}
+
 	/*****************************************************************
 	 * Generated Code
 	 ****************************************************************/
@@ -182,4 +202,5 @@ public class ConnectionManager {
 		}
 		return s.toString();
 	}
+
 }

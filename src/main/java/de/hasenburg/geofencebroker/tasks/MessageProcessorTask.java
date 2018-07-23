@@ -60,6 +60,9 @@ class MessageProcessorTask extends Task<Boolean> {
 						case SUBSCRIBE:
 							connectionManager.processSUBSCRIBEforConnection(message);
 							break;
+						case PUBLISH:
+							connectionManager.processPublish(message);
+							break;
 						default:
 							logger.debug("Cannot process message {}", message.toString());
 					}

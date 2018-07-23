@@ -46,6 +46,11 @@ public class Connection {
 		return this.active;
 	}
 
+	// TODO add geofence check
+	public boolean subscribedToTopic(Topic topic) {
+		return subscriptions.containsKey(topic);
+	}
+
 	/**
 	 * Checks whether a connection is active and not null -> is connected
 	 * @param connection - the connection to be checked
