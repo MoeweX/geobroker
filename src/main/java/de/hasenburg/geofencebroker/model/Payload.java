@@ -62,6 +62,7 @@ public class Payload implements JSONable {
 
 	@Override
 	public String toString() {
+		// Note: also subclasses can use JSONable.toJSON
 		return JSONable.toJSON(this);
 	}
 }
