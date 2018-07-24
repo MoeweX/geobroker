@@ -2,6 +2,7 @@ package de.hasenburg.geofencebroker.model;
 
 import de.hasenburg.geofencebroker.communication.ControlPacketType;
 import de.hasenburg.geofencebroker.main.Utility;
+import de.hasenburg.geofencebroker.model.geofence.Geofence;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.ZMsg;
@@ -16,7 +17,7 @@ public class RouterMessage {
 	private String clientIdentifier;
 	private ControlPacketType controlPacketType;
 	private Topic topic;
-	private String geofence;
+	private Geofence geofence;
 	private Payload payload;
 
 	public static Optional<RouterMessage> buildRouterMessage(ZMsg msg) {
@@ -36,7 +37,7 @@ public class RouterMessage {
 			message.clientIdentifier = msg.popString();
 			message.controlPacketType = ControlPacketType.valueOf(msg.popString());
 			message.topic = new Topic(msg.popString());
-			message.geofence = msg.popString();
+			message.geofence = Geofence.fromJSON(msg.popString());
 			String s = new String(msg.pop().getData());
 			message.payload = Utility.buildPayloadFromString(s, message.controlPacketType);
 		} catch (Exception e) {
@@ -56,7 +57,7 @@ public class RouterMessage {
 		this.clientIdentifier = clientIdentifier;
 		this.controlPacketType = controlPacketType;
 		this.topic = new Topic("");
-		this.geofence = "";
+		this.geofence = new Geofence();
 		this.payload = new Payload();
 	}
 
@@ -65,12 +66,12 @@ public class RouterMessage {
 		this.clientIdentifier = clientIdentifier;
 		this.controlPacketType = controlPacketType;
 		this.topic = new Topic("");
-		this.geofence = "";
+		this.geofence = new Geofence();
 		this.payload = payload;
 	}
 
 	public RouterMessage(String clientIdentifier,
-						 ControlPacketType controlPacketType, Topic topic, String geofence, Payload payload) {
+						 ControlPacketType controlPacketType, Topic topic, Geofence geofence, Payload payload) {
 		this.clientIdentifier = clientIdentifier;
 		this.controlPacketType = controlPacketType;
 		this.topic = topic;
@@ -79,7 +80,7 @@ public class RouterMessage {
 	}
 
 	public ZMsg getZmsg() {
-		ZMsg msg = ZMsg.newStringMsg(clientIdentifier, controlPacketType.name(), topic.getTopic(), geofence);
+		ZMsg msg = ZMsg.newStringMsg(clientIdentifier, controlPacketType.name(), topic.getTopic(), geofence.toJSON());
 		msg.add(JSONable.toJSON(payload).getBytes()); // cannot just add string, encoding fails
 		return msg;
 	}
@@ -100,7 +101,7 @@ public class RouterMessage {
 		return topic;
 	}
 
-	public String getGeofence() {
+	public Geofence getGeofence() {
 		return geofence;
 	}
 
@@ -136,7 +137,7 @@ public class RouterMessage {
 				"clientIdentifier='" + clientIdentifier + '\'' +
 				", controlPacketType=" + controlPacketType +
 				", topic=" + topic +
-				", geofence='" + geofence + '\'' +
+				", geofence='" + geofence.toString() + '\'' +
 				", payload='" + payload + '\'' +
 				'}';
 	}

@@ -60,9 +60,13 @@ public class Payload implements JSONable {
 		return Objects.hash(getReasonCode());
 	}
 
-	@Override
-	public String toString() {
+	public String toJSON() {
 		// Note: also subclasses can use JSONable.toJSON
 		return JSONable.toJSON(this);
+	}
+
+	@Override
+	public String toString() {
+		return toJSON();
 	}
 }

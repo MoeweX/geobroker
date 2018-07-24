@@ -4,6 +4,7 @@ import de.hasenburg.geofencebroker.communication.ControlPacketType;
 import de.hasenburg.geofencebroker.communication.DealerCommunicator;
 import de.hasenburg.geofencebroker.model.*;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
+import de.hasenburg.geofencebroker.model.geofence.Geofence;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.ZMsg;
@@ -55,12 +56,12 @@ public class BasicClient {
 
 	public void sendSUBSCRIBE(Topic topic) {
 		logger.trace("Subscribing with client {} to topic {}", getIdentity(), topic);
-		dealer.sendDealerMessage(new DealerMessage(ControlPacketType.SUBSCRIBE, topic, "", new Payload()));
+		dealer.sendDealerMessage(new DealerMessage(ControlPacketType.SUBSCRIBE, topic, new Geofence(), new Payload()));
 	}
 
 	public void sendPublish(Topic topic, String content) {
 		logger.trace("Publishing with client {} to topic {}: {}", getIdentity(), topic, content);
-		dealer.sendDealerMessage(new DealerMessage(ControlPacketType.PUBLISH, topic, "", new PayloadPUBLISH(content)));
+		dealer.sendDealerMessage(new DealerMessage(ControlPacketType.PUBLISH, topic, new Geofence(), new PayloadPUBLISH(content)));
 	}
 
 	public String getIdentity() {

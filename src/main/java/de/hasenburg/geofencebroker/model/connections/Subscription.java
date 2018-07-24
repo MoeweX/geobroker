@@ -1,13 +1,14 @@
 package de.hasenburg.geofencebroker.model.connections;
 
 import de.hasenburg.geofencebroker.model.Topic;
+import de.hasenburg.geofencebroker.model.geofence.Geofence;
 
 public class Subscription {
 
 	private Topic topic;
-	private String geofence;
+	private Geofence geofence;
 
-	public Subscription(Topic topic, String geofence) {
+	public Subscription(Topic topic, Geofence geofence) {
 		this.topic = topic;
 		this.geofence = geofence;
 	}
@@ -16,7 +17,7 @@ public class Subscription {
 		return topic;
 	}
 
-	public String getGeofence() {
+	public Geofence getGeofence() {
 		return geofence;
 	}
 }

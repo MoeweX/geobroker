@@ -78,11 +78,12 @@ public class Geofence {
 		return geofence;
 	}
 
-	private String getCompleteJSON(JSONable object) {
+	private String getCompleteJSON(Object object) {
 		JSONObject obj = new JSONObject();
 		obj.put("shape", shape);
 		if (object != null) {
-			obj.put("data", new JSONObject(JSONable.toJSON(object)));
+			//obj.put("data", new JSONObject(JSONable.toJSON(object)));
+			obj.put("data", new JSONObject(object));
 		}
 		return obj.toString();
 	}
