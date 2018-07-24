@@ -65,7 +65,7 @@ public class Geofence {
 			// if shape is invalid or empty, we do not have to do anything here
 			switch (shape) {
 				case CIRCLE:
-					Optional<GeofenceCIRCLE> circle = JSONable.fromJSON(obj.getString("data"), GeofenceCIRCLE.class);
+					Optional<GeofenceCIRCLE> circle = JSONable.fromJSON(obj.getJSONObject("data").toString(), GeofenceCIRCLE.class);
 					circle.ifPresent(geofenceCIRCLE1 -> geofence.buildCircle(
 							geofenceCIRCLE1.getCircleLocation(),
 							geofenceCIRCLE1.getCircleDiameterInMeter()));
@@ -81,7 +81,9 @@ public class Geofence {
 	private String getCompleteJSON(JSONable object) {
 		JSONObject obj = new JSONObject();
 		obj.put("shape", shape);
-		obj.put("data", JSONable.toJSON(object));
+		if (object != null) {
+			obj.put("data", new JSONObject(JSONable.toJSON(object)));
+		}
 		return obj.toString();
 	}
 

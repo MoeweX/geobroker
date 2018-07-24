@@ -27,7 +27,7 @@ public class GeofenceCIRCLE implements JSONable {
 		return circleDiameterInMeter;
 	}
 
-	// TODO Change diameter test to tolerance
+	// TODO Add 10% of diameter as tolerance to equals
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {

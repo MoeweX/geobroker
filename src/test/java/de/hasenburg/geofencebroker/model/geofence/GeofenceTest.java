@@ -38,7 +38,7 @@ public class GeofenceTest {
 		logger.info("FINISHED TEST");
 	}
 
-	@Test
+	//@Test
 	public void testCircleTolerance() {
 		fail("Not yet implemented");
 	}
