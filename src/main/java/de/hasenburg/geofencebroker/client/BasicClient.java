@@ -49,6 +49,11 @@ public class BasicClient {
 		dealer.sendDealerMessage(new DealerMessage(ControlPacketType.PINGREQ, new PayloadPINGREQ(Location.random())));
 	}
 
+	public void sendPINGREQ(Location location) {
+		logger.trace("Pinging with client " + getIdentity());
+		dealer.sendDealerMessage(new DealerMessage(ControlPacketType.PINGREQ, new PayloadPINGREQ(location)));
+	}
+
 	public void sendDISCONNECT() {
 		logger.trace("Disconnecting with client " + getIdentity());
 		dealer.sendDealerMessage(new DealerMessage(ControlPacketType.DISCONNECT));
@@ -56,12 +61,24 @@ public class BasicClient {
 
 	public void sendSUBSCRIBE(Topic topic) {
 		logger.trace("Subscribing with client {} to topic {}", getIdentity(), topic);
-		dealer.sendDealerMessage(new DealerMessage(ControlPacketType.SUBSCRIBE, topic, new Geofence(), new Payload()));
+		Geofence geofence = new Geofence();
+		geofence.buildCircle(Location.random(), 20.0);
+		dealer.sendDealerMessage(new DealerMessage(ControlPacketType.SUBSCRIBE, topic, geofence, new Payload()));
+	}
+
+	public void sendSUBSCRIBE(Topic topic, Geofence geofence) {
+		logger.trace("Subscribing with client {} to topic {}", getIdentity(), topic);
+		dealer.sendDealerMessage(new DealerMessage(ControlPacketType.SUBSCRIBE, topic, geofence, new Payload()));
 	}
 
 	public void sendPublish(Topic topic, String content) {
 		logger.trace("Publishing with client {} to topic {}: {}", getIdentity(), topic, content);
 		dealer.sendDealerMessage(new DealerMessage(ControlPacketType.PUBLISH, topic, new Geofence(), new PayloadPUBLISH(content)));
+	}
+
+	public void sendPublish(Topic topic, String content, Geofence geofence) {
+		logger.trace("Publishing with client {} to topic {}: {}", getIdentity(), topic, content);
+		dealer.sendDealerMessage(new DealerMessage(ControlPacketType.PUBLISH, topic, geofence, new PayloadPUBLISH(content)));
 	}
 
 	public String getIdentity() {

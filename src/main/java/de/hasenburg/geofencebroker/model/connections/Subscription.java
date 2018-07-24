@@ -20,4 +20,12 @@ public class Subscription {
 	public Geofence getGeofence() {
 		return geofence;
 	}
+
+	@Override
+	public String toString() {
+		return "Subscription{" +
+				"topic=" + topic +
+				", geofence=" + geofence +
+				'}';
+	}
 }

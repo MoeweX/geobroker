@@ -19,7 +19,7 @@ public class Location {
 	 */
 	public static Location random() {
 		Random random = new Random();
-		return new Location((random.nextDouble() * -180.0) + 90.0,(random.nextDouble() * -360.0) + 180.0);
+		return new Location((random.nextDouble() * -180.0) + 90.0, (random.nextDouble() * -360.0) + 180.0);
 	}
 
 	public static Optional<Location> fromString(String s) {
@@ -33,12 +33,28 @@ public class Location {
 	}
 
 	/**
-	 * @param latitude the latitude in degrees.
+	 * @param latitude  the latitude in degrees.
 	 * @param longitude the longitude in degrees.
 	 */
 	public Location(double latitude, double longitude) {
 		this.latitude = latitude;
 		this.longitude = longitude;
+	}
+
+	public static double distanceInMeters(Location location1, Location location2) {
+		double lat1 = location1.latitude;
+		double lng1 = location1.longitude;
+		double lat2 = location2.latitude;
+		double lng2 = location2.longitude;
+
+		double earthRadius = 6371000; //meters
+		double radLat = Math.toRadians(lat2 - lat1);
+		double radLng = Math.toRadians(lng2 - lng1);
+		double a = Math.sin(radLat / 2) * Math.sin(radLat / 2) + Math.cos(Math.toRadians(lat1))
+				* Math.cos(Math.toRadians(lat2)) * Math.sin(radLng / 2) * Math.sin(radLng / 2);
+		double b = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+		return earthRadius * b;
 	}
 
 	@Override

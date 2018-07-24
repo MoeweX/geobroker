@@ -2,10 +2,12 @@ package de.hasenburg.geofencebroker.model.connections;
 
 import de.hasenburg.geofencebroker.model.Location;
 import de.hasenburg.geofencebroker.model.Topic;
+import de.hasenburg.geofencebroker.model.geofence.Geofence;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 public class Connection {
@@ -46,18 +48,37 @@ public class Connection {
 		heartbeat = System.currentTimeMillis();
 	}
 
-	// TODO add geofence check
-	public boolean subscribedToTopic(Topic topic) {
-		return subscriptions.containsKey(topic);
+	public boolean shouldGetMessage(Topic topic, Geofence geofence) {
+		boolean subscribedToTopic = subscriptions.containsKey(topic);
+
+		if (!subscribedToTopic) {
+			return false;
+		}
+
+		boolean clientLocationInPublishGeofence;
+		if (geofence.getGeofenceCircle().isPresent()) {
+			clientLocationInPublishGeofence = geofence.getGeofenceCircle().get().locationInFence(location);
+		} else {
+			clientLocationInPublishGeofence = true;
+		}
+
+		// TODO CHECK location of publisher in subscribe geofence
+
+		return clientLocationInPublishGeofence;
 	}
 
 	@Override
 	public String toString() {
+		StringBuilder s = new StringBuilder("\n");
+		for (Map.Entry<Topic, Subscription> entry : subscriptions.entrySet()) {
+			s.append(entry.getValue().toString());
+		}
+
 		return "Connection{" +
 				"heartbeat=" + heartbeat +
 				", clientIdentifier='" + clientIdentifier + '\'' +
 				", location=" + location +
-				", subscriptions=" + subscriptions.keySet() +
+				", subscriptions=" + s +
 				'}';
 	}
 }

@@ -19,6 +19,10 @@ public class GeofenceCIRCLE implements JSONable {
 		this.circleDiameterInMeter = diameterInMeter;
 	}
 
+	public boolean locationInFence(Location location) {
+		return Location.distanceInMeters(circleLocation, location) <= circleDiameterInMeter;
+	}
+
 	public Location getCircleLocation() {
 		return circleLocation;
 	}

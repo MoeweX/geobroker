@@ -174,9 +174,10 @@ public class ConnectionManager {
 			List<Connection> activeConnections = getActiveConnections();
 			logger.debug("Publishing topic {} to all subscribers", message.getTopic());
 
-			// send message to every connection that has topic
+			// send message to every connection that has topic and whose location is published geofence
 			for (Connection connection : activeConnections) {
-				if (connection.subscribedToTopic(message.getTopic())) {
+				if (connection.shouldGetMessage(message.getTopic(), message.getGeofence())) {
+					logger.trace("Client {} is a subscriber", connection.getClientIdentifier());
 					RouterMessage toPublish = new RouterMessage(connection.getClientIdentifier(),
 							ControlPacketType.PUBLISH, message.getTopic(), message.getGeofence(), message.getPayload());
 					routerCommunicator.sendRouterMessage(toPublish);
@@ -192,9 +193,9 @@ public class ConnectionManager {
 
 	@Override
 	public String toString() {
-		StringBuilder s = new StringBuilder("\n");
+		StringBuilder s = new StringBuilder();
 		for (Map.Entry<String, Connection> entry : connections.entrySet()) {
-			s.append("\t").append(entry.getValue().toString());
+			s.append(entry.getValue().toString());
 		}
 		return s.toString();
 	}

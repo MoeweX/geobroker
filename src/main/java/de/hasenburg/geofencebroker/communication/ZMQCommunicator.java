@@ -84,7 +84,11 @@ public abstract class ZMQCommunicator {
 			while (!Thread.currentThread().isInterrupted()) {
 
 				ZMsg message = ZMsg.recvMsg(socket);
-				logger.trace("Received message " + message.toString());
+				if (socket.getType() == ZMQ.DEALER) {
+					logger.trace("Received DealerMessage: {}", message.toString());
+				} else if (socket.getType() == ZMQ.ROUTER) {
+					logger.trace("Received RouterMessage: {}", message.toString());
+				}
 
 				if (!messageQueue.offer(message)) {
 					logger.warn("Could not add message to queue, dropping it.");

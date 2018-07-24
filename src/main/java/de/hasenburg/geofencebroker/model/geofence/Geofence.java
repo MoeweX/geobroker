@@ -43,9 +43,9 @@ public class Geofence {
 	 */
 	public Optional<GeofenceCIRCLE> getGeofenceCircle() {
 		if (Shape.CIRCLE == shape) {
-			logger.warn("Cannot return geofence circle if shape is {}", shape.name());
 			return Optional.of(geofenceCIRCLE);
 		}
+		logger.warn("Cannot return geofence circle if shape is {}", shape.name());
 		return Optional.empty();
 	}
 
@@ -65,6 +65,7 @@ public class Geofence {
 			// if shape is invalid or empty, we do not have to do anything here
 			switch (shape) {
 				case CIRCLE:
+					// TODO get rid of toString for better performance
 					Optional<GeofenceCIRCLE> circle = JSONable.fromJSON(obj.getJSONObject("data").toString(), GeofenceCIRCLE.class);
 					circle.ifPresent(geofenceCIRCLE1 -> geofence.buildCircle(
 							geofenceCIRCLE1.getCircleLocation(),
