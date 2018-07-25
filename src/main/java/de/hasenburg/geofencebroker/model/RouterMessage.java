@@ -5,6 +5,7 @@ import de.hasenburg.geofencebroker.main.Utility;
 import de.hasenburg.geofencebroker.model.payload.AbstractPayload;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
 
 import java.util.Objects;
@@ -40,7 +41,7 @@ public class RouterMessage {
 		try {
 			message.clientIdentifier = msg.popString();
 			message.controlPacketType = ControlPacketType.valueOf(msg.popString());
-			String s = new String(msg.pop().getData()); // TODO would be great to use String instead of byte[]
+			String s = msg.pop().getString(ZMQ.CHARSET);
 			message.payload = Utility.buildPayloadFromString(s, message.controlPacketType);
 		} catch (Exception e) {
 			logger.warn("Cannot parse message, due to exception, discarding it", e);
@@ -62,9 +63,7 @@ public class RouterMessage {
 	}
 
 	public ZMsg getZMsg() {
-		ZMsg msg = ZMsg.newStringMsg(clientIdentifier, controlPacketType.name());
-		msg.add(JSONable.toJSON(payload).getBytes()); // cannot just add string, encoding fails
-		return msg;
+		return ZMsg.newStringMsg(clientIdentifier, controlPacketType.name(), JSONable.toJSON(payload));
 	}
 
 	/*****************************************************************

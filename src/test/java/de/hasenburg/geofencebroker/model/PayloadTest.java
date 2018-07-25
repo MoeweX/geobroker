@@ -9,6 +9,8 @@ import de.hasenburg.geofencebroker.model.payload.PINGREQPayload;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Test;
+import org.zeromq.ZFrame;
+import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
 
 import static org.junit.Assert.assertEquals;
@@ -25,12 +27,8 @@ public class PayloadTest {
 		String json = JSONable.toJSON(payload);
 		logger.debug(json);
 
-		// we cannot add just a string because of ZMsg byte encoding (not compatible)
-		byte[] bytes = json.getBytes();
-		ZMsg message = new ZMsg();
-		message.add(bytes);
-		byte[] bytes2 = message.pop().getData();
-		String messageString = new String(bytes);
+		ZMsg message = ZMsg.newStringMsg(json);
+		String messageString = message.pop().getString(ZMQ.CHARSET);
 
 		AbstractPayload payload2 = Utility.buildPayloadFromString(messageString, ControlPacketType.CONNECT);
 		logger.debug(payload2);
@@ -46,12 +44,8 @@ public class PayloadTest {
 		String json = JSONable.toJSON(payload);
 		logger.debug(json);
 
-		// we cannot add just a string because of ZMsg byte encoding (not compatible)
-		byte[] bytes = json.getBytes();
-		ZMsg message = new ZMsg();
-		message.add(bytes);
-		byte[] bytes2 = message.pop().getData();
-		String messageString = new String(bytes);
+		ZMsg message = ZMsg.newStringMsg(json);
+		String messageString = message.pop().getString(ZMQ.CHARSET);
 
 		AbstractPayload payload2 = Utility.buildPayloadFromString(messageString, ControlPacketType.PINGREQ);
 		logger.debug(payload2);
@@ -60,6 +54,7 @@ public class PayloadTest {
 		logger.info("FINISHED TEST");
 	}
 
+	// cause some fields are null
 	@Test(expected = CommunicatorException.class)
 	public void testPINGREQPayloadEmpty() throws CommunicatorException {
 		logger.info("RUNNING testPINGREQPayloadEmpty TEST");
@@ -67,14 +62,11 @@ public class PayloadTest {
 		String json = JSONable.toJSON(payload);
 		logger.debug(json);
 
-		// we cannot add just a string because of ZMsg byte encoding (not compatible)
-		byte[] bytes = json.getBytes();
-		ZMsg message = new ZMsg();
-		message.add(bytes);
-		byte[] bytes2 = message.pop().getData();
-		String messageString = new String(bytes);
+		ZMsg message = ZMsg.newStringMsg(json);
+		String messageString = message.pop().getString(ZMQ.CHARSET);
 
 		AbstractPayload payload2 = Utility.buildPayloadFromString(messageString, ControlPacketType.PINGREQ);
 		logger.info("FINISHED TEST");
 	}
+
 }
