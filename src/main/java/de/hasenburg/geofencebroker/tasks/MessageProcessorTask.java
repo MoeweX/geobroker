@@ -105,7 +105,7 @@ class MessageProcessorTask extends Task<Boolean> {
 		} else {
 			connection = new Connection(message.getClientIdentifier());
 			logger.debug("Created connection for client {}, acknowledging.", message.getClientIdentifier());
-			response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.CONNACK, new CONNACKPayload());
+			response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.CONNACK, new CONNACKPayload(ReasonCode.Success));
 			connectionManager.putConnection(connection);
 		}
 

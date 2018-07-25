@@ -93,7 +93,7 @@ public class BasicClient {
 		client.sendCONNECT();
 		Location l = Location.random();
 		client.sendPINGREQ(l);
-		client.sendSUBSCRIBE(new Topic("Test Topic"));
+		client.sendSUBSCRIBE(new Topic("Test Topic"), new Geofence(l, 20.0));
 		client.sendPublish(new Topic("Test Topic"), new Geofence(l, 20.0), "My message content");
 
 		System.in.read();
