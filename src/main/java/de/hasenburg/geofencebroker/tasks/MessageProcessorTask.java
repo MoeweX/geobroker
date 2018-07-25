@@ -181,17 +181,24 @@ class MessageProcessorTask extends Task<Boolean> {
 			logger.debug("Publishing topic {} to all subscribers", payload.getTopic());
 
 			// send message to every connection that has topic and whose location is published geofence
+			boolean hasSubscriber = false;
 			for (Connection targetConnection : activeConnections) {
-				if (targetConnection.shouldGetMessage(payload.getTopic(), payload.getGeofence())) {
+				if (targetConnection.shouldGetMessage(payload.getTopic(), payload.getGeofence(), connection.getLocation())) {
 					logger.trace("Client {} is a subscriber", targetConnection.getClientIdentifier());
+					hasSubscriber = true;
 					RouterMessage toPublish = new RouterMessage(targetConnection.getClientIdentifier(),
 							ControlPacketType.PUBLISH, payload);
 					routerCommunicator.sendRouterMessage(toPublish);
 				}
 			}
 
-			response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.PUBACK,
-					new PUBACKPayload(ReasonCode.Success));
+			if (hasSubscriber) {
+				response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.PUBACK,
+						new PUBACKPayload(ReasonCode.Success));
+			} else {
+				response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.PUBACK,
+						new PUBACKPayload(ReasonCode.NoMatchingSubscribers));
+			}
 
 		} else {
 			response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.PUBACK,

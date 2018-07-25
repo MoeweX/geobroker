@@ -8,6 +8,7 @@ public enum ReasonCode {
 	NotConnected,
 	GrantedQoS1,
 	Success,
+	NoMatchingSubscribers,
 
 	// New Reason Codes
 	LocationUpdated

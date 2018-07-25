@@ -48,16 +48,30 @@ public class Connection {
 		heartbeat = System.currentTimeMillis();
 	}
 
-	public boolean shouldGetMessage(Topic topic, Geofence geofence) {
+	@SuppressWarnings({"RedundantIfStatement", "OptionalUsedAsFieldOrParameterType"})
+	public boolean shouldGetMessage(Topic topic, Geofence publisherGeofence, Optional<Location> publisherLocation) {
 		boolean subscribedToTopic = subscriptions.containsKey(topic);
 
+		// test whether this client is subscribed to the topic
 		if (!subscribedToTopic) {
 			return false;
 		}
 
-		return geofence.locationInFence(location);
+		// test whether the location of this client is inside the geofence of the published message
+		if (!publisherGeofence.locationInFence(location)) {
+			return false;
+		}
 
-		// TODO CHECK location of publisher in subscribe geofence
+		// test whether the location of the publisher is inside the geofence of the subscription
+		if (publisherLocation.isPresent()) {
+			if (!subscriptions.get(topic).getGeofence().locationInFence(publisherLocation.get())) {
+				return false;
+			}
+		} else {
+			return false;
+		}
+
+		return true;
 	}
 
 	@Override
