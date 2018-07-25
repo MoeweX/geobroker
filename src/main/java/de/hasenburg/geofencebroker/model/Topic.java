@@ -6,6 +6,10 @@ public class Topic {
 
 	private String topic;
 
+	private Topic() {
+		// JSON
+	}
+
 	public Topic(String topic) {
 		this.topic = topic;
 	}

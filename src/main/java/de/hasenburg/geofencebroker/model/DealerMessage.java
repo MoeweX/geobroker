@@ -2,12 +2,11 @@ package de.hasenburg.geofencebroker.model;
 
 import de.hasenburg.geofencebroker.communication.ControlPacketType;
 import de.hasenburg.geofencebroker.main.Utility;
-import de.hasenburg.geofencebroker.model.geofence.Geofence;
+import de.hasenburg.geofencebroker.model.payload.AbstractPayload;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.ZMsg;
 
-import javax.swing.text.html.Option;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -16,17 +15,21 @@ public class DealerMessage {
 	private static final Logger logger = LogManager.getLogger();
 
 	private ControlPacketType controlPacketType;
-	private Topic topic;
-	private Geofence geofence;
-	private Payload payload;
+	private AbstractPayload payload;
 
+	/**
+	 * Optional is empty when
+	 * 	- ZMsg is not a DealerMessage or null
+	 * 	- Payload incompatible to control packet type
+	 * 	- Payload misses fields
+	 */
 	public static Optional<DealerMessage> buildDealerMessage(ZMsg msg) {
 		if (msg == null) {
 			// happens when queue is empty
 			return Optional.empty();
 		}
 
-		if (msg.size() != 4) {
+		if (msg.size() != 2) {
 			logger.error("Cannot parse message {} to DealerMessage, has wrong size.", msg.toString());
 			return Optional.empty();
 		}
@@ -35,45 +38,27 @@ public class DealerMessage {
 
 		try {
 			message.controlPacketType = ControlPacketType.valueOf(msg.popString());
-			message.topic = new Topic(msg.popString());
-			message.geofence = Geofence.fromJSON(msg.popString());
-			String s = new String(msg.pop().getData());
+			String s = new String(msg.pop().getData()); // TODO would be great to use String instead of byte[]
 			message.payload = Utility.buildPayloadFromString(s, message.controlPacketType);
 		} catch (Exception e) {
-			logger.error("Cannot parse message, due to exception.", e);
+			logger.warn("Cannot parse message, due to exception, discarding it", e);
 			message = null;
 		}
 
 		return Optional.ofNullable(message);
 	}
 
-	public DealerMessage() {
+	private DealerMessage() {
 
 	}
 
-	public DealerMessage(ControlPacketType controlPacketType) {
+	public DealerMessage(ControlPacketType controlPacketType, AbstractPayload payload) {
 		this.controlPacketType = controlPacketType;
-		this.topic = new Topic("");
-		this.geofence = new Geofence();
-		this.payload = new Payload();
-	}
-
-	public DealerMessage(ControlPacketType controlPacketType, Payload payload) {
-		this.controlPacketType = controlPacketType;
-		this.topic = new Topic("");
-		this.geofence = new Geofence();
 		this.payload = payload;
 	}
 
-	public DealerMessage(ControlPacketType controlPacketType, Topic topic, Geofence geofence, Payload payload) {
-		this.controlPacketType = controlPacketType;
-		this.topic = topic;
-		this.geofence = geofence;
-		this.payload = payload;
-	}
-
-	public ZMsg getZmsg() {
-		ZMsg msg = ZMsg.newStringMsg(controlPacketType.name(), topic.getTopic(), geofence.toJSON());
+	public ZMsg getZMsg() {
+		ZMsg msg = ZMsg.newStringMsg(controlPacketType.name());
 		msg.add(JSONable.toJSON(payload).getBytes()); // cannot just add string, encoding fails
 		return msg;
 	}
@@ -86,16 +71,16 @@ public class DealerMessage {
 		return controlPacketType;
 	}
 
-	public Topic getTopic() {
-		return topic;
-	}
-
-	public Geofence getGeofence() {
-		return geofence;
-	}
-
-	public Payload getPayload() {
+	public AbstractPayload getPayload() {
 		return payload;
+	}
+
+	@Override
+	public String toString() {
+		return "DealerMessage{" +
+				"controlPacketType=" + controlPacketType +
+				", payload=" + payload +
+				'}';
 	}
 
 	@Override
@@ -108,24 +93,12 @@ public class DealerMessage {
 		}
 		DealerMessage that = (DealerMessage) o;
 		return getControlPacketType() == that.getControlPacketType() &&
-				Objects.equals(getTopic(), that.getTopic()) &&
-				Objects.equals(getGeofence(), that.getGeofence()) &&
 				Objects.equals(getPayload(), that.getPayload());
 	}
 
 	@Override
 	public int hashCode() {
 
-		return Objects.hash(getControlPacketType(), getTopic(), getGeofence(), getPayload());
-	}
-
-	@Override
-	public String toString() {
-		return "DealerMessage{" +
-				"controlPacketType=" + controlPacketType +
-				", topic=" + topic +
-				", geofence='" + geofence.toString() + '\'' +
-				", payload='" + payload + '\'' +
-				'}';
+		return Objects.hash(getControlPacketType(), getPayload());
 	}
 }

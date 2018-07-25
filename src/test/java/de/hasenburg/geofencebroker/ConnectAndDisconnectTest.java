@@ -35,6 +35,7 @@ public class ConnectAndDisconnectTest {
 	ConnectionManager connectionManager;
 	TaskManager taskManager;
 
+	@SuppressWarnings("Duplicates")
 	@Before
 	public void setUp() throws Exception {
 		logger.info("Running test setUp");
@@ -43,7 +44,7 @@ public class ConnectAndDisconnectTest {
 		blockingQueue = new LinkedBlockingDeque<>();
 		router.startReceiving(blockingQueue);
 
-		connectionManager = new ConnectionManager(router);
+		connectionManager = new ConnectionManager();
 
 		taskManager = new TaskManager();
 		taskManager.runMessageProcessorTask(blockingQueue, router, connectionManager);

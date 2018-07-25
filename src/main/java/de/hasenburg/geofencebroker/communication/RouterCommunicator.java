@@ -1,11 +1,9 @@
 package de.hasenburg.geofencebroker.communication;
 
-import de.hasenburg.geofencebroker.model.DealerMessage;
 import de.hasenburg.geofencebroker.model.RouterMessage;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
-import zmq.socket.reqrep.Router;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -28,7 +26,7 @@ public class RouterCommunicator extends ZMQCommunicator {
 	}
 
 	public void sendRouterMessage(RouterMessage message) {
-		sendMessage(message.getZmsg());
+		sendMessage(message.getZMsg());
 	}
 
 	public static void main(String[] args) throws CommunicatorException {

@@ -6,5 +6,9 @@ public enum ReasonCode {
 	NormalDisconnection,
 	ProtocolError,
 	NotConnected,
-	GrantedQoS0
+	GrantedQoS1,
+	Success,
+
+	// New Reason Codes
+	LocationUpdated
 }

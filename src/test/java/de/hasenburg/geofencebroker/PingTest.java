@@ -28,6 +28,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+@SuppressWarnings("ConstantConditions")
 public class PingTest {
 
 	private static final Logger logger = LogManager.getLogger();
@@ -47,7 +48,7 @@ public class PingTest {
 		blockingQueue = new LinkedBlockingDeque<>();
 		router.startReceiving(blockingQueue);
 
-		connectionManager = new ConnectionManager(router);
+		connectionManager = new ConnectionManager();
 
 		taskManager = new TaskManager();
 		taskManager.runMessageProcessorTask(blockingQueue, router, connectionManager);
@@ -85,7 +86,7 @@ public class PingTest {
 			} else {
 				dealerMessage.ifPresent(message -> {
 					assertEquals(ControlPacketType.PINGRESP, message.getControlPacketType());
-					assertFalse(message.getPayload().getReasonCode().isPresent());
+					assertEquals(ReasonCode.LocationUpdated, message.getPayload().getPINGRESPPayload().get().getReasonCode());
 				});
 			}
 		}
@@ -108,7 +109,7 @@ public class PingTest {
 		assertTrue("DealerMessage is missing", dealerMessage.isPresent());
 		dealerMessage.ifPresent(message -> {
 			assertEquals(ControlPacketType.PINGRESP, message.getControlPacketType());
-			assertEquals(ReasonCode.NotConnected, message.getPayload().getReasonCode().get());
+			assertEquals(ReasonCode.NotConnected, message.getPayload().getPINGRESPPayload().get().getReasonCode());
 		});
 
 		client.tearDown();

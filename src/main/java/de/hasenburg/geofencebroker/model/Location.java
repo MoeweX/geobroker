@@ -14,6 +14,10 @@ public class Location {
 	private Double latitude;
 	private Double longitude;
 
+	private Location() {
+		// JSON
+	}
+
 	/**
 	 * Creates a random location point. (Not inclusive of (-90, 0))
 	 */
@@ -65,10 +69,6 @@ public class Location {
 	/*****************************************************************
 	 * Generated Code
 	 ****************************************************************/
-
-	public Location() {
-
-	}
 
 	public Double getLatitude() {
 		return latitude;

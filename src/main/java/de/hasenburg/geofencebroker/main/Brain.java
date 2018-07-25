@@ -22,7 +22,7 @@ public class Brain {
 		BlockingQueue<ZMsg> blockingQueue = new LinkedBlockingDeque<>();
 		router.startReceiving(blockingQueue);
 
-		ConnectionManager connectionManager = new ConnectionManager(router);
+		ConnectionManager connectionManager = new ConnectionManager();
 
 		TaskManager taskManager = new TaskManager();
 		taskManager.runMessageProcessorTask(blockingQueue, router, connectionManager);

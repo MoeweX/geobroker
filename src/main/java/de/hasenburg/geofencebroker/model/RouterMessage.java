@@ -2,7 +2,7 @@ package de.hasenburg.geofencebroker.model;
 
 import de.hasenburg.geofencebroker.communication.ControlPacketType;
 import de.hasenburg.geofencebroker.main.Utility;
-import de.hasenburg.geofencebroker.model.geofence.Geofence;
+import de.hasenburg.geofencebroker.model.payload.AbstractPayload;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.ZMsg;
@@ -16,17 +16,21 @@ public class RouterMessage {
 
 	private String clientIdentifier;
 	private ControlPacketType controlPacketType;
-	private Topic topic;
-	private Geofence geofence;
-	private Payload payload;
+	private AbstractPayload payload;
 
+	/**
+	 * Optional is empty when
+	 * 	- ZMsg is not a DealerMessage or null
+	 * 	- Payload incompatible to control packet type
+	 * 	- Payload misses fields
+	 */
 	public static Optional<RouterMessage> buildRouterMessage(ZMsg msg) {
 		if (msg == null) {
 			// happens when queue is empty
 			return Optional.empty();
 		}
 
-		if (msg.size() != 5) {
+		if (msg.size() != 3) {
 			logger.error("Cannot parse message {} to RouterMessage, has wrong size.", msg.toString());
 			return Optional.empty();
 		}
@@ -36,51 +40,29 @@ public class RouterMessage {
 		try {
 			message.clientIdentifier = msg.popString();
 			message.controlPacketType = ControlPacketType.valueOf(msg.popString());
-			message.topic = new Topic(msg.popString());
-			message.geofence = Geofence.fromJSON(msg.popString());
-			String s = new String(msg.pop().getData());
+			String s = new String(msg.pop().getData()); // TODO would be great to use String instead of byte[]
 			message.payload = Utility.buildPayloadFromString(s, message.controlPacketType);
 		} catch (Exception e) {
-			logger.error("Cannot parse message, due to exception.", e);
+			logger.warn("Cannot parse message, due to exception, discarding it", e);
 			message = null;
 		}
 
 		return Optional.ofNullable(message);
 	}
 
-	public RouterMessage() {
+	private RouterMessage() {
 
 	}
 
 	public RouterMessage(String clientIdentifier,
-						 ControlPacketType controlPacketType) {
+						 ControlPacketType controlPacketType, AbstractPayload payload) {
 		this.clientIdentifier = clientIdentifier;
 		this.controlPacketType = controlPacketType;
-		this.topic = new Topic("");
-		this.geofence = new Geofence();
-		this.payload = new Payload();
-	}
-
-	public RouterMessage(String clientIdentifier,
-						 ControlPacketType controlPacketType, Payload payload) {
-		this.clientIdentifier = clientIdentifier;
-		this.controlPacketType = controlPacketType;
-		this.topic = new Topic("");
-		this.geofence = new Geofence();
 		this.payload = payload;
 	}
 
-	public RouterMessage(String clientIdentifier,
-						 ControlPacketType controlPacketType, Topic topic, Geofence geofence, Payload payload) {
-		this.clientIdentifier = clientIdentifier;
-		this.controlPacketType = controlPacketType;
-		this.topic = topic;
-		this.geofence = geofence;
-		this.payload = payload;
-	}
-
-	public ZMsg getZmsg() {
-		ZMsg msg = ZMsg.newStringMsg(clientIdentifier, controlPacketType.name(), topic.getTopic(), geofence.toJSON());
+	public ZMsg getZMsg() {
+		ZMsg msg = ZMsg.newStringMsg(clientIdentifier, controlPacketType.name());
 		msg.add(JSONable.toJSON(payload).getBytes()); // cannot just add string, encoding fails
 		return msg;
 	}
@@ -97,16 +79,17 @@ public class RouterMessage {
 		return controlPacketType;
 	}
 
-	public Topic getTopic() {
-		return topic;
-	}
-
-	public Geofence getGeofence() {
-		return geofence;
-	}
-
-	public Payload getPayload() {
+	public AbstractPayload getPayload() {
 		return payload;
+	}
+
+	@Override
+	public String toString() {
+		return "RouterMessage{" +
+				"clientIdentifier='" + clientIdentifier + '\'' +
+				", controlPacketType=" + controlPacketType +
+				", payload=" + payload +
+				'}';
 	}
 
 	@Override
@@ -120,25 +103,12 @@ public class RouterMessage {
 		RouterMessage that = (RouterMessage) o;
 		return Objects.equals(getClientIdentifier(), that.getClientIdentifier()) &&
 				getControlPacketType() == that.getControlPacketType() &&
-				Objects.equals(getTopic(), that.getTopic()) &&
-				Objects.equals(getGeofence(), that.getGeofence()) &&
 				Objects.equals(getPayload(), that.getPayload());
 	}
 
 	@Override
 	public int hashCode() {
 
-		return Objects.hash(getClientIdentifier(), getControlPacketType(), getTopic(), getGeofence(), getPayload());
-	}
-
-	@Override
-	public String toString() {
-		return "RouterMessage{" +
-				"clientIdentifier='" + clientIdentifier + '\'' +
-				", controlPacketType=" + controlPacketType +
-				", topic=" + topic +
-				", geofence='" + geofence.toString() + '\'' +
-				", payload='" + payload + '\'' +
-				'}';
+		return Objects.hash(getClientIdentifier(), getControlPacketType(), getPayload());
 	}
 }

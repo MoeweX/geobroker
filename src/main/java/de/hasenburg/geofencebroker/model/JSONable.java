@@ -36,10 +36,19 @@ public interface JSONable {
 	}
 
 	static String toJSON(JSONable obj) {
+		return JSONable.toJSON(obj, true);
+	}
+
+	static String toJSON(JSONable obj, boolean indent) {
 		// Only include non-null field
-		ObjectMapper mapper = new ObjectMapper().setSerializationInclusion(Include.NON_NULL).setSerializationInclusion(Include.NON_EMPTY);
+		ObjectMapper mapper = new ObjectMapper()
+				.setSerializationInclusion(Include.NON_NULL)
+				.setSerializationInclusion(Include.NON_EMPTY);
 		mapper.registerModule(new Jdk8Module());
-		mapper.enable(SerializationFeature.INDENT_OUTPUT);
+		if (indent) {
+			mapper.enable(SerializationFeature.INDENT_OUTPUT);
+		}
+
 		String json = null;
 		try {
 			json = mapper.writeValueAsString(obj);

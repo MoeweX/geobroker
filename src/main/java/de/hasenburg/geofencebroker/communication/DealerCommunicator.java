@@ -1,9 +1,6 @@
 package de.hasenburg.geofencebroker.communication;
 
 import de.hasenburg.geofencebroker.model.DealerMessage;
-import de.hasenburg.geofencebroker.model.Location;
-import de.hasenburg.geofencebroker.model.PayloadPINGREQ;
-import de.hasenburg.geofencebroker.model.RouterMessage;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
@@ -29,7 +26,7 @@ public class DealerCommunicator extends ZMQCommunicator {
 	}
 
 	public void sendDealerMessage(DealerMessage message) {
-		sendMessage(message.getZmsg());
+		sendMessage(message.getZMsg());
 	}
 
 	public static void main(String[] args) throws CommunicatorException, InterruptedException {

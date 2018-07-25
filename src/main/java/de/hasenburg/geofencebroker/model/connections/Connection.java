@@ -55,16 +55,9 @@ public class Connection {
 			return false;
 		}
 
-		boolean clientLocationInPublishGeofence;
-		if (geofence.getGeofenceCircle().isPresent()) {
-			clientLocationInPublishGeofence = geofence.getGeofenceCircle().get().locationInFence(location);
-		} else {
-			clientLocationInPublishGeofence = true;
-		}
+		return geofence.locationInFence(location);
 
 		// TODO CHECK location of publisher in subscribe geofence
-
-		return clientLocationInPublishGeofence;
 	}
 
 	@Override

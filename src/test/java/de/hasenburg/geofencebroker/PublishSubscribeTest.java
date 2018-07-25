@@ -2,15 +2,14 @@ package de.hasenburg.geofencebroker;
 
 import de.hasenburg.geofencebroker.client.BasicClient;
 import de.hasenburg.geofencebroker.communication.ControlPacketType;
-import de.hasenburg.geofencebroker.communication.ReasonCode;
 import de.hasenburg.geofencebroker.communication.RouterCommunicator;
 import de.hasenburg.geofencebroker.model.DealerMessage;
 import de.hasenburg.geofencebroker.model.Location;
-import de.hasenburg.geofencebroker.model.PayloadPUBLISH;
 import de.hasenburg.geofencebroker.model.Topic;
 import de.hasenburg.geofencebroker.model.connections.ConnectionManager;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
 import de.hasenburg.geofencebroker.model.geofence.Geofence;
+import de.hasenburg.geofencebroker.model.payload.PUBLISHPayload;
 import de.hasenburg.geofencebroker.tasks.TaskManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -24,7 +23,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class PublishSubscribeTest {
 
@@ -45,7 +45,7 @@ public class PublishSubscribeTest {
 		blockingQueue = new LinkedBlockingDeque<>();
 		router.startReceiving(blockingQueue);
 
-		connectionManager = new ConnectionManager(router);
+		connectionManager = new ConnectionManager();
 
 		taskManager = new TaskManager();
 		taskManager.runMessageProcessorTask(blockingQueue, router, connectionManager);
@@ -64,30 +64,29 @@ public class PublishSubscribeTest {
 		logger.info("RUNNING testSubscribeInGeofence TEST");
 
 		// connect, ping, and disconnect
-		Location location = Location.random();
-		Geofence geofence = new Geofence();
-		geofence.buildCircle(location, 20.0);
+		Geofence geofence = new Geofence(Location.random(), 20.0);
 		BasicClient client = new BasicClient(null, "tcp://localhost", 5559);
 		client.sendCONNECT();
-		client.sendPINGREQ(location);
+		client.sendPINGREQ(geofence.getCircleLocation());
 		client.sendSUBSCRIBE(new Topic("test"), geofence);
-		client.sendPublish(new Topic("test"), "Content", geofence);
+		client.sendPublish(new Topic("test"), geofence, "Content");
 		client.sendDISCONNECT();
 
 		Thread.sleep(1000);
 
 		// check dealer messages
-		int messageCount = 4;
+		int messageCount = 5;
 		for (int i = 0; i < messageCount; i++) {
-			assertEquals("Dealer queue contains wrong number of elements.", messageCount - i, client.blockingQueue.size());
+			assertEquals("Dealer queue contains wrong number of elements.", messageCount - i,
+					client.blockingQueue.size());
 			Optional<DealerMessage> dealerMessage = DealerMessage.buildDealerMessage(client.blockingQueue.poll(1, TimeUnit.SECONDS));
+			logger.debug(dealerMessage);
 			assertTrue("DealerMessage is missing", dealerMessage.isPresent());
 			if (i == 3) {
 				dealerMessage.ifPresent(message -> {
 					assertEquals(ControlPacketType.PUBLISH, message.getControlPacketType());
-					PayloadPUBLISH payload = (PayloadPUBLISH) message.getPayload();
-					assertFalse(payload.getReasonCode().isPresent());
-					assertEquals("Content", payload.getContent().get());
+					PUBLISHPayload payload = message.getPayload().getPUBLISHPayload().get();
+					assertEquals("Content", payload.getContent());
 				});
 			}
 		}
@@ -103,22 +102,23 @@ public class PublishSubscribeTest {
 
 		// connect, ping, and disconnect
 		Location location = Location.random();
-		Geofence geofence = new Geofence();
-		geofence.buildCircle(location, 20.0);
+		Geofence geofence = new Geofence(Location.random(), 20.0);
 		BasicClient client = new BasicClient(null, "tcp://localhost", 5559);
 		client.sendCONNECT();
 		client.sendPINGREQ(Location.random());
 		client.sendSUBSCRIBE(new Topic("test"), geofence);
-		client.sendPublish(new Topic("test"), "Content", geofence);
+		client.sendPublish(new Topic("test"), geofence, "Content");
 		client.sendDISCONNECT();
 
 		Thread.sleep(1000);
 
 		// check dealer messages
-		int messageCount = 3;
+		int messageCount = 4;
 		for (int i = 0; i < messageCount; i++) {
-			assertEquals("Dealer queue contains wrong number of elements.", messageCount - i, client.blockingQueue.size());
-			Optional<DealerMessage> dealerMessage = DealerMessage.buildDealerMessage(client.blockingQueue.poll(1, TimeUnit.SECONDS));
+			assertEquals("Dealer queue contains wrong number of elements.", messageCount - i,
+					client.blockingQueue.size());
+			Optional<DealerMessage> dealerMessage =
+					DealerMessage.buildDealerMessage(client.blockingQueue.poll(1, TimeUnit.SECONDS));
 			assertTrue("DealerMessage is missing", dealerMessage.isPresent());
 		}
 
