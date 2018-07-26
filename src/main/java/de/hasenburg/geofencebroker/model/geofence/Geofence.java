@@ -38,7 +38,9 @@ public class Geofence implements JSONable {
 		return circleDiameterInMeter;
 	}
 
-	// TODO Add 10% of diameter as tolerance to equals
+	/**
+	 * Two Geofences are equal if their diameter is similar and their locations are in close proximity (<10% of diameter)
+	 */
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
@@ -48,8 +50,13 @@ public class Geofence implements JSONable {
 			return false;
 		}
 		Geofence that = (Geofence) o;
-		return Double.compare(that.getCircleDiameterInMeter(), getCircleDiameterInMeter()) == 0 &&
-				Objects.equals(getCircleLocation(), that.getCircleLocation());
+
+		boolean closeProximity = false;
+		if (Location.distanceInMeters(circleLocation, that.circleLocation) <= 0.1 * circleDiameterInMeter) {
+			closeProximity = true;
+		}
+
+		return Double.compare(that.getCircleDiameterInMeter(), getCircleDiameterInMeter()) == 0 && closeProximity;
 	}
 
 	@Override
