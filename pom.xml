@@ -59,5 +59,12 @@
             <artifactId>jackson-datatype-jdk8</artifactId>
             <version>2.9.6</version>
         </dependency>
+        <!-- Nullable annotation -->
+        <dependency>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+            <version>RELEASE</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 </project>

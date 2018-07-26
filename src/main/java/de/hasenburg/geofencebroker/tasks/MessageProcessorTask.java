@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
  * @author jonathanhasenburg
  *
  */
-@SuppressWarnings("ConstantConditions")
 class MessageProcessorTask extends Task<Boolean> {
 
 	private static final Logger logger = LogManager.getLogger();
@@ -112,6 +111,7 @@ class MessageProcessorTask extends Task<Boolean> {
 		routerCommunicator.sendRouterMessage(response);
 	}
 
+	@SuppressWarnings("ConstantConditions")
 	private void processDISCONNECT(RouterMessage message) {
 		Connection connection = connectionManager.getConnection(message.getClientIdentifier());
 		if (connection == null) {
@@ -125,6 +125,7 @@ class MessageProcessorTask extends Task<Boolean> {
 		connectionManager.removeConnection(connection.getClientIdentifier());
 	}
 
+	@SuppressWarnings("ConstantConditions")
 	private void processPINGREQ(RouterMessage message) {
 		RouterMessage response;
 
@@ -145,6 +146,7 @@ class MessageProcessorTask extends Task<Boolean> {
 		routerCommunicator.sendRouterMessage(response);
 	}
 
+	@SuppressWarnings("ConstantConditions")
 	private void processSUBSCRIBEforConnection(RouterMessage message) {
 		RouterMessage response;
 
@@ -170,6 +172,7 @@ class MessageProcessorTask extends Task<Boolean> {
 		throw new RuntimeException("Not yet implemented");
 	}
 
+	@SuppressWarnings("ConstantConditions")
 	public void processPublish(RouterMessage message) {
 		RouterMessage response;
 
@@ -177,25 +180,22 @@ class MessageProcessorTask extends Task<Boolean> {
 		if (connection != null) {
 			PUBLISHPayload payload = message.getPayload().getPUBLISHPayload().get();
 
-			List<Connection> activeConnections = connectionManager.getActiveConnections();
 			logger.debug("Publishing topic {} to all subscribers", payload.getTopic());
+			List<Connection> subscribers = connectionManager
+					.getSubscribers(payload.getTopic(), payload.getGeofence(), connection.getLocation().orElseGet(null));
 
-			// send message to every connection that has topic and whose location is published geofence
-			boolean hasSubscriber = false;
-			for (Connection targetConnection : activeConnections) {
-				if (targetConnection.shouldGetMessage(payload.getTopic(), payload.getGeofence(), connection.getLocation())) {
-					logger.trace("Client {} is a subscriber", targetConnection.getClientIdentifier());
-					hasSubscriber = true;
-					RouterMessage toPublish = new RouterMessage(targetConnection.getClientIdentifier(),
-							ControlPacketType.PUBLISH, payload);
-					routerCommunicator.sendRouterMessage(toPublish);
-				}
+			for (Connection subscriber : subscribers) {
+				logger.trace("Client {} is a subscriber", subscriber.getClientIdentifier());
+				RouterMessage toPublish = new RouterMessage(subscriber.getClientIdentifier(),
+						ControlPacketType.PUBLISH, payload);
+				routerCommunicator.sendRouterMessage(toPublish);
 			}
 
-			if (hasSubscriber) {
+			if (!subscribers.isEmpty()) {
 				response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.PUBACK,
 						new PUBACKPayload(ReasonCode.Success));
 			} else {
+				logger.trace("No subscriber exists.");
 				response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.PUBACK,
 						new PUBACKPayload(ReasonCode.NoMatchingSubscribers));
 			}
@@ -205,6 +205,7 @@ class MessageProcessorTask extends Task<Boolean> {
 					new PUBACKPayload(ReasonCode.NotConnected));
 		}
 
+		// send response to publisher
 		routerCommunicator.sendRouterMessage(response);
 	}
 }

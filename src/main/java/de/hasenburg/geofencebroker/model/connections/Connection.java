@@ -5,6 +5,8 @@ import de.hasenburg.geofencebroker.model.Topic;
 import de.hasenburg.geofencebroker.model.geofence.Geofence;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
+import zmq.socket.pubsub.Sub;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -48,8 +50,16 @@ public class Connection {
 		heartbeat = System.currentTimeMillis();
 	}
 
-	@SuppressWarnings({"RedundantIfStatement", "OptionalUsedAsFieldOrParameterType"})
-	public boolean shouldGetMessage(Topic topic, Geofence publisherGeofence, Optional<Location> publisherLocation) {
+	/**
+	 * Checks whether the client of this connection is a subscriber. For that:
+	 * 	- the client has to be interested in the topic
+	 * 	- the client has to be inside the publisher geofence
+	 * 	- the publisher has to be inside the geofence the client defined for the topic
+	 *
+	 * @param publisherLocation - can be null if the publisher has not set a location yet
+	 * @return true, if subscriber
+	 */
+	public boolean clientIsSubscriber(Topic topic, Geofence publisherGeofence, @Nullable Location publisherLocation) {
 		boolean subscribedToTopic = subscriptions.containsKey(topic);
 
 		// test whether this client is subscribed to the topic
@@ -57,21 +67,20 @@ public class Connection {
 			return false;
 		}
 
+		Subscription subscription = subscriptions.get(topic);
+
 		// test whether the location of this client is inside the geofence of the published message
 		if (!publisherGeofence.locationInFence(location)) {
 			return false;
 		}
 
-		// test whether the location of the publisher is inside the geofence of the subscription
-		if (publisherLocation.isPresent()) {
-			if (!subscriptions.get(topic).getGeofence().locationInFence(publisherLocation.get())) {
-				return false;
-			}
-		} else {
+		// when there is no publisher location, the subscriber geofence has to be infinite
+		if (publisherLocation == null && subscription.getGeofence().getCircleDiameterInMeter() >= 0) {
 			return false;
 		}
 
-		return true;
+		// last check: when publisher in subscription geofence, the client is subscribed
+		return subscription.getGeofence().locationInFence(publisherLocation);
 	}
 
 	@Override
