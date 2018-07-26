@@ -82,7 +82,7 @@ public class ConnectAndDisconnectTest {
 		logger.info("RUNNING testMultipleClients TEST");
 
 		List<TestClient> clients = new ArrayList<>();
-		int activeConnections = 200;
+		int activeConnections = 10;
 		Random random = new Random();
 
 		// create clients

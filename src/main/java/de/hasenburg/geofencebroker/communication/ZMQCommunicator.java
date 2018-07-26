@@ -14,7 +14,7 @@ import java.util.concurrent.Future;
 
 public abstract class ZMQCommunicator {
 
-	private static final Logger logger = LogManager.getLogger();
+	private final Logger logger;
 
 	/*****************************************************************
 	 * Fields
@@ -39,9 +39,10 @@ public abstract class ZMQCommunicator {
 	 * Constructors and Co
 	 ****************************************************************/
 
-	public ZMQCommunicator(String address, int port) {
+	public ZMQCommunicator(String address, int port, Logger logger) {
 		this.address = address;
 		this.port = port;
+		this.logger = logger;
 	}
 
 	/**

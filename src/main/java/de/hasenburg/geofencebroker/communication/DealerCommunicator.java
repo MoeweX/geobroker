@@ -2,6 +2,8 @@ package de.hasenburg.geofencebroker.communication;
 
 import de.hasenburg.geofencebroker.model.DealerMessage;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
 
@@ -11,8 +13,10 @@ import java.util.concurrent.LinkedBlockingDeque;
 
 public class DealerCommunicator extends ZMQCommunicator {
 
+	private static final Logger logger = LogManager.getLogger();
+
 	public DealerCommunicator(String address, int port) {
-		super(address, port);
+		super(address, port, logger);
 	}
 
 	@Override
