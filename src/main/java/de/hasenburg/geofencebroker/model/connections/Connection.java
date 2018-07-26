@@ -6,22 +6,20 @@ import de.hasenburg.geofencebroker.model.geofence.Geofence;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
-import zmq.socket.pubsub.Sub;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Connection {
 
 	private static final Logger logger = LogManager.getLogger();
 
 	private long heartbeat;
-	private boolean active = false;
-	private String clientIdentifier;
+	private final String clientIdentifier;
 	private Location location = null;
 
-	private final HashMap<Topic, Subscription> subscriptions = new HashMap<>();
+	private final ConcurrentHashMap<Topic, Subscription> subscriptions = new ConcurrentHashMap<>();
 
 	public Connection(String clientIdentifier) {
 		updateHeartbeat();
