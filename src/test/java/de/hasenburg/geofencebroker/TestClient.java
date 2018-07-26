@@ -1,4 +1,4 @@
-package de.hasenburg.geofencebroker.client;
+package de.hasenburg.geofencebroker;
 
 import de.hasenburg.geofencebroker.communication.ControlPacketType;
 import de.hasenburg.geofencebroker.communication.DealerCommunicator;
@@ -16,29 +16,29 @@ import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
-public class BasicClient {
+public class TestClient {
 
 	private static final Logger logger = LogManager.getLogger();
 
 	private DealerCommunicator dealer;
 	public BlockingQueue<ZMsg> blockingQueue;
 
-	public BasicClient(String identifier, String address, int port) throws CommunicatorException {
+	public TestClient(String identifier, String address, int port) throws CommunicatorException {
 		if (identifier == null) {
 			Random random = new Random();
-			identifier = "BasicClient-" + System.nanoTime();
+			identifier = "TestClient-" + System.nanoTime();
 		}
 
 		dealer = new DealerCommunicator(address, port);
 		dealer.init(identifier);
 		blockingQueue = new LinkedBlockingDeque<>();
 		dealer.startReceiving(blockingQueue);
-		logger.info("Started BasicClient " + getIdentity());
+		logger.info("Started TestClient " + getIdentity());
 	}
 
 	public void tearDown() {
 		dealer.tearDown();
-		logger.info("Stopped BasicClient.");
+		logger.info("Stopped TestClient.");
 	}
 
 	public String getIdentity() {
@@ -89,7 +89,7 @@ public class BasicClient {
 	}
 
 	public static void main(String[] args) throws CommunicatorException, InterruptedException, IOException {
-		BasicClient client = new BasicClient(null, "tcp://localhost", 5559);
+		TestClient client = new TestClient(null, "tcp://localhost", 5559);
 		client.sendCONNECT();
 		Location l = Location.random();
 		client.sendPINGREQ(l);

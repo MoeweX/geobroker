@@ -25,6 +25,8 @@ public class Brain {
 		ConnectionManager connectionManager = new ConnectionManager();
 
 		TaskManager taskManager = new TaskManager();
+		// let's use two message processor tasks
+		taskManager.runMessageProcessorTask(blockingQueue, router, connectionManager);
 		taskManager.runMessageProcessorTask(blockingQueue, router, connectionManager);
 
 		while (true) {

@@ -1,11 +1,9 @@
 package de.hasenburg.geofencebroker;
 
-import de.hasenburg.geofencebroker.client.BasicClient;
 import de.hasenburg.geofencebroker.communication.ControlPacketType;
 import de.hasenburg.geofencebroker.communication.ReasonCode;
 import de.hasenburg.geofencebroker.communication.RouterCommunicator;
 import de.hasenburg.geofencebroker.model.DealerMessage;
-import de.hasenburg.geofencebroker.model.Location;
 import de.hasenburg.geofencebroker.model.connections.ConnectionManager;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
 import de.hasenburg.geofencebroker.tasks.TaskManager;
@@ -16,10 +14,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.zeromq.ZMsg;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
@@ -66,7 +61,7 @@ public class PingTest {
 		logger.info("RUNNING testPingWhileConnected TEST");
 
 		// connect, ping, and disconnect
-		BasicClient client = new BasicClient(null, "tcp://localhost", 5559);
+		TestClient client = new TestClient(null, "tcp://localhost", 5559);
 		client.sendCONNECT();
 
 		for (int i = 0; i < 10; i++) {
@@ -101,7 +96,7 @@ public class PingTest {
 		logger.info("RUNNING testPingWhileConnected TEST");
 
 		// connect, ping, and disconnect
-		BasicClient client = new BasicClient(null, "tcp://localhost", 5559);
+		TestClient client = new TestClient(null, "tcp://localhost", 5559);
 
 		client.sendPINGREQ();
 

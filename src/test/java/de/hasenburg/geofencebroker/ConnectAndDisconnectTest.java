@@ -1,6 +1,5 @@
 package de.hasenburg.geofencebroker;
 
-import de.hasenburg.geofencebroker.client.BasicClient;
 import de.hasenburg.geofencebroker.communication.ControlPacketType;
 import de.hasenburg.geofencebroker.communication.RouterCommunicator;
 import de.hasenburg.geofencebroker.model.DealerMessage;
@@ -60,7 +59,7 @@ public class ConnectAndDisconnectTest {
 	@Test
 	public void testOneClient() throws InterruptedException, CommunicatorException {
 		logger.info("RUNNING testOneClient TEST");
-		BasicClient client = new BasicClient(null, "tcp://localhost", 5559);
+		TestClient client = new TestClient(null, "tcp://localhost", 5559);
 		client.sendCONNECT();
 		client.sendDISCONNECT();
 
@@ -82,13 +81,13 @@ public class ConnectAndDisconnectTest {
 	public void testMultipleClients() throws InterruptedException, CommunicatorException {
 		logger.info("RUNNING testMultipleClients TEST");
 
-		List<BasicClient> clients = new ArrayList<>();
+		List<TestClient> clients = new ArrayList<>();
 		int activeConnections = 200;
 		Random random = new Random();
 
 		// create clients
 		for (int i = 0; i < activeConnections; i++) {
-			BasicClient client = new BasicClient(null, "tcp://localhost", 5559);
+			TestClient client = new TestClient(null, "tcp://localhost", 5559);
 			clients.add(client);
 		}
 
@@ -96,7 +95,7 @@ public class ConnectAndDisconnectTest {
 		Thread.sleep(3000);
 
 		// send connects and randomly also disconnect
-		for (BasicClient client : clients) {
+		for (TestClient client : clients) {
 			client.sendCONNECT();
 			if (random.nextBoolean()) {
 				client.sendDISCONNECT();
@@ -105,7 +104,7 @@ public class ConnectAndDisconnectTest {
 		}
 
 		// check acknowledgements
-		for (BasicClient client : clients) {
+		for (TestClient client : clients) {
 			Optional<DealerMessage> dealerMessage = DealerMessage.buildDealerMessage(client.blockingQueue.poll(3, TimeUnit.SECONDS));
 			assertEquals("Queue should not contain any more elements.", 0, client.blockingQueue.size());
 			assertTrue("DealerMessage is missing", dealerMessage.isPresent());

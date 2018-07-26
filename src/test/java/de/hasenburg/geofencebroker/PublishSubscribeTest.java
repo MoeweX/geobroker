@@ -1,6 +1,5 @@
 package de.hasenburg.geofencebroker;
 
-import de.hasenburg.geofencebroker.client.BasicClient;
 import de.hasenburg.geofencebroker.communication.ControlPacketType;
 import de.hasenburg.geofencebroker.communication.ReasonCode;
 import de.hasenburg.geofencebroker.communication.RouterCommunicator;
@@ -68,7 +67,7 @@ public class PublishSubscribeTest {
 
 		// connect, ping, and disconnect
 		Geofence geofence = new Geofence(Location.random(), 20.0);
-		BasicClient client = new BasicClient(null, "tcp://localhost", 5559);
+		TestClient client = new TestClient(null, "tcp://localhost", 5559);
 		client.sendCONNECT();
 		client.sendPINGREQ(geofence.getCircleLocation()); // subscriber = publisher; booth in geofence
 		client.sendSUBSCRIBE(new Topic("test"), geofence);
@@ -112,13 +111,13 @@ public class PublishSubscribeTest {
 
 		// subscriber
 		Geofence geofence = new Geofence(Location.random(), 20.0);
-		BasicClient clientSubscriber = new BasicClient(null, "tcp://localhost", 5559);
+		TestClient clientSubscriber = new TestClient(null, "tcp://localhost", 5559);
 		clientSubscriber.sendCONNECT();
 		clientSubscriber.sendPINGREQ(Location.random()); // subscriber is not in geofence
 		clientSubscriber.sendSUBSCRIBE(new Topic("test"), geofence);
 
 		// publisher
-		BasicClient clientPublisher = new BasicClient(null, "tcp://localhost", 5559);
+		TestClient clientPublisher = new TestClient(null, "tcp://localhost", 5559);
 		clientPublisher.sendCONNECT();
 		clientPublisher.sendPINGREQ(geofence.getCircleLocation()); // publisher is in geofence
 		clientPublisher.sendPublish(new Topic("test"), geofence, "Content");
@@ -142,13 +141,13 @@ public class PublishSubscribeTest {
 
 		// subscriber
 		Geofence geofence = new Geofence(Location.random(), 20.0);
-		BasicClient clientSubscriber = new BasicClient(null, "tcp://localhost", 5559);
+		TestClient clientSubscriber = new TestClient(null, "tcp://localhost", 5559);
 		clientSubscriber.sendCONNECT();
 		clientSubscriber.sendPINGREQ(geofence.getCircleLocation()); // subscriber is in geofence
 		clientSubscriber.sendSUBSCRIBE(new Topic("test"), geofence);
 
 		// publisher
-		BasicClient clientPublisher = new BasicClient(null, "tcp://localhost", 5559);
+		TestClient clientPublisher = new TestClient(null, "tcp://localhost", 5559);
 		clientPublisher.sendCONNECT();
 		clientPublisher.sendPINGREQ(Location.random()); // publisher is not in geofence
 		clientPublisher.sendPublish(new Topic("test"), geofence, "Content");
@@ -165,7 +164,7 @@ public class PublishSubscribeTest {
 		logger.info("FINISHED TEST");
 	}
 
-	private void validateNoPublishReceived(BasicClient clientSubscriber, BasicClient clientPublisher)
+	private void validateNoPublishReceived(TestClient clientSubscriber, TestClient clientPublisher)
 			throws InterruptedException {
 		// check subscriber messages: must not contain "PUBLISH"
 		int subscriberMessageCount = 3;
