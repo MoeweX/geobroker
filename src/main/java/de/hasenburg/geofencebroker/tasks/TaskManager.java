@@ -1,13 +1,18 @@
 package de.hasenburg.geofencebroker.tasks;
 
 import de.hasenburg.geofencebroker.communication.RouterCommunicator;
+import de.hasenburg.geofencebroker.main.Utility;
 import de.hasenburg.geofencebroker.model.connections.ConnectionManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.zeromq.ZContext;
+import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
 import zmq.socket.reqrep.Router;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -28,11 +33,12 @@ public class TaskManager {
 	private final AtomicInteger[] taskHistory = new AtomicInteger[TaskName.values().length];
 
 	public enum TaskName {
-		SLEEP, MESSAGE_PROCESSOR_TASK
+		SLEEP, MESSAGE_PROCESSOR_TASK, ZMQ_MESSAGE_PROCESSOR_TASK
 	}
 
 	public void tearDown() {
 		pool.shutdownNow();
+		logger.info("Shutdown Task Manager");
 	}
 	
 	public void storeHistory() {
@@ -44,6 +50,7 @@ public class TaskManager {
 			runningTasks[i] = new AtomicInteger(0);
 			taskHistory[i] = new AtomicInteger(0);
 		}
+		logger.info("Started Task Manager");
 	}
 
 	public void registerTask(TaskName name) {
@@ -93,6 +100,10 @@ public class TaskManager {
 
 	public Future<Boolean> runMessageProcessorTask(BlockingQueue<ZMsg> messageQueue, RouterCommunicator routerCommunicator, ConnectionManager connectionManager) {
 		return pool.submit(new MessageProcessorTask(this, messageQueue, routerCommunicator, connectionManager));
+	}
+
+	public Future<Boolean> runZMQMessageProcessorTask(ZContext zContext, ConnectionManager connectionManager) {
+		return pool.submit(new ZMQMessageProcessorTask(this, zContext, connectionManager));
 	}
 
 }

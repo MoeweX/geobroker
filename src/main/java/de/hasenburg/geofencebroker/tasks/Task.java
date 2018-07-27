@@ -24,7 +24,7 @@ public abstract class Task<V> implements Callable<V> {
 		taskManager.registerTask(name);
 		V answer = executeFunctionality();
 		taskManager.deregisterTask(name);
-		logger.debug("Ending Task " + name + " completed");
+		logger.debug("Task " + name + " completed");
 		return answer;
 	}
 

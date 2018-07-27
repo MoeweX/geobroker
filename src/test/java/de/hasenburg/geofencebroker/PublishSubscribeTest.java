@@ -1,5 +1,6 @@
 package de.hasenburg.geofencebroker;
 
+import de.hasenburg.geofencebroker.communication.Broker;
 import de.hasenburg.geofencebroker.communication.ControlPacketType;
 import de.hasenburg.geofencebroker.communication.ReasonCode;
 import de.hasenburg.geofencebroker.communication.RouterCommunicator;
@@ -33,8 +34,7 @@ public class PublishSubscribeTest {
 	private static final Logger logger = LogManager.getLogger();
 
 	// Broker
-	RouterCommunicator router;
-	BlockingQueue<ZMsg> blockingQueue;
+	Broker broker;
 	ConnectionManager connectionManager;
 	TaskManager taskManager;
 
@@ -42,21 +42,19 @@ public class PublishSubscribeTest {
 	@Before
 	public void setUp() throws Exception {
 		logger.info("Running test setUp");
-		router = new RouterCommunicator("tcp://localhost", 5559);
-		router.init(null);
-		blockingQueue = new LinkedBlockingDeque<>();
-		router.startReceiving(blockingQueue);
+		broker = new Broker("tcp://localhost", 5559);
+		broker.init();
 
 		connectionManager = new ConnectionManager();
 
 		taskManager = new TaskManager();
-		taskManager.runMessageProcessorTask(blockingQueue, router, connectionManager);
+		taskManager.runZMQMessageProcessorTask(broker.getContext(), connectionManager);
 	}
 
 	@After
 	public void tearDown() throws Exception {
 		logger.info("Running test tearDown.");
-		router.tearDown();
+		broker.tearDown();
 		taskManager.tearDown();
 	}
 

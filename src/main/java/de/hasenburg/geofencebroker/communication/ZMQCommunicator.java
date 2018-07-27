@@ -2,7 +2,6 @@ package de.hasenburg.geofencebroker.communication;
 
 import de.hasenburg.geofencebroker.main.Utility;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;

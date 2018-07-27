@@ -11,6 +11,9 @@ import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
+/**
+ * Should not be used in situations with multiple messages as uses the not threadsafe socket in different threads.
+ */
 public class DealerCommunicator extends ZMQCommunicator {
 
 	private static final Logger logger = LogManager.getLogger();
