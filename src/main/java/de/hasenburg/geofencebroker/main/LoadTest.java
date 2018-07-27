@@ -76,10 +76,8 @@ public class LoadTest {
 			clients.add(client);
 		}
 
-		Thread.sleep(1000);
-
 		while (true) {
-			Utility.sleepNoLog(10, 0);
+			Utility.sleepNoLog(1000, 0);
 			if (blockingQueue.isEmpty()) {
 				Utility.sleepNoLog(100, 0);
 				if (blockingQueue.isEmpty()) {
