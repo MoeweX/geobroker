@@ -1,5 +1,6 @@
 package de.hasenburg.geofencebroker.main;
 
+import de.hasenburg.geofencebroker.communication.Broker;
 import de.hasenburg.geofencebroker.communication.ControlPacketType;
 import de.hasenburg.geofencebroker.communication.ReasonCode;
 import de.hasenburg.geofencebroker.communication.RouterCommunicator;
@@ -13,6 +14,7 @@ import de.hasenburg.geofencebroker.model.payload.*;
 import de.hasenburg.geofencebroker.tasks.TaskManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.After;
 import org.zeromq.ZMsg;
 
 import java.util.ArrayList;
@@ -27,10 +29,9 @@ public class LoadTest {
 	private static final Logger logger = LogManager.getLogger();
 
 	// Broker
-	private RouterCommunicator router;
-	private BlockingQueue<ZMsg> blockingQueue;
-	private ConnectionManager connectionManager;
-	private TaskManager taskManager;
+	Broker broker;
+	ConnectionManager connectionManager;
+	TaskManager taskManager;
 
 	public static void main (String[] args) throws Exception {
 	    LoadTest loadTest = new LoadTest();
@@ -41,22 +42,18 @@ public class LoadTest {
 
 	public void setUp() throws Exception {
 		logger.info("Running setUp");
-
-		// setup broker
-		router = new RouterCommunicator("tcp://localhost", 5559);
-		router.init(null);
-		blockingQueue = new LinkedBlockingDeque<>();
-		router.startReceiving(blockingQueue);
+		broker = new Broker("tcp://localhost", 5559);
+		broker.init();
 
 		connectionManager = new ConnectionManager();
 
 		taskManager = new TaskManager();
-		taskManager.runMessageProcessorTask(blockingQueue, router, connectionManager);
+		taskManager.runZMQMessageProcessorTask(broker.getContext(), connectionManager);
 	}
 
 	public void tearDown() throws Exception {
 		logger.info("Running tearDown.");
-		router.tearDown();
+		broker.tearDown();
 		taskManager.tearDown();
 	}
 
@@ -71,24 +68,9 @@ public class LoadTest {
 
 		// create clients
 		for (int i = 0; i < numberOfClients; i++) {
-			Thread client = new Thread(new SubscribeOwnTopicProcess("tcp://localhost", 5559, 100));
+			Thread client = new Thread(new SubscribeOwnTopicProcess("tcp://localhost", 5559, 2000));
 			client.start();
 			clients.add(client);
-		}
-
-		while (true) {
-			Utility.sleepNoLog(1000, 0);
-			if (blockingQueue.isEmpty()) {
-				Utility.sleepNoLog(100, 0);
-				if (blockingQueue.isEmpty()) {
-					break;
-				}
-			}
-		}
-
-		// interrupt all clients
-		for (Thread client : clients) {
-			//client.interrupt();
 		}
 
 		// wait for clients
@@ -104,13 +86,12 @@ public class LoadTest {
 
 		SimpleClient simpleClient;
 		int plannedMessageRounds;
-		int actualMessageRounds = 0;
+		int actualMessageRounds = 1;
 		Location location = Location.random();
 
 		public SubscribeOwnTopicProcess(String address, int port, int messagesToSend) throws CommunicatorException {
 			this.simpleClient = new SimpleClient(null, address, port);
 			this.plannedMessageRounds = messagesToSend;
-			simpleClient.startReceiving();
 			simpleClient.sendDealerMessage(new DealerMessage(ControlPacketType.CONNECT, new CONNECTPayload()));
 			simpleClient.sendDealerMessage(new DealerMessage(ControlPacketType.SUBSCRIBE,
 					new SUBSCRIBEPayload(new Topic(simpleClient.getIdentity()), new Geofence(location, 0.0))));
@@ -119,7 +100,7 @@ public class LoadTest {
 		@Override
 		public void run() {
 			long start = System.currentTimeMillis();
-			while (actualMessageRounds < plannedMessageRounds) {
+			while (actualMessageRounds <= plannedMessageRounds) {
 				simpleClient.sendDealerMessage(new DealerMessage(ControlPacketType.PINGREQ, new PINGREQPayload(location)));
 				simpleClient.sendDealerMessage(
 						new DealerMessage(ControlPacketType.PUBLISH,
@@ -129,10 +110,18 @@ public class LoadTest {
 								"Some Test content that is being published.")));
 				actualMessageRounds++;
 			}
-//			while (!Thread.currentThread().isInterrupted()) {
-//				Utility.sleepNoLog(1, 0);
-//			}
-			Utility.sleep(10000,0);
+
+			try {
+				simpleClient.startReceiving();
+			} catch (CommunicatorException e) {
+				e.printStackTrace();
+			}
+
+			int messages = plannedMessageRounds*3 + 2;
+			while (simpleClient.blockingQueue.size() < messages) {
+				Utility.sleepNoLog(1, 0);
+			}
+
 			logger.info("Client {} finished {} message rounds in {} milliseconds",
 					simpleClient.getIdentity(), plannedMessageRounds, System.currentTimeMillis() - start);
 			//let's evaluate the received messages

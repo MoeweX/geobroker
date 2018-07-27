@@ -6,13 +6,13 @@
         </Console>
     </Appenders>
     <Loggers>
-        <Root level="all" additivity="false">
+        <Root level="debug" additivity="false">
             <AppenderRef ref="Console"/>
         </Root>
-        <Logger name="de.hasenburg.geofencebroker.tasks.MessageProcessorTask" level="all" additivity="false">
+        <Logger name="de.hasenburg.geofencebroker.tasks.MessageProcessorTask" level="debug" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
-        <Logger name="de.hasenburg.geofencebroker.communication.ZMQCommunicator" level="all" additivity="false">
+        <Logger name="de.hasenburg.geofencebroker.communication.ZMQCommunicator" level="debug" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
         <Logger name="de.hasenburg.geofencebroker.main.LoadTest" level="debug" additivity="false">

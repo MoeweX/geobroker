@@ -116,6 +116,7 @@ class ZMQMessageProcessorTask extends Task<Boolean> {
 			connectionManager.putConnection(connection);
 		}
 
+		logger.debug("Sending response " + response);
 		response.getZMsg().send(processor);
 	}
 
@@ -151,6 +152,7 @@ class ZMQMessageProcessorTask extends Task<Boolean> {
 			response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.PINGRESP, new PINGRESPPayload(ReasonCode.NotConnected));
 		}
 
+		logger.debug("Sending response " + response);
 		response.getZMsg().send(processor);
 	}
 
@@ -173,6 +175,7 @@ class ZMQMessageProcessorTask extends Task<Boolean> {
 					new SUBACKPayload(ReasonCode.NotConnected));
 		}
 
+		logger.debug("Sending response " + response);
 		response.getZMsg().send(processor);
 	}
 
@@ -196,6 +199,7 @@ class ZMQMessageProcessorTask extends Task<Boolean> {
 				logger.trace("Client {} is a subscriber", subscriber.getClientIdentifier());
 				RouterMessage toPublish = new RouterMessage(subscriber.getClientIdentifier(),
 						ControlPacketType.PUBLISH, payload);
+				logger.debug("Publishing " + toPublish);
 				toPublish.getZMsg().send(processor);
 			}
 
@@ -214,6 +218,7 @@ class ZMQMessageProcessorTask extends Task<Boolean> {
 		}
 
 		// send response to publisher
+		logger.debug("Sending response " + response);
 		response.getZMsg().send(processor);
 	}
 }

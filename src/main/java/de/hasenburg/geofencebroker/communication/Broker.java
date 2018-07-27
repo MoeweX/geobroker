@@ -5,11 +5,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
-import org.zeromq.ZMQException;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
+import static org.junit.Assert.assertTrue;
 
 public class Broker {
 
@@ -55,7 +56,7 @@ public class Broker {
 			logger.debug("Frontend socket destroyed");
 			context.destroySocket(backend);
 			logger.debug("Backend socket destroyed");
-			logger.info("Broker stopped to broker as context was destroyed");
+			logger.info("Broker stopped to broker as context is beeing destroyed");
 		});
 
 		logger.info("Broker ready to broker.");
@@ -79,6 +80,16 @@ public class Broker {
 
 		this.executor.shutdownNow();
 		logger.info("Tear down of broker completed, communicator cannot be reused." + (executor.isTerminated() ? "" : " Some tasks may still be running."));
+	}
+
+	public static void main (String[] args) throws CommunicatorException {
+		for (int i = 0; i < 10; i++) {
+			Broker broker = new Broker("tcp://localhost", 5559);
+			broker.init();
+			logger.info("Broker is brokering?: {}", broker.isBrokering());
+			broker.tearDown();
+			logger.info("\n\n");
+		}
 	}
 
 }
