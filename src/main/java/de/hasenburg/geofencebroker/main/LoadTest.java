@@ -49,6 +49,7 @@ public class LoadTest {
 
 		taskManager = new TaskManager();
 		taskManager.runZMQMessageProcessorTask(broker.getContext(), connectionManager);
+		// taskManager.runZMQMessageProcessorTask(broker.getContext(), connectionManager); -> connection management not thread safe yet
 	}
 
 	public void tearDown() throws Exception {
@@ -61,14 +62,14 @@ public class LoadTest {
 		logger.info("RUNNING testOneLocations");
 
 		List<Thread> clients = new ArrayList<>();
-		int numberOfClients = 1;
+		int numberOfClients = 10;
 
 		Location location = Location.random();
 		Geofence geofence = new Geofence(location, 0.0); // does not matter as topics are different
 
 		// create clients
 		for (int i = 0; i < numberOfClients; i++) {
-			Thread client = new Thread(new SubscribeOwnTopicProcess("tcp://localhost", 5559, 2000));
+			Thread client = new Thread(new SubscribeOwnTopicProcess("tcp://localhost", 5559, 1000));
 			client.start();
 			clients.add(client);
 		}

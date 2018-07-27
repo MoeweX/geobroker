@@ -29,6 +29,7 @@ public class SimpleClient {
 		dealer = new DealerCommunicator(address, port);
 		dealer.init(identifier);
 		blockingQueue = new LinkedBlockingDeque<>();
+		logger.info("Created client {}", identifier);
 	}
 
 	public void startReceiving() throws CommunicatorException {

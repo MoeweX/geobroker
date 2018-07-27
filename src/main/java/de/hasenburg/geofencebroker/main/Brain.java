@@ -1,15 +1,11 @@
 package de.hasenburg.geofencebroker.main;
 
-import de.hasenburg.geofencebroker.communication.RouterCommunicator;
+import de.hasenburg.geofencebroker.communication.Broker;
 import de.hasenburg.geofencebroker.model.connections.ConnectionManager;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
 import de.hasenburg.geofencebroker.tasks.TaskManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.zeromq.ZMsg;
-
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
 
 public class Brain {
 
@@ -17,17 +13,13 @@ public class Brain {
 
 	public static void main(String[] args) throws CommunicatorException, InterruptedException {
 
-		RouterCommunicator router = new RouterCommunicator("tcp://localhost", 5559);
-		router.init(null);
-		BlockingQueue<ZMsg> blockingQueue = new LinkedBlockingDeque<>();
-		router.startReceiving(blockingQueue);
+		Broker broker = new Broker("tcp://localhost", 5559);
+		broker.init();
 
 		ConnectionManager connectionManager = new ConnectionManager();
 
 		TaskManager taskManager = new TaskManager();
-		// let's use two message processor tasks
-		taskManager.runMessageProcessorTask(blockingQueue, router, connectionManager);
-		taskManager.runMessageProcessorTask(blockingQueue, router, connectionManager);
+		taskManager.runZMQMessageProcessorTask(broker.getContext(), connectionManager);
 
 		while (true) {
 			logger.info(connectionManager.toString());

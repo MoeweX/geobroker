@@ -42,7 +42,10 @@ class ZMQMessageProcessorTask extends Task<Boolean> {
 	public Boolean executeFunctionality() {
 
 		processor = context.createSocket(ZMQ.DEALER);
+		processor.setIdentity(Long.toString(System.nanoTime()).getBytes());
 		processor.connect("inproc://backend");
+
+		int number = 1;
 
 		while (!Thread.currentThread().isInterrupted()) {
 
@@ -61,6 +64,7 @@ class ZMQMessageProcessorTask extends Task<Boolean> {
 			}
 
 			Optional<RouterMessage> messageO = RouterMessage.buildRouterMessage(zMsg);
+			logger.debug("Processor {} processing message number {}", new String(processor.getIdentity()), number);
 			messageO.ifPresentOrElse(message -> {
 				switch (message.getControlPacketType()) {
 					case CONNECT:
@@ -82,6 +86,8 @@ class ZMQMessageProcessorTask extends Task<Boolean> {
 						logger.debug("Cannot process message {}", message.toString());
 				}
 			}, () -> logger.warn("Received an incompatible message", zMsg));
+
+			number++;
 
 		}
 
