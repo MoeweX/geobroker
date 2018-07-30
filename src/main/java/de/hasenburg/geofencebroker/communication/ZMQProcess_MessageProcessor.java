@@ -1,8 +1,5 @@
-package de.hasenburg.geofencebroker.tasks;
+package de.hasenburg.geofencebroker.communication;
 
-import de.hasenburg.geofencebroker.communication.ControlPacketType;
-import de.hasenburg.geofencebroker.communication.ReasonCode;
-import de.hasenburg.geofencebroker.communication.ZMQControlUtility;
 import de.hasenburg.geofencebroker.model.RouterMessage;
 import de.hasenburg.geofencebroker.model.connections.Connection;
 import de.hasenburg.geofencebroker.model.connections.ConnectionManager;
@@ -17,43 +14,39 @@ import org.zeromq.ZMsg;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * A Task that continuously processes messages.
- *
- * @author jonathanhasenburg
- */
-class ZMQMessageProcessorTask extends Task<Boolean> {
+class ZMQProcess_MessageProcessor implements Runnable {
 
 	private static final Logger logger = LogManager.getLogger();
+	private static final String PROCESSING_BACKEND = "inproc://backend";
+	private static final int TIMEOUT_SECONDS = 10; // logs when not received in time, but repeats
 
 	ConnectionManager connectionManager;
+	String identity;
 	ZContext context;
 	ZMQ.Socket processor;
 
-	protected ZMQMessageProcessorTask(TaskManager taskManager, ZContext context, ConnectionManager connectionManager) {
-		super(TaskManager.TaskName.ZMQ_MESSAGE_PROCESSOR_TASK, taskManager);
+	protected ZMQProcess_MessageProcessor(String identity, ZContext context, ConnectionManager connectionManager) {
+		this.identity = identity;
 		this.connectionManager = connectionManager;
 		this.context = context;
 	}
 
 	@Override
-	public Boolean executeFunctionality() {
-
+	public void run() {
 		processor = context.createSocket(ZMQ.DEALER);
-		processor.setIdentity(Long.toString(System.nanoTime()).getBytes());
-		processor.connect("inproc://backend");
+		processor.setIdentity(identity.getBytes());
+		processor.connect(PROCESSING_BACKEND);
 
 		ZMQ.Poller poller = context.createPoller(1);
-		int zmqControlIndex = ZMQControlUtility.connectWithPoller(context, poller, "ZMQMessageProcessorTask");
+		int zmqControlIndex = ZMQControlUtility.connectWithPoller(context, poller, identity);
 		poller.register(processor, ZMQ.Poller.POLLIN);
 
 		int number = 1;
-		int timeoutSeconds = 10;
 
 		while (!Thread.currentThread().isInterrupted()) {
 
-			logger.debug("ZMQMessageProcessor waiting {}s for a message", timeoutSeconds);
-			poller.poll(timeoutSeconds * 1000);
+			logger.debug("ZMQMessageProcessor waiting {}s for a message", TIMEOUT_SECONDS);
+			poller.poll(TIMEOUT_SECONDS * 1000);
 
 			if (poller.pollin(zmqControlIndex)) {
 				if (ZMQControlUtility.getCommand(poller, zmqControlIndex).equals(ZMQControlUtility.ZMQControlCommand.KILL)) {
@@ -86,15 +79,13 @@ class ZMQMessageProcessorTask extends Task<Boolean> {
 					}
 				}, () -> logger.warn("Received an incompatible message", zMsg));
 			} else {
-				logger.debug("Did not receive a message for {}s", timeoutSeconds);
+				logger.debug("Did not receive a message for {}s", TIMEOUT_SECONDS);
 			}
 
 		} // end while loop
 
 		context.destroySocket(processor);
 		logger.info("Shut down ZMQMessageProcessor, socket was destroyed.");
-
-		return true;
 	}
 
 	/*****************************************************************
@@ -231,4 +222,5 @@ class ZMQMessageProcessorTask extends Task<Boolean> {
 		logger.debug("Sending response " + response);
 		response.getZMsg().send(processor);
 	}
+
 }
