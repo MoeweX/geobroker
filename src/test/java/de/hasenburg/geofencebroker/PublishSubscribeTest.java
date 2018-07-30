@@ -1,9 +1,6 @@
 package de.hasenburg.geofencebroker;
 
-import de.hasenburg.geofencebroker.communication.Broker;
-import de.hasenburg.geofencebroker.communication.ControlPacketType;
-import de.hasenburg.geofencebroker.communication.ReasonCode;
-import de.hasenburg.geofencebroker.communication.RouterCommunicator;
+import de.hasenburg.geofencebroker.communication.*;
 import de.hasenburg.geofencebroker.model.DealerMessage;
 import de.hasenburg.geofencebroker.model.Location;
 import de.hasenburg.geofencebroker.model.Topic;
@@ -33,29 +30,25 @@ public class PublishSubscribeTest {
 
 	private static final Logger logger = LogManager.getLogger();
 
-	// Broker
-	Broker broker;
 	ConnectionManager connectionManager;
-	TaskManager taskManager;
+	ZMQProcessManager processManager;
 
 	@SuppressWarnings("Duplicates")
 	@Before
-	public void setUp() throws Exception {
+	public void setUp() {
 		logger.info("Running test setUp");
-		broker = new Broker("tcp://localhost", 5559);
-		broker.init();
 
 		connectionManager = new ConnectionManager();
 
-		taskManager = new TaskManager();
-		taskManager.runZMQMessageProcessorTask(broker.getContext(), connectionManager);
+		processManager = new ZMQProcessManager();
+		processManager.runZMQProcess_Broker("tcp://localhost", 5559, "broker");
+		processManager.runZMQProcess_MessageProcessor("message_processor", connectionManager);
 	}
 
 	@After
-	public void tearDown() throws Exception {
+	public void tearDown() {
 		logger.info("Running test tearDown.");
-		broker.tearDown();
-		taskManager.tearDown();
+		assertTrue(processManager.tearDown(5000));
 	}
 
 	@SuppressWarnings("ConstantConditions")

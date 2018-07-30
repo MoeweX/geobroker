@@ -1,9 +1,7 @@
 package de.hasenburg.geofencebroker.main;
 
-import de.hasenburg.geofencebroker.communication.Broker;
+import de.hasenburg.geofencebroker.communication.ZMQProcessManager;
 import de.hasenburg.geofencebroker.model.connections.ConnectionManager;
-import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
-import de.hasenburg.geofencebroker.tasks.TaskManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -11,15 +9,13 @@ public class Brain {
 
 	private static final Logger logger = LogManager.getLogger();
 
-	public static void main(String[] args) throws CommunicatorException, InterruptedException {
-
-		Broker broker = new Broker("tcp://localhost", 5559);
-		broker.init();
+	public static void main(String[] args) throws InterruptedException {
 
 		ConnectionManager connectionManager = new ConnectionManager();
 
-		TaskManager taskManager = new TaskManager();
-		taskManager.runZMQMessageProcessorTask(broker.getContext(), connectionManager);
+		ZMQProcessManager processManager = new ZMQProcessManager();
+		processManager.runZMQProcess_Broker("tcp://localhost", 5559, "broker");
+		processManager.runZMQProcess_MessageProcessor("message_processor", connectionManager);
 
 		while (true) {
 			logger.info(connectionManager.toString());

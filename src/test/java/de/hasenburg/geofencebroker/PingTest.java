@@ -1,28 +1,21 @@
 package de.hasenburg.geofencebroker;
 
-import de.hasenburg.geofencebroker.communication.Broker;
 import de.hasenburg.geofencebroker.communication.ControlPacketType;
 import de.hasenburg.geofencebroker.communication.ReasonCode;
-import de.hasenburg.geofencebroker.communication.RouterCommunicator;
-import de.hasenburg.geofencebroker.main.Utility;
+import de.hasenburg.geofencebroker.communication.ZMQProcessManager;
 import de.hasenburg.geofencebroker.model.DealerMessage;
 import de.hasenburg.geofencebroker.model.connections.ConnectionManager;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
-import de.hasenburg.geofencebroker.tasks.TaskManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.zeromq.ZMsg;
 
 import java.util.Optional;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("ConstantConditions")
@@ -30,29 +23,25 @@ public class PingTest {
 
 	private static final Logger logger = LogManager.getLogger();
 
-	// Broker
-	Broker broker;
 	ConnectionManager connectionManager;
-	TaskManager taskManager;
+	ZMQProcessManager processManager;
 
 	@SuppressWarnings("Duplicates")
 	@Before
-	public void setUp() throws Exception {
+	public void setUp() {
 		logger.info("Running test setUp");
-		broker = new Broker("tcp://localhost", 5559);
-		broker.init();
 
 		connectionManager = new ConnectionManager();
 
-		taskManager = new TaskManager();
-		taskManager.runZMQMessageProcessorTask(broker.getContext(), connectionManager);
+		processManager = new ZMQProcessManager();
+		processManager.runZMQProcess_Broker("tcp://localhost", 5559, "broker");
+		processManager.runZMQProcess_MessageProcessor("message_processor", connectionManager);
 	}
 
 	@After
-	public void tearDown() throws Exception {
+	public void tearDown() {
 		logger.info("Running test tearDown.");
-		broker.tearDown();
-		taskManager.tearDown();
+		assertTrue(processManager.tearDown(5000));
 	}
 
 	@Test

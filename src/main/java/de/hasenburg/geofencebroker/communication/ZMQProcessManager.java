@@ -87,14 +87,24 @@ public class ZMQProcessManager {
 	 * Process Starter
 	 ****************************************************************/
 
-	public void runZMQMessageProcessorTask(String identity, ConnectionManager connectionManager) {
-		if (zmqProcesses.contains(identity)) {
+	public void runZMQProcess_MessageProcessor(String identity, ConnectionManager connectionManager) {
+		if (getIncompleteZMQProcesses().contains(identity)) {
 			logger.error("Cannot start ZMQProcess with identity {}, as one with this identity already exists", identity);
 			return;
 		}
 		Future<?> process = pool.submit(new ZMQProcess_MessageProcessor(identity, context, connectionManager));
 		zmqProcesses.put(identity, process);
 		logger.info("Started {} with identity {}", ZMQProcess_MessageProcessor.class.getSimpleName(), identity);
+	}
+
+	public void runZMQProcess_Broker(String address, int port, String identity) {
+		if (getIncompleteZMQProcesses().contains(identity)) {
+			logger.error("Cannot start ZMQProcess with identity {}, as one with this identity already exists", identity);
+			return;
+		}
+		Future<?> process = pool.submit(new ZMQProcess_Broker(address, port, identity, context));
+		zmqProcesses.put(identity, process);
+		logger.info("Started {} with identity {}", Broker.class.getSimpleName(), identity);
 	}
 
 }

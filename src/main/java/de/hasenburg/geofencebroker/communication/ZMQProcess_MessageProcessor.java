@@ -45,7 +45,7 @@ class ZMQProcess_MessageProcessor implements Runnable {
 
 		while (!Thread.currentThread().isInterrupted()) {
 
-			logger.debug("ZMQMessageProcessor waiting {}s for a message", TIMEOUT_SECONDS);
+			logger.trace("ZMQMessageProcessor waiting {}s for a message", TIMEOUT_SECONDS);
 			poller.poll(TIMEOUT_SECONDS * 1000);
 
 			if (poller.pollin(zmqControlIndex)) {
@@ -85,7 +85,7 @@ class ZMQProcess_MessageProcessor implements Runnable {
 		} // end while loop
 
 		context.destroySocket(processor);
-		logger.info("Shut down ZMQMessageProcessor, socket was destroyed.");
+		logger.info("Shut down ZMQProcess_MessageProcessor, socket was destroyed.");
 	}
 
 	/*****************************************************************

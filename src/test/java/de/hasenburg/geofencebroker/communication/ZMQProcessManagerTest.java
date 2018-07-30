@@ -3,17 +3,11 @@ package de.hasenburg.geofencebroker.communication;
 import de.hasenburg.geofencebroker.main.Utility;
 import de.hasenburg.geofencebroker.model.connections.ConnectionManager;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
-import de.hasenburg.geofencebroker.tasks.TaskManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
-import org.zeromq.ZContext;
-import org.zeromq.ZMQ;
 
 import java.util.Arrays;
-import java.util.concurrent.Future;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -32,8 +26,8 @@ public class ZMQProcessManagerTest {
 		assertTrue(pm.getIncompleteZMQProcesses().isEmpty());
 
 		// start two processes
-		pm.runZMQMessageProcessorTask("Process 1", cm);
-		pm.runZMQMessageProcessorTask("Process 2", cm);
+		pm.runZMQProcess_MessageProcessor("Process 1", cm);
+		pm.runZMQProcess_MessageProcessor("Process 2", cm);
 		Utility.sleepNoLog(100, 0);
 		assertTrue(pm.getIncompleteZMQProcesses().containsAll(Arrays.asList("Process 1", "Process 2")));
 
