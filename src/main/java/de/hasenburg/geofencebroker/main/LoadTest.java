@@ -1,9 +1,6 @@
 package de.hasenburg.geofencebroker.main;
 
-import de.hasenburg.geofencebroker.communication.Broker;
-import de.hasenburg.geofencebroker.communication.ControlPacketType;
-import de.hasenburg.geofencebroker.communication.ReasonCode;
-import de.hasenburg.geofencebroker.communication.RouterCommunicator;
+import de.hasenburg.geofencebroker.communication.*;
 import de.hasenburg.geofencebroker.model.DealerMessage;
 import de.hasenburg.geofencebroker.model.Location;
 import de.hasenburg.geofencebroker.model.Topic;
@@ -28,10 +25,8 @@ public class LoadTest {
 
 	private static final Logger logger = LogManager.getLogger();
 
-	// Broker
-	Broker broker;
+	ZMQProcessManager processManager;
 	ConnectionManager connectionManager;
-	TaskManager taskManager;
 
 	public static void main (String[] args) throws Exception {
 	    LoadTest loadTest = new LoadTest();
@@ -42,20 +37,16 @@ public class LoadTest {
 
 	public void setUp() throws Exception {
 		logger.info("Running setUp");
-		broker = new Broker("tcp://localhost", 5559);
-		broker.init();
+		ConnectionManager connectionManager = new ConnectionManager();
 
-		connectionManager = new ConnectionManager();
-
-		taskManager = new TaskManager();
-		taskManager.runZMQMessageProcessorTask(broker.getContext(), connectionManager);
-		// taskManager.runZMQMessageProcessorTask(broker.getContext(), connectionManager); -> connection management not thread safe yet
+		processManager = new ZMQProcessManager();
+		processManager.runZMQProcess_Broker("tcp://localhost", 5559, "broker");
+		processManager.runZMQProcess_MessageProcessor("message_processor", connectionManager);
 	}
 
 	public void tearDown() throws Exception {
 		logger.info("Running tearDown.");
-		broker.tearDown();
-		taskManager.tearDown();
+		processManager.tearDown(5000);
 	}
 
 	public void loadTestOwnTopic() throws InterruptedException, CommunicatorException {

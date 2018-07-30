@@ -44,7 +44,7 @@ class ZMQProcess_Broker implements Runnable {
 
 		while (!Thread.currentThread().isInterrupted()) {
 
-			logger.trace("Broker waiting {}s for a message", TIMEOUT_SECONDS);
+			logger.trace("ZMQProcess_Broker waiting {}s for a message", TIMEOUT_SECONDS);
 			poller.poll(TIMEOUT_SECONDS * 1000);
 
 			if (poller.pollin(zmqControlIndex)) {

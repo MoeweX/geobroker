@@ -1,20 +1,10 @@
 package de.hasenburg.geofencebroker.tasks;
 
-import de.hasenburg.geofencebroker.communication.RouterCommunicator;
-import de.hasenburg.geofencebroker.main.Utility;
-import de.hasenburg.geofencebroker.model.connections.ConnectionManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.zeromq.ZContext;
-import org.zeromq.ZMQ;
-import org.zeromq.ZMsg;
-import zmq.socket.reqrep.Router;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -96,14 +86,6 @@ public class TaskManager {
 
 	public Future<Boolean> runSleepTask(int time) {
 		return pool.submit(new SleepTask(this, time));
-	}
-
-	public Future<Boolean> runMessageProcessorTask(BlockingQueue<ZMsg> messageQueue, RouterCommunicator routerCommunicator, ConnectionManager connectionManager) {
-		return pool.submit(new MessageProcessorTask(this, messageQueue, routerCommunicator, connectionManager));
-	}
-
-	public Future<Boolean> runZMQMessageProcessorTask(ZContext zContext, ConnectionManager connectionManager) {
-		return pool.submit(new ZMQMessageProcessorTask(this, zContext, connectionManager));
 	}
 
 }

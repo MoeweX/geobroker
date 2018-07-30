@@ -45,7 +45,7 @@ class ZMQProcess_MessageProcessor implements Runnable {
 
 		while (!Thread.currentThread().isInterrupted()) {
 
-			logger.trace("ZMQMessageProcessor waiting {}s for a message", TIMEOUT_SECONDS);
+			logger.trace("ZMQProcess_MessageProcessor {} waiting {}s for a message", new String(processor.getIdentity()), TIMEOUT_SECONDS);
 			poller.poll(TIMEOUT_SECONDS * 1000);
 
 			if (poller.pollin(zmqControlIndex)) {
@@ -56,7 +56,7 @@ class ZMQProcess_MessageProcessor implements Runnable {
 				ZMsg zMsg = ZMsg.recvMsg(processor);
 				number++;
 				Optional<RouterMessage> messageO = RouterMessage.buildRouterMessage(zMsg);
-				logger.debug("Processor {} processing message number {}", new String(processor.getIdentity()), number);
+				logger.debug("ZMQProcess_MessageProcessor {} processing message number {}", new String(processor.getIdentity()), number);
 				messageO.ifPresentOrElse(message -> {
 					switch (message.getControlPacketType()) {
 						case CONNECT:
