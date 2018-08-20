@@ -69,7 +69,7 @@ public class PublishSubscribeTest {
 			assertEquals("Dealer queue contains wrong number of elements.", messageCount - i,
 					client.blockingQueue.size());
 			Optional<InternalClientMessage> dealerMessage = InternalClientMessage
-					.buildDealerMessage(client.blockingQueue.poll(1, TimeUnit.SECONDS));
+					.buildMessage(client.blockingQueue.poll(1, TimeUnit.SECONDS));
 			logger.debug(dealerMessage);
 			assertTrue("InternalClientMessage is missing", dealerMessage.isPresent());
 			if (i == 3) {
@@ -160,7 +160,7 @@ public class PublishSubscribeTest {
 			assertEquals("Dealer queue contains wrong number of elements.", subscriberMessageCount - i,
 					clientSubscriber.blockingQueue.size());
 			Optional<InternalClientMessage> dealerMessage =
-					InternalClientMessage.buildDealerMessage(clientSubscriber.blockingQueue.poll(1, TimeUnit.SECONDS));
+					InternalClientMessage.buildMessage(clientSubscriber.blockingQueue.poll(1, TimeUnit.SECONDS));
 			logger.debug(dealerMessage);
 			assertTrue("InternalClientMessage is missing", dealerMessage.isPresent());
 			assertNotEquals(ControlPacketType.PUBLISH, dealerMessage.get().getControlPacketType()); // no publish message
@@ -172,7 +172,7 @@ public class PublishSubscribeTest {
 			assertEquals("Dealer queue contains wrong number of elements.", publisherMessageCount - i,
 					clientPublisher.blockingQueue.size());
 			Optional<InternalClientMessage> dealerMessage =
-					InternalClientMessage.buildDealerMessage(clientPublisher.blockingQueue.poll(1, TimeUnit.SECONDS));
+					InternalClientMessage.buildMessage(clientPublisher.blockingQueue.poll(1, TimeUnit.SECONDS));
 			logger.debug(dealerMessage);
 			assertTrue("InternalClientMessage is missing", dealerMessage.isPresent());
 			assertNotEquals(ControlPacketType.PUBLISH, dealerMessage.get().getControlPacketType()); // no publish message

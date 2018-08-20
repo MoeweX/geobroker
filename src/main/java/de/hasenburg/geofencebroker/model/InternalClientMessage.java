@@ -24,7 +24,7 @@ public class InternalClientMessage {
 	 * 	- Payload incompatible to control packet type
 	 * 	- Payload misses fields
 	 */
-	public static Optional<InternalClientMessage> buildDealerMessage(ZMsg msg) {
+	public static Optional<InternalClientMessage> buildMessage(ZMsg msg) {
 		if (msg == null) {
 			// happens when queue is empty
 			return Optional.empty();

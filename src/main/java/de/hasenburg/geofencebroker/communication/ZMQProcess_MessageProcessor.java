@@ -54,7 +54,7 @@ class ZMQProcess_MessageProcessor implements Runnable {
 			} else if (poller.pollin(1)) {
 				ZMsg zMsg = ZMsg.recvMsg(processor);
 				number++;
-				Optional<InternalBrokerMessage> messageO = InternalBrokerMessage.buildRouterMessage(zMsg);
+				Optional<InternalBrokerMessage> messageO = InternalBrokerMessage.buildMessage(zMsg);
 				logger.debug("ZMQProcess_MessageProcessor {} processing message number {}", new String(processor.getIdentity()), number);
 				messageO.ifPresentOrElse(message -> {
 					switch (message.getControlPacketType()) {
@@ -89,7 +89,7 @@ class ZMQProcess_MessageProcessor implements Runnable {
 
 	/*****************************************************************
 	 * Message Processing
-	 * 	- we already validated the messages above using #buildRouterMessage()
+	 * 	- we already validated the messages above using #buildMessage()
 	 * 	-> we expect the payload to be compatible with the control packet type
 	 * 	-> we expect all fields to be set
 	 ****************************************************************/

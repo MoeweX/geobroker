@@ -27,7 +27,7 @@ public class InternalClientMessageTest {
 		InternalClientMessage message = new InternalClientMessage(ControlPacketType.CONNECT, new CONNECTPayload());
 		logger.debug(message);
 		ZMsg zmsg = message.getZMsg();
-		InternalClientMessage message2 = InternalClientMessage.buildDealerMessage(zmsg).get();
+		InternalClientMessage message2 = InternalClientMessage.buildMessage(zmsg).get();
 		logger.debug(message2);
 		assertEquals("Messages should be equal", message, message2);
 		logger.info("FINISHED TEST");
@@ -39,7 +39,7 @@ public class InternalClientMessageTest {
 		InternalClientMessage message = new InternalClientMessage(ControlPacketType.PINGREQ, new PINGREQPayload(Location.random()));
 		logger.debug(message);
 		ZMsg zmsg = message.getZMsg();
-		InternalClientMessage message2 = InternalClientMessage.buildDealerMessage(zmsg).get();
+		InternalClientMessage message2 = InternalClientMessage.buildMessage(zmsg).get();
 		logger.debug(message2);
 		assertEquals("Messages should be equal", message, message2);
 		logger.info("FINISHED TEST");
@@ -51,7 +51,7 @@ public class InternalClientMessageTest {
 		InternalClientMessage message = new InternalClientMessage(ControlPacketType.PINGREQ, new PINGREQPayload());
 		logger.debug(message);
 		ZMsg zmsg = message.getZMsg();
-		assertFalse(InternalClientMessage.buildDealerMessage(zmsg).isPresent());
+		assertFalse(InternalClientMessage.buildMessage(zmsg).isPresent());
 		logger.info("FINISHED TEST");
 	}
 

@@ -100,7 +100,7 @@ public class TestClient {
 
 		client.sendDISCONNECT();
 		for (ZMsg message : client.blockingQueue) {
-			logger.info(InternalClientMessage.buildDealerMessage(message).get().toString());
+			logger.info(InternalClientMessage.buildMessage(message).get().toString());
 		}
 		Thread.sleep(1000);
 		client.tearDown();

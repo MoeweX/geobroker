@@ -25,7 +25,7 @@ public class InternalBrokerMessage {
 	 * 	- Payload incompatible to control packet type
 	 * 	- Payload misses fields
 	 */
-	public static Optional<InternalBrokerMessage> buildRouterMessage(ZMsg msg) {
+	public static Optional<InternalBrokerMessage> buildMessage(ZMsg msg) {
 		if (msg == null) {
 			// happens when queue is empty
 			return Optional.empty();

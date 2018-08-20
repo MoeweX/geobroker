@@ -63,7 +63,7 @@ public class PingTest {
 		for (int i = 0; i < 11; i++) {
 			assertEquals("Dealer queue contains wrong number of elements.", 11 - i, client.blockingQueue.size());
 			Optional<InternalClientMessage> dealerMessage = InternalClientMessage
-					.buildDealerMessage(client.blockingQueue.poll(1, TimeUnit.SECONDS));
+					.buildMessage(client.blockingQueue.poll(1, TimeUnit.SECONDS));
 			assertTrue("InternalClientMessage is missing", dealerMessage.isPresent());
 			if (i == 0) {
 				dealerMessage.ifPresent(message -> assertEquals(ControlPacketType.CONNACK, message.getControlPacketType()));
@@ -90,7 +90,7 @@ public class PingTest {
 		client.sendPINGREQ();
 
 		Optional<InternalClientMessage> dealerMessage = InternalClientMessage
-				.buildDealerMessage(client.blockingQueue.poll(1, TimeUnit.SECONDS));
+				.buildMessage(client.blockingQueue.poll(1, TimeUnit.SECONDS));
 		assertTrue("InternalClientMessage is missing", dealerMessage.isPresent());
 		dealerMessage.ifPresent(message -> {
 			assertEquals(ControlPacketType.PINGRESP, message.getControlPacketType());

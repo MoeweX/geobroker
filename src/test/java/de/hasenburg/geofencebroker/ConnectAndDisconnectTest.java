@@ -54,7 +54,7 @@ public class ConnectAndDisconnectTest {
 
 		// check dealer messages
 		Optional<InternalClientMessage> dealerMessage = InternalClientMessage
-				.buildDealerMessage(client.blockingQueue.poll(1, TimeUnit.SECONDS));
+				.buildMessage(client.blockingQueue.poll(1, TimeUnit.SECONDS));
 		assertEquals("Dealer queue should not contain any more elements.", 0, client.blockingQueue.size());
 		assertTrue("InternalClientMessage is missing", dealerMessage.isPresent());
 		dealerMessage.ifPresent(message -> assertEquals(ControlPacketType.CONNACK, message.getControlPacketType()));
@@ -96,7 +96,7 @@ public class ConnectAndDisconnectTest {
 		// check acknowledgements
 		for (TestClient client : clients) {
 			Optional<InternalClientMessage> dealerMessage = InternalClientMessage
-					.buildDealerMessage(client.blockingQueue.poll(3, TimeUnit.SECONDS));
+					.buildMessage(client.blockingQueue.poll(3, TimeUnit.SECONDS));
 			assertEquals("Queue should not contain any more elements.", 0, client.blockingQueue.size());
 			assertTrue("InternalClientMessage is missing", dealerMessage.isPresent());
 

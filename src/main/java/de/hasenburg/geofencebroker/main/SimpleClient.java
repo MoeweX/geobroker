@@ -55,7 +55,7 @@ public class SimpleClient {
 	}
 
 	public Optional<InternalClientMessage> getNextDealerMessage() {
-		return InternalClientMessage.buildDealerMessage(blockingQueue.poll());
+		return InternalClientMessage.buildMessage(blockingQueue.poll());
 	}
 
 }
