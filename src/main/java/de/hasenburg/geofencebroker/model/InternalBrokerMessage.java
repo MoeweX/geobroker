@@ -11,33 +11,35 @@ import org.zeromq.ZMsg;
 import java.util.Objects;
 import java.util.Optional;
 
-public class DealerMessage {
+public class InternalBrokerMessage {
 
 	private static final Logger logger = LogManager.getLogger();
 
+	private String clientIdentifier;
 	private ControlPacketType controlPacketType;
 	private AbstractPayload payload;
 
 	/**
 	 * Optional is empty when
-	 * 	- ZMsg is not a DealerMessage or null
+	 * 	- ZMsg is not a InternalClientMessage or null
 	 * 	- Payload incompatible to control packet type
 	 * 	- Payload misses fields
 	 */
-	public static Optional<DealerMessage> buildDealerMessage(ZMsg msg) {
+	public static Optional<InternalBrokerMessage> buildRouterMessage(ZMsg msg) {
 		if (msg == null) {
 			// happens when queue is empty
 			return Optional.empty();
 		}
 
-		if (msg.size() != 2) {
-			logger.error("Cannot parse message {} to DealerMessage, has wrong size.", msg.toString());
+		if (msg.size() != 3) {
+			logger.error("Cannot parse message {} to InternalBrokerMessage, has wrong size.", msg.toString());
 			return Optional.empty();
 		}
 
-		DealerMessage message = new DealerMessage();
+		InternalBrokerMessage message = new InternalBrokerMessage();
 
 		try {
+			message.clientIdentifier = msg.popString();
 			message.controlPacketType = ControlPacketType.valueOf(msg.popString());
 			String s = msg.pop().getString(ZMQ.CHARSET);
 			message.payload = Utility.buildPayloadFromString(s, message.controlPacketType);
@@ -49,22 +51,28 @@ public class DealerMessage {
 		return Optional.ofNullable(message);
 	}
 
-	private DealerMessage() {
+	private InternalBrokerMessage() {
 
 	}
 
-	public DealerMessage(ControlPacketType controlPacketType, AbstractPayload payload) {
+	public InternalBrokerMessage(String clientIdentifier,
+								 ControlPacketType controlPacketType, AbstractPayload payload) {
+		this.clientIdentifier = clientIdentifier;
 		this.controlPacketType = controlPacketType;
 		this.payload = payload;
 	}
 
 	public ZMsg getZMsg() {
-		return ZMsg.newStringMsg(controlPacketType.name(), JSONable.toJSON(payload));
+		return ZMsg.newStringMsg(clientIdentifier, controlPacketType.name(), JSONable.toJSON(payload));
 	}
 
 	/*****************************************************************
 	 * Generated Code
 	 ****************************************************************/
+
+	public String getClientIdentifier() {
+		return clientIdentifier;
+	}
 
 	public ControlPacketType getControlPacketType() {
 		return controlPacketType;
@@ -76,8 +84,9 @@ public class DealerMessage {
 
 	@Override
 	public String toString() {
-		return "DealerMessage{" +
-				"controlPacketType=" + controlPacketType +
+		return "InternalBrokerMessage{" +
+				"clientIdentifier='" + clientIdentifier + '\'' +
+				", controlPacketType=" + controlPacketType +
 				", payload=" + payload +
 				'}';
 	}
@@ -87,17 +96,18 @@ public class DealerMessage {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof DealerMessage)) {
+		if (!(o instanceof InternalBrokerMessage)) {
 			return false;
 		}
-		DealerMessage that = (DealerMessage) o;
-		return getControlPacketType() == that.getControlPacketType() &&
+		InternalBrokerMessage that = (InternalBrokerMessage) o;
+		return Objects.equals(getClientIdentifier(), that.getClientIdentifier()) &&
+				getControlPacketType() == that.getControlPacketType() &&
 				Objects.equals(getPayload(), that.getPayload());
 	}
 
 	@Override
 	public int hashCode() {
 
-		return Objects.hash(getControlPacketType(), getPayload());
+		return Objects.hash(getClientIdentifier(), getControlPacketType(), getPayload());
 	}
 }

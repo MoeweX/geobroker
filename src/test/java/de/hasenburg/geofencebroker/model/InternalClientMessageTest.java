@@ -13,7 +13,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 
 @SuppressWarnings("ConstantConditions")
-public class DealerMessageTest {
+public class InternalClientMessageTest {
 
 	private static final Logger logger = LogManager.getLogger();
 
@@ -24,10 +24,10 @@ public class DealerMessageTest {
 	@Test
 	public void testPayloadConnect() {
 		logger.info("RUNNING testPayloadConnect TEST");
-		DealerMessage message = new DealerMessage(ControlPacketType.CONNECT, new CONNECTPayload());
+		InternalClientMessage message = new InternalClientMessage(ControlPacketType.CONNECT, new CONNECTPayload());
 		logger.debug(message);
 		ZMsg zmsg = message.getZMsg();
-		DealerMessage message2 = DealerMessage.buildDealerMessage(zmsg).get();
+		InternalClientMessage message2 = InternalClientMessage.buildDealerMessage(zmsg).get();
 		logger.debug(message2);
 		assertEquals("Messages should be equal", message, message2);
 		logger.info("FINISHED TEST");
@@ -36,10 +36,10 @@ public class DealerMessageTest {
 	@Test
 	public void testPayloadPINGREQ() {
 		logger.info("RUNNING testPayloadPINGREQ TEST");
-		DealerMessage message = new DealerMessage(ControlPacketType.PINGREQ, new PINGREQPayload(Location.random()));
+		InternalClientMessage message = new InternalClientMessage(ControlPacketType.PINGREQ, new PINGREQPayload(Location.random()));
 		logger.debug(message);
 		ZMsg zmsg = message.getZMsg();
-		DealerMessage message2 = DealerMessage.buildDealerMessage(zmsg).get();
+		InternalClientMessage message2 = InternalClientMessage.buildDealerMessage(zmsg).get();
 		logger.debug(message2);
 		assertEquals("Messages should be equal", message, message2);
 		logger.info("FINISHED TEST");
@@ -48,10 +48,10 @@ public class DealerMessageTest {
 	@Test
 	public void testPayloadPINGREQEmpty() {
 		logger.info("RUNNING testPayloadPINGREQEmpty TEST");
-		DealerMessage message = new DealerMessage(ControlPacketType.PINGREQ, new PINGREQPayload());
+		InternalClientMessage message = new InternalClientMessage(ControlPacketType.PINGREQ, new PINGREQPayload());
 		logger.debug(message);
 		ZMsg zmsg = message.getZMsg();
-		assertFalse(DealerMessage.buildDealerMessage(zmsg).isPresent());
+		assertFalse(InternalClientMessage.buildDealerMessage(zmsg).isPresent());
 		logger.info("FINISHED TEST");
 	}
 

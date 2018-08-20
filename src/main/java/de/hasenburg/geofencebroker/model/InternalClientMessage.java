@@ -11,35 +11,33 @@ import org.zeromq.ZMsg;
 import java.util.Objects;
 import java.util.Optional;
 
-public class RouterMessage {
+public class InternalClientMessage {
 
 	private static final Logger logger = LogManager.getLogger();
 
-	private String clientIdentifier;
 	private ControlPacketType controlPacketType;
 	private AbstractPayload payload;
 
 	/**
 	 * Optional is empty when
-	 * 	- ZMsg is not a DealerMessage or null
+	 * 	- ZMsg is not a InternalClientMessage or null
 	 * 	- Payload incompatible to control packet type
 	 * 	- Payload misses fields
 	 */
-	public static Optional<RouterMessage> buildRouterMessage(ZMsg msg) {
+	public static Optional<InternalClientMessage> buildDealerMessage(ZMsg msg) {
 		if (msg == null) {
 			// happens when queue is empty
 			return Optional.empty();
 		}
 
-		if (msg.size() != 3) {
-			logger.error("Cannot parse message {} to RouterMessage, has wrong size.", msg.toString());
+		if (msg.size() != 2) {
+			logger.error("Cannot parse message {} to InternalClientMessage, has wrong size.", msg.toString());
 			return Optional.empty();
 		}
 
-		RouterMessage message = new RouterMessage();
+		InternalClientMessage message = new InternalClientMessage();
 
 		try {
-			message.clientIdentifier = msg.popString();
 			message.controlPacketType = ControlPacketType.valueOf(msg.popString());
 			String s = msg.pop().getString(ZMQ.CHARSET);
 			message.payload = Utility.buildPayloadFromString(s, message.controlPacketType);
@@ -51,28 +49,22 @@ public class RouterMessage {
 		return Optional.ofNullable(message);
 	}
 
-	private RouterMessage() {
+	private InternalClientMessage() {
 
 	}
 
-	public RouterMessage(String clientIdentifier,
-						 ControlPacketType controlPacketType, AbstractPayload payload) {
-		this.clientIdentifier = clientIdentifier;
+	public InternalClientMessage(ControlPacketType controlPacketType, AbstractPayload payload) {
 		this.controlPacketType = controlPacketType;
 		this.payload = payload;
 	}
 
 	public ZMsg getZMsg() {
-		return ZMsg.newStringMsg(clientIdentifier, controlPacketType.name(), JSONable.toJSON(payload));
+		return ZMsg.newStringMsg(controlPacketType.name(), JSONable.toJSON(payload));
 	}
 
 	/*****************************************************************
 	 * Generated Code
 	 ****************************************************************/
-
-	public String getClientIdentifier() {
-		return clientIdentifier;
-	}
 
 	public ControlPacketType getControlPacketType() {
 		return controlPacketType;
@@ -84,9 +76,8 @@ public class RouterMessage {
 
 	@Override
 	public String toString() {
-		return "RouterMessage{" +
-				"clientIdentifier='" + clientIdentifier + '\'' +
-				", controlPacketType=" + controlPacketType +
+		return "InternalClientMessage{" +
+				"controlPacketType=" + controlPacketType +
 				", payload=" + payload +
 				'}';
 	}
@@ -96,18 +87,17 @@ public class RouterMessage {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof RouterMessage)) {
+		if (!(o instanceof InternalClientMessage)) {
 			return false;
 		}
-		RouterMessage that = (RouterMessage) o;
-		return Objects.equals(getClientIdentifier(), that.getClientIdentifier()) &&
-				getControlPacketType() == that.getControlPacketType() &&
+		InternalClientMessage that = (InternalClientMessage) o;
+		return getControlPacketType() == that.getControlPacketType() &&
 				Objects.equals(getPayload(), that.getPayload());
 	}
 
 	@Override
 	public int hashCode() {
 
-		return Objects.hash(getClientIdentifier(), getControlPacketType(), getPayload());
+		return Objects.hash(getControlPacketType(), getPayload());
 	}
 }

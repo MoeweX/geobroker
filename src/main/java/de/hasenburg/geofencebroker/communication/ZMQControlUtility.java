@@ -41,6 +41,8 @@ public class ZMQControlUtility {
 	 * Creates and registers a subscribe socket that filters all messages except once send to identity for the
 	 * zmqControl publisher. New messages can be polled and received via the socket.
 	 *
+	 * TODO: we never kill this socket, is that ok? -> seems so but keep in mind
+	 *
 	 * @return - the index in the poller of the subscriber socket
 	 */
 	public static int connectWithPoller(ZContext context, ZMQ.Poller poller, String identity) {
