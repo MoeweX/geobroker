@@ -1,7 +1,7 @@
 package de.hasenburg.geofencebroker.main;
 
 import de.hasenburg.geofencebroker.communication.DealerCommunicator;
-import de.hasenburg.geofencebroker.model.DealerMessage;
+import de.hasenburg.geofencebroker.model.InternalClientMessage;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -50,12 +50,12 @@ public class SimpleClient {
 		logger.info("Stopped client .");
 	}
 
-	public void sendDealerMessage(DealerMessage message) {
+	public void sendDealerMessage(InternalClientMessage message) {
 		dealer.sendDealerMessage(message);
 	}
 
-	public Optional<DealerMessage> getNextDealerMessage() {
-		return DealerMessage.buildDealerMessage(blockingQueue.poll());
+	public Optional<InternalClientMessage> getNextDealerMessage() {
+		return InternalClientMessage.buildDealerMessage(blockingQueue.poll());
 	}
 
 }

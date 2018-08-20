@@ -3,7 +3,7 @@ package de.hasenburg.geofencebroker;
 import de.hasenburg.geofencebroker.communication.ControlPacketType;
 import de.hasenburg.geofencebroker.communication.ReasonCode;
 import de.hasenburg.geofencebroker.communication.ZMQProcessManager;
-import de.hasenburg.geofencebroker.model.DealerMessage;
+import de.hasenburg.geofencebroker.model.InternalClientMessage;
 import de.hasenburg.geofencebroker.model.connections.ConnectionManager;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
 import org.apache.logging.log4j.LogManager;
@@ -62,8 +62,9 @@ public class PingTest {
 		// check dealer messages
 		for (int i = 0; i < 11; i++) {
 			assertEquals("Dealer queue contains wrong number of elements.", 11 - i, client.blockingQueue.size());
-			Optional<DealerMessage> dealerMessage = DealerMessage.buildDealerMessage(client.blockingQueue.poll(1, TimeUnit.SECONDS));
-			assertTrue("DealerMessage is missing", dealerMessage.isPresent());
+			Optional<InternalClientMessage> dealerMessage = InternalClientMessage
+					.buildDealerMessage(client.blockingQueue.poll(1, TimeUnit.SECONDS));
+			assertTrue("InternalClientMessage is missing", dealerMessage.isPresent());
 			if (i == 0) {
 				dealerMessage.ifPresent(message -> assertEquals(ControlPacketType.CONNACK, message.getControlPacketType()));
 			} else {
@@ -88,8 +89,9 @@ public class PingTest {
 
 		client.sendPINGREQ();
 
-		Optional<DealerMessage> dealerMessage = DealerMessage.buildDealerMessage(client.blockingQueue.poll(1, TimeUnit.SECONDS));
-		assertTrue("DealerMessage is missing", dealerMessage.isPresent());
+		Optional<InternalClientMessage> dealerMessage = InternalClientMessage
+				.buildDealerMessage(client.blockingQueue.poll(1, TimeUnit.SECONDS));
+		assertTrue("InternalClientMessage is missing", dealerMessage.isPresent());
 		dealerMessage.ifPresent(message -> {
 			assertEquals(ControlPacketType.PINGRESP, message.getControlPacketType());
 			assertEquals(ReasonCode.NotConnected, message.getPayload().getPINGRESPPayload().get().getReasonCode());

@@ -2,7 +2,7 @@ package de.hasenburg.geofencebroker;
 
 import de.hasenburg.geofencebroker.communication.ControlPacketType;
 import de.hasenburg.geofencebroker.communication.ZMQProcessManager;
-import de.hasenburg.geofencebroker.model.DealerMessage;
+import de.hasenburg.geofencebroker.model.InternalClientMessage;
 import de.hasenburg.geofencebroker.model.connections.ConnectionManager;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
 import org.apache.logging.log4j.LogManager;
@@ -53,9 +53,10 @@ public class ConnectAndDisconnectTest {
 		client.sendDISCONNECT();
 
 		// check dealer messages
-		Optional<DealerMessage> dealerMessage = DealerMessage.buildDealerMessage(client.blockingQueue.poll(1, TimeUnit.SECONDS));
+		Optional<InternalClientMessage> dealerMessage = InternalClientMessage
+				.buildDealerMessage(client.blockingQueue.poll(1, TimeUnit.SECONDS));
 		assertEquals("Dealer queue should not contain any more elements.", 0, client.blockingQueue.size());
-		assertTrue("DealerMessage is missing", dealerMessage.isPresent());
+		assertTrue("InternalClientMessage is missing", dealerMessage.isPresent());
 		dealerMessage.ifPresent(message -> assertEquals(ControlPacketType.CONNACK, message.getControlPacketType()));
 
 		// check if connection is inactive
@@ -94,9 +95,10 @@ public class ConnectAndDisconnectTest {
 
 		// check acknowledgements
 		for (TestClient client : clients) {
-			Optional<DealerMessage> dealerMessage = DealerMessage.buildDealerMessage(client.blockingQueue.poll(3, TimeUnit.SECONDS));
+			Optional<InternalClientMessage> dealerMessage = InternalClientMessage
+					.buildDealerMessage(client.blockingQueue.poll(3, TimeUnit.SECONDS));
 			assertEquals("Queue should not contain any more elements.", 0, client.blockingQueue.size());
-			assertTrue("DealerMessage is missing", dealerMessage.isPresent());
+			assertTrue("InternalClientMessage is missing", dealerMessage.isPresent());
 
 			dealerMessage.ifPresent(message -> assertEquals(ControlPacketType.CONNACK, message.getControlPacketType()));
 		}

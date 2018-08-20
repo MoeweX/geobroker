@@ -1,25 +1,20 @@
 package de.hasenburg.geofencebroker.main;
 
 import de.hasenburg.geofencebroker.communication.*;
-import de.hasenburg.geofencebroker.model.DealerMessage;
+import de.hasenburg.geofencebroker.model.InternalClientMessage;
 import de.hasenburg.geofencebroker.model.Location;
 import de.hasenburg.geofencebroker.model.Topic;
 import de.hasenburg.geofencebroker.model.connections.ConnectionManager;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
 import de.hasenburg.geofencebroker.model.geofence.Geofence;
 import de.hasenburg.geofencebroker.model.payload.*;
-import de.hasenburg.geofencebroker.tasks.TaskManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.After;
-import org.zeromq.ZMsg;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
 
 public class LoadTest {
 
@@ -84,8 +79,8 @@ public class LoadTest {
 		public SubscribeOwnTopicProcess(String address, int port, int messagesToSend) throws CommunicatorException {
 			this.simpleClient = new SimpleClient(null, address, port);
 			this.plannedMessageRounds = messagesToSend;
-			simpleClient.sendDealerMessage(new DealerMessage(ControlPacketType.CONNECT, new CONNECTPayload()));
-			simpleClient.sendDealerMessage(new DealerMessage(ControlPacketType.SUBSCRIBE,
+			simpleClient.sendDealerMessage(new InternalClientMessage(ControlPacketType.CONNECT, new CONNECTPayload()));
+			simpleClient.sendDealerMessage(new InternalClientMessage(ControlPacketType.SUBSCRIBE,
 					new SUBSCRIBEPayload(new Topic(simpleClient.getIdentity()), new Geofence(location, 0.0))));
 		}
 
@@ -93,9 +88,9 @@ public class LoadTest {
 		public void run() {
 			long start = System.currentTimeMillis();
 			while (actualMessageRounds <= plannedMessageRounds) {
-				simpleClient.sendDealerMessage(new DealerMessage(ControlPacketType.PINGREQ, new PINGREQPayload(location)));
+				simpleClient.sendDealerMessage(new InternalClientMessage(ControlPacketType.PINGREQ, new PINGREQPayload(location)));
 				simpleClient.sendDealerMessage(
-						new DealerMessage(ControlPacketType.PUBLISH,
+						new InternalClientMessage(ControlPacketType.PUBLISH,
 						new PUBLISHPayload(
 								new Topic(simpleClient.getIdentity()),
 								new Geofence(location, 0.0),
@@ -120,7 +115,7 @@ public class LoadTest {
 			HashMap<ControlPacketType, Integer> numbers = new HashMap<>();
 
 			while (true) {
-				Optional<DealerMessage> nextDealerMessage = simpleClient.getNextDealerMessage();
+				Optional<InternalClientMessage> nextDealerMessage = simpleClient.getNextDealerMessage();
 				if (!nextDealerMessage.isPresent()) {
 					break;
 				}

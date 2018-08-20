@@ -1,7 +1,7 @@
 package de.hasenburg.geofencebroker;
 
 import de.hasenburg.geofencebroker.communication.*;
-import de.hasenburg.geofencebroker.model.DealerMessage;
+import de.hasenburg.geofencebroker.model.InternalClientMessage;
 import de.hasenburg.geofencebroker.model.Location;
 import de.hasenburg.geofencebroker.model.Topic;
 import de.hasenburg.geofencebroker.model.connections.ConnectionManager;
@@ -9,17 +9,13 @@ import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
 import de.hasenburg.geofencebroker.model.geofence.Geofence;
 import de.hasenburg.geofencebroker.model.payload.PUBACKPayload;
 import de.hasenburg.geofencebroker.model.payload.PUBLISHPayload;
-import de.hasenburg.geofencebroker.tasks.TaskManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.zeromq.ZMsg;
 
 import java.util.Optional;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
@@ -72,9 +68,10 @@ public class PublishSubscribeTest {
 		for (int i = 0; i < messageCount; i++) {
 			assertEquals("Dealer queue contains wrong number of elements.", messageCount - i,
 					client.blockingQueue.size());
-			Optional<DealerMessage> dealerMessage = DealerMessage.buildDealerMessage(client.blockingQueue.poll(1, TimeUnit.SECONDS));
+			Optional<InternalClientMessage> dealerMessage = InternalClientMessage
+					.buildDealerMessage(client.blockingQueue.poll(1, TimeUnit.SECONDS));
 			logger.debug(dealerMessage);
-			assertTrue("DealerMessage is missing", dealerMessage.isPresent());
+			assertTrue("InternalClientMessage is missing", dealerMessage.isPresent());
 			if (i == 3) {
 				dealerMessage.ifPresent(message -> {
 					assertEquals(ControlPacketType.PUBLISH, message.getControlPacketType());
@@ -162,10 +159,10 @@ public class PublishSubscribeTest {
 		for (int i = 0; i < subscriberMessageCount; i++) {
 			assertEquals("Dealer queue contains wrong number of elements.", subscriberMessageCount - i,
 					clientSubscriber.blockingQueue.size());
-			Optional<DealerMessage> dealerMessage =
-					DealerMessage.buildDealerMessage(clientSubscriber.blockingQueue.poll(1, TimeUnit.SECONDS));
+			Optional<InternalClientMessage> dealerMessage =
+					InternalClientMessage.buildDealerMessage(clientSubscriber.blockingQueue.poll(1, TimeUnit.SECONDS));
 			logger.debug(dealerMessage);
-			assertTrue("DealerMessage is missing", dealerMessage.isPresent());
+			assertTrue("InternalClientMessage is missing", dealerMessage.isPresent());
 			assertNotEquals(ControlPacketType.PUBLISH, dealerMessage.get().getControlPacketType()); // no publish message
 		}
 
@@ -174,10 +171,10 @@ public class PublishSubscribeTest {
 		for (int i = 0; i < publisherMessageCount; i++) {
 			assertEquals("Dealer queue contains wrong number of elements.", publisherMessageCount - i,
 					clientPublisher.blockingQueue.size());
-			Optional<DealerMessage> dealerMessage =
-					DealerMessage.buildDealerMessage(clientPublisher.blockingQueue.poll(1, TimeUnit.SECONDS));
+			Optional<InternalClientMessage> dealerMessage =
+					InternalClientMessage.buildDealerMessage(clientPublisher.blockingQueue.poll(1, TimeUnit.SECONDS));
 			logger.debug(dealerMessage);
-			assertTrue("DealerMessage is missing", dealerMessage.isPresent());
+			assertTrue("InternalClientMessage is missing", dealerMessage.isPresent());
 			assertNotEquals(ControlPacketType.PUBLISH, dealerMessage.get().getControlPacketType()); // no publish message
 			if (i == 2) {
 				assertEquals(ControlPacketType.PUBACK, dealerMessage.get().getControlPacketType());

@@ -1,15 +1,15 @@
 package de.hasenburg.geofencebroker.model.payload;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.hasenburg.geofencebroker.model.DealerMessage;
+import de.hasenburg.geofencebroker.model.InternalClientMessage;
+import de.hasenburg.geofencebroker.model.InternalBrokerMessage;
 import de.hasenburg.geofencebroker.model.JSONable;
-import de.hasenburg.geofencebroker.model.RouterMessage;
 
 import java.lang.reflect.Field;
 import java.util.Optional;
 
 /**
- * Every {@link DealerMessage} or {@link RouterMessage} has at least this empty payload.
+ * Every {@link InternalClientMessage} or {@link InternalBrokerMessage} has at least this empty payload.
  */
 public abstract class AbstractPayload implements JSONable {
 

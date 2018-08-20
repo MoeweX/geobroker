@@ -85,9 +85,9 @@ public abstract class ZMQCommunicator {
 
 				ZMsg message = ZMsg.recvMsg(socket);
 				if (socket.getType() == ZMQ.DEALER) {
-					logger.trace("Received DealerMessage: {}", message.toString());
+					logger.trace("Received InternalClientMessage: {}", message.toString());
 				} else if (socket.getType() == ZMQ.ROUTER) {
-					logger.trace("Received RouterMessage: {}", message.toString());
+					logger.trace("Received InternalBrokerMessage: {}", message.toString());
 				}
 
 				if (!messageQueue.offer(message)) {
@@ -110,9 +110,9 @@ public abstract class ZMQCommunicator {
 
 	protected synchronized void sendMessage(ZMsg message) {
 		if (socket.getType() == ZMQ.DEALER) {
-			logger.trace("Sending DealerMessage: {}", message.toString());
+			logger.trace("Sending InternalClientMessage: {}", message.toString());
 		} else if (socket.getType() == ZMQ.ROUTER) {
-			logger.trace("Sending RouterMessage: {}", message.toString());
+			logger.trace("Sending InternalBrokerMessage: {}", message.toString());
 		}
 
 		message.send(socket);

@@ -1,6 +1,6 @@
 package de.hasenburg.geofencebroker.communication;
 
-import de.hasenburg.geofencebroker.model.RouterMessage;
+import de.hasenburg.geofencebroker.model.InternalBrokerMessage;
 import de.hasenburg.geofencebroker.model.connections.Connection;
 import de.hasenburg.geofencebroker.model.connections.ConnectionManager;
 import de.hasenburg.geofencebroker.model.connections.Subscription;
@@ -54,7 +54,7 @@ class ZMQProcess_MessageProcessor implements Runnable {
 			} else if (poller.pollin(1)) {
 				ZMsg zMsg = ZMsg.recvMsg(processor);
 				number++;
-				Optional<RouterMessage> messageO = RouterMessage.buildRouterMessage(zMsg);
+				Optional<InternalBrokerMessage> messageO = InternalBrokerMessage.buildRouterMessage(zMsg);
 				logger.debug("ZMQProcess_MessageProcessor {} processing message number {}", new String(processor.getIdentity()), number);
 				messageO.ifPresentOrElse(message -> {
 					switch (message.getControlPacketType()) {
@@ -94,21 +94,21 @@ class ZMQProcess_MessageProcessor implements Runnable {
 	 * 	-> we expect all fields to be set
 	 ****************************************************************/
 
-	private void processCONNECT(RouterMessage message) {
-		RouterMessage response;
+	private void processCONNECT(InternalBrokerMessage message) {
+		InternalBrokerMessage response;
 
 		Connection connection = connectionManager.getConnection(message.getClientIdentifier());
 		if (connection != null) {
 			logger.debug("Connection already exists for {}, so protocol error. Disconnecting.",
 					message.getClientIdentifier());
 			connectionManager.removeConnection(message.getClientIdentifier());
-			response = new RouterMessage(
+			response = new InternalBrokerMessage(
 					message.getClientIdentifier(), ControlPacketType.DISCONNECT,
 					new DISCONNECTPayload(ReasonCode.ProtocolError));
 		} else {
 			connection = new Connection(message.getClientIdentifier());
 			logger.debug("Created connection for client {}, acknowledging.", message.getClientIdentifier());
-			response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.CONNACK,
+			response = new InternalBrokerMessage(message.getClientIdentifier(), ControlPacketType.CONNACK,
 					new CONNACKPayload(ReasonCode.Success));
 			connectionManager.putConnection(connection);
 		}
@@ -118,7 +118,7 @@ class ZMQProcess_MessageProcessor implements Runnable {
 	}
 
 	@SuppressWarnings("ConstantConditions")
-	private void processDISCONNECT(RouterMessage message) {
+	private void processDISCONNECT(InternalBrokerMessage message) {
 		Connection connection = connectionManager.getConnection(message.getClientIdentifier());
 		if (connection == null) {
 			logger.trace("Connection for {} did not exist", message.getClientIdentifier());
@@ -132,8 +132,8 @@ class ZMQProcess_MessageProcessor implements Runnable {
 	}
 
 	@SuppressWarnings("ConstantConditions")
-	private void processPINGREQ(RouterMessage message) {
-		RouterMessage response;
+	private void processPINGREQ(InternalBrokerMessage message) {
+		InternalBrokerMessage response;
 
 		Connection connection = connectionManager.getConnection(message.getClientIdentifier());
 		if (connection != null) {
@@ -143,11 +143,11 @@ class ZMQProcess_MessageProcessor implements Runnable {
 			connection.updateLocation(payload.getLocation());
 			logger.debug("Updated location of {} to {}", message.getClientIdentifier(), payload.getLocation());
 
-			response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.PINGRESP,
+			response = new InternalBrokerMessage(message.getClientIdentifier(), ControlPacketType.PINGRESP,
 					new PINGRESPPayload(ReasonCode.LocationUpdated));
 		} else {
 			logger.trace("Client {} is not connected", message.getClientIdentifier());
-			response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.PINGRESP,
+			response = new InternalBrokerMessage(message.getClientIdentifier(), ControlPacketType.PINGRESP,
 					new PINGRESPPayload(ReasonCode.NotConnected));
 		}
 
@@ -156,8 +156,8 @@ class ZMQProcess_MessageProcessor implements Runnable {
 	}
 
 	@SuppressWarnings("ConstantConditions")
-	private void processSUBSCRIBEforConnection(RouterMessage message) {
-		RouterMessage response;
+	private void processSUBSCRIBEforConnection(InternalBrokerMessage message) {
+		InternalBrokerMessage response;
 
 		Connection connection = connectionManager.getConnection(message.getClientIdentifier());
 		if (connection != null) {
@@ -167,10 +167,10 @@ class ZMQProcess_MessageProcessor implements Runnable {
 			Subscription subscription = new Subscription(payload.getTopic(), payload.getGeofence());
 			connection.putSubscription(subscription);
 			logger.debug("Client {} subscribed to topic {}", message.getClientIdentifier(), payload.getTopic());
-			response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.SUBACK,
+			response = new InternalBrokerMessage(message.getClientIdentifier(), ControlPacketType.SUBACK,
 					new SUBACKPayload(ReasonCode.GrantedQoS1));
 		} else {
-			response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.SUBACK,
+			response = new InternalBrokerMessage(message.getClientIdentifier(), ControlPacketType.SUBACK,
 					new SUBACKPayload(ReasonCode.NotConnected));
 		}
 
@@ -178,13 +178,13 @@ class ZMQProcess_MessageProcessor implements Runnable {
 		response.getZMsg().send(processor);
 	}
 
-	public void processUNSUBSCRIBEforConnection(RouterMessage message) {
+	public void processUNSUBSCRIBEforConnection(InternalBrokerMessage message) {
 		throw new RuntimeException("Not yet implemented");
 	}
 
 	@SuppressWarnings("ConstantConditions")
-	public void processPublish(RouterMessage message) {
-		RouterMessage response;
+	public void processPublish(InternalBrokerMessage message) {
+		InternalBrokerMessage response;
 
 		Connection connection = connectionManager.getConnection(message.getClientIdentifier());
 		if (connection != null) {
@@ -197,23 +197,23 @@ class ZMQProcess_MessageProcessor implements Runnable {
 
 			for (Connection subscriber : subscribers) {
 				logger.trace("Client {} is a subscriber", subscriber.getClientIdentifier());
-				RouterMessage toPublish = new RouterMessage(subscriber.getClientIdentifier(),
+				InternalBrokerMessage toPublish = new InternalBrokerMessage(subscriber.getClientIdentifier(),
 						ControlPacketType.PUBLISH, payload);
 				logger.debug("Publishing " + toPublish);
 				toPublish.getZMsg().send(processor);
 			}
 
 			if (!subscribers.isEmpty()) {
-				response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.PUBACK,
+				response = new InternalBrokerMessage(message.getClientIdentifier(), ControlPacketType.PUBACK,
 						new PUBACKPayload(ReasonCode.Success));
 			} else {
 				logger.trace("No subscriber exists.");
-				response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.PUBACK,
+				response = new InternalBrokerMessage(message.getClientIdentifier(), ControlPacketType.PUBACK,
 						new PUBACKPayload(ReasonCode.NoMatchingSubscribers));
 			}
 
 		} else {
-			response = new RouterMessage(message.getClientIdentifier(), ControlPacketType.PUBACK,
+			response = new InternalBrokerMessage(message.getClientIdentifier(), ControlPacketType.PUBACK,
 					new PUBACKPayload(ReasonCode.NotConnected));
 		}
 

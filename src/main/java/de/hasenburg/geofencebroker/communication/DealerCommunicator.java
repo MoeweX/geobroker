@@ -1,6 +1,6 @@
 package de.hasenburg.geofencebroker.communication;
 
-import de.hasenburg.geofencebroker.model.DealerMessage;
+import de.hasenburg.geofencebroker.model.InternalClientMessage;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,7 +32,7 @@ public class DealerCommunicator extends ZMQCommunicator {
 		socket.connect(address + ":" + port);
 	}
 
-	public void sendDealerMessage(DealerMessage message) {
+	public void sendDealerMessage(InternalClientMessage message) {
 		sendMessage(message.getZMsg());
 	}
 
