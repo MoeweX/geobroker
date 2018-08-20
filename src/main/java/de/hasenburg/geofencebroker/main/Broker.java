@@ -5,7 +5,7 @@ import de.hasenburg.geofencebroker.model.connections.ConnectionManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class Brain {
+public class Broker {
 
 	private static final Logger logger = LogManager.getLogger();
 

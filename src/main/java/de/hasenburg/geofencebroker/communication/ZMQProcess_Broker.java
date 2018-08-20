@@ -9,10 +9,10 @@ import org.zeromq.ZMsg;
 class ZMQProcess_Broker implements Runnable {
 
 	private static final Logger logger = LogManager.getLogger();
-	private static final String PROCESSING_BACKEND = "inproc://backend";
+	public static final String BROKER_PROCESSING_BACKEND = "inproc://backend";
 	private static final int TIMEOUT_SECONDS = 10; // logs when not received in time, but repeats
 
-	// Address and port of broker
+	// Address and port of broker frontend
 	private String address;
 	private int port;
 	private String identity;
@@ -35,7 +35,7 @@ class ZMQProcess_Broker implements Runnable {
 		frontend.setIdentity(identity.getBytes());
 
 		ZMQ.Socket backend = context.createSocket(ZMQ.DEALER);
-		backend.bind(PROCESSING_BACKEND);
+		backend.bind(BROKER_PROCESSING_BACKEND);
 
 		ZMQ.Poller poller = context.createPoller(1);
 		int zmqControlIndex = ZMQControlUtility.connectWithPoller(context, poller, identity);

@@ -16,10 +16,6 @@ public class ZMQProcessManager {
 
 	private static final Logger logger = LogManager.getLogger();
 
-	public enum ProcessName {
-		MessageProcessorZMQProcess
-	}
-
 	private final ExecutorService pool = Executors.newCachedThreadPool();
 	private final ConcurrentHashMap<String, Future<?>> zmqProcesses = new ConcurrentHashMap<>();
 

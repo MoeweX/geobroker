@@ -17,7 +17,6 @@ import java.util.Optional;
 class ZMQProcess_MessageProcessor implements Runnable {
 
 	private static final Logger logger = LogManager.getLogger();
-	private static final String PROCESSING_BACKEND = "inproc://backend";
 	private static final int TIMEOUT_SECONDS = 10; // logs when not received in time, but repeats
 
 	ConnectionManager connectionManager;
@@ -35,7 +34,7 @@ class ZMQProcess_MessageProcessor implements Runnable {
 	public void run() {
 		processor = context.createSocket(ZMQ.DEALER);
 		processor.setIdentity(identity.getBytes());
-		processor.connect(PROCESSING_BACKEND);
+		processor.connect(ZMQProcess_Broker.BROKER_PROCESSING_BACKEND);
 
 		ZMQ.Poller poller = context.createPoller(1);
 		int zmqControlIndex = ZMQControlUtility.connectWithPoller(context, poller, identity);
