@@ -1,5 +1,6 @@
 package de.hasenburg.geofencebroker.communication;
 
+import de.hasenburg.geofencebroker.main.LoadTest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.ZContext;
@@ -33,9 +34,11 @@ class ZMQProcess_Broker implements Runnable {
 		ZMQ.Socket frontend = context.createSocket(ZMQ.ROUTER);
 		frontend.bind(address + ":" + port);
 		frontend.setIdentity(identity.getBytes());
+		frontend.setSendTimeOut(1);
 
 		ZMQ.Socket backend = context.createSocket(ZMQ.DEALER);
 		backend.bind(BROKER_PROCESSING_BACKEND);
+		backend.setSendTimeOut(1);
 
 		ZMQ.Poller poller = context.createPoller(1);
 		int zmqControlIndex = ZMQControlUtility.connectWithPoller(context, poller, identity);
@@ -44,7 +47,7 @@ class ZMQProcess_Broker implements Runnable {
 
 		while (!Thread.currentThread().isInterrupted()) {
 
-			logger.trace("ZMQProcess_Broker waiting {}s for a message", TIMEOUT_SECONDS);
+			logger.trace("Waiting {}s for a message", TIMEOUT_SECONDS);
 			poller.poll(TIMEOUT_SECONDS * 1000);
 
 			if (poller.pollin(zmqControlIndex)) {
@@ -52,14 +55,16 @@ class ZMQProcess_Broker implements Runnable {
 						.equals(ZMQControlUtility.ZMQControlCommand.KILL)) {
 					break;
 				}
-			} else if (poller.pollin(1)) {
-				ZMsg msg = ZMsg.recvMsg(frontend);
-				msg.send(backend);
-			} else if (poller.pollin(2)) {
+			} else if (poller.pollin(2)) { // first check outgoing messages to clients
 				ZMsg msg = ZMsg.recvMsg(backend);
-				msg.send(frontend);
-			} else {
-				logger.debug("Did not receive a message for {}s", TIMEOUT_SECONDS);
+				if (!msg.send(frontend)) {
+					logger.warn("Dropping response to client as HWM reached.");
+				}
+			} else if (poller.pollin(1)) { // only accept new, if no outgoing messages pending
+				ZMsg msg = ZMsg.recvMsg(frontend);
+				if (!msg.send(backend)) {
+					logger.warn("Dropping client request as HWM reached.");
+				}
 			}
 
 		} // end while loop

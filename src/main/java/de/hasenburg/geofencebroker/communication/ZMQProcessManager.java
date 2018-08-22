@@ -23,9 +23,13 @@ public class ZMQProcessManager {
 	private final ZMQ.Socket zmqController;
 
 	public ZMQProcessManager() {
-		context = new ZContext();
+		context = new ZContext(1);
 		zmqController = ZMQControlUtility.createZMQControlSocket(context);
 		logger.info("Started ZMQProcessManager");
+	}
+
+	public ZContext getContext() {
+		return context;
 	}
 
 	/**
@@ -43,7 +47,7 @@ public class ZMQProcessManager {
 		int tries = 0;
 		while (tries < timeout) {
 			if (getIncompleteZMQProcesses().isEmpty()) {
-				return true;
+				break;
 			}
 			Utility.sleepNoLog(1, 0);
 			tries++;
@@ -101,6 +105,16 @@ public class ZMQProcessManager {
 		Future<?> process = pool.submit(new ZMQProcess_Broker(address, port, identity, context));
 		zmqProcesses.put(identity, process);
 		logger.info("Started {} with identity {}", ZMQProcess_Broker.class.getSimpleName(), identity);
+	}
+
+	public void runZMQProcess_SimpleClient(String address, int port, String identity) {
+		if (getIncompleteZMQProcesses().contains(identity)) {
+			logger.error("Cannot start ZMQProcess with identity {}, as one with this identity already exists", identity);
+			return;
+		}
+		Future<?> process = pool.submit(new ZMQProcess_SimpleClient(address, port, identity, context));
+		zmqProcesses.put(identity, process);
+		logger.info("Started {} with identity {}", ZMQProcess_SimpleClient.class.getSimpleName(), identity);
 	}
 
 }

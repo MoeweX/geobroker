@@ -108,4 +108,8 @@ public class Utility {
 		throw new CommunicatorException("Some of the payloads fields are null.");
 	}
 
+	public static String generateClientOrderBackendString(String identity) {
+		return "inproc://" + identity;
+	}
+
 }
