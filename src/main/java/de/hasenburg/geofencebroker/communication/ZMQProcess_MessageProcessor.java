@@ -1,5 +1,6 @@
 package de.hasenburg.geofencebroker.communication;
 
+import de.hasenburg.geofencebroker.main.BenchmarkHelper;
 import de.hasenburg.geofencebroker.model.InternalBrokerMessage;
 import de.hasenburg.geofencebroker.model.connections.Connection;
 import de.hasenburg.geofencebroker.model.connections.ConnectionManager;
@@ -57,21 +58,27 @@ class ZMQProcess_MessageProcessor implements Runnable {
 				Optional<InternalBrokerMessage> messageO = InternalBrokerMessage.buildMessage(zMsg);
 				logger.debug("ZMQProcess_MessageProcessor {} processing message number {}", new String(processor.getIdentity()), number);
 				messageO.ifPresentOrElse(message -> {
+					long time = System.nanoTime();
 					switch (message.getControlPacketType()) {
 						case CONNECT:
 							processCONNECT(message);
+							BenchmarkHelper.addEntry("processCONNECT", System.nanoTime() - time);
 							break;
 						case DISCONNECT:
 							processDISCONNECT(message);
+							BenchmarkHelper.addEntry("processDISCONNECT", System.nanoTime() - time);
 							break;
 						case PINGREQ:
 							processPINGREQ(message);
+							BenchmarkHelper.addEntry("processPINGREQ", System.nanoTime() - time);
 							break;
 						case SUBSCRIBE:
 							processSUBSCRIBEforConnection(message);
+							BenchmarkHelper.addEntry("processSUBSCRIBEforConnection", System.nanoTime() - time);
 							break;
 						case PUBLISH:
 							processPublish(message);
+							BenchmarkHelper.addEntry("processPublish", System.nanoTime() - time);
 							break;
 						default:
 							logger.warn("Cannot process message {}", message.toString());

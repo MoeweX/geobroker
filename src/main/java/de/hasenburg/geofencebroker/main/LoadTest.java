@@ -34,18 +34,20 @@ public class LoadTest {
 
 	public void setUp() {
 		logger.info("Running setUp");
+		BenchmarkHelper.startBenchmarking();
 		ConnectionManager connectionManager = new ConnectionManager();
 
 		processManager = new ZMQProcessManager();
 		processManager.runZMQProcess_Broker("tcp://localhost", 5559, "broker");
 		processManager.runZMQProcess_MessageProcessor("message_processor1", connectionManager);
-		//processManager.runZMQProcess_MessageProcessor("message_processor2", connectionManager);
+		processManager.runZMQProcess_MessageProcessor("message_processor2", connectionManager);
 		//processManager.runZMQProcess_MessageProcessor("message_processor3", connectionManager);
 	}
 
 	public void tearDown() {
 		logger.info("Running tearDown.");
 		processManager.tearDown(5000);
+		BenchmarkHelper.stopBenchmarking();
 		System.exit(0);
 	}
 
@@ -53,14 +55,14 @@ public class LoadTest {
 		logger.info("RUNNING testOneLocations");
 
 		List<Thread> clients = new ArrayList<>();
-		int numberOfClients = 5;
+		int numberOfClients = 20;
 
 		Location location = Location.random();
 		Geofence geofence = new Geofence(location, 0.0); // does not matter as topics are different
 
 		// create clients
 		for (int i = 0; i < numberOfClients; i++) {
-			Thread client = new Thread(new SubscribeOwnTopicProcess("tcp://localhost", 5559, 8000));
+			Thread client = new Thread(new SubscribeOwnTopicProcess("tcp://localhost", 5559, 2000));
 			clients.add(client);
 		}
 
@@ -124,13 +126,17 @@ public class LoadTest {
 					logger.info("Finished {}% of all planned message rounds", percentComplete);
 				}
 
+				long time = System.nanoTime();
 				sendMessageAndProcessResponses(new InternalClientMessage(ControlPacketType.PINGREQ, new PINGREQPayload(location)), 1);
+				BenchmarkHelper.addEntry("clientPINGREQ", System.nanoTime() - time);
+				time = System.nanoTime();
 				sendMessageAndProcessResponses(new InternalClientMessage(ControlPacketType.PUBLISH,
 						new PUBLISHPayload(
 								new Topic(simpleClient.getIdentity()),
 								new Geofence(location, 0.0),
 								"Some Test content that is being published.")),
 						2);
+				BenchmarkHelper.addEntry("clientPUBLISH", System.nanoTime() - time);
 
 				actualMessageRounds++;
 			}

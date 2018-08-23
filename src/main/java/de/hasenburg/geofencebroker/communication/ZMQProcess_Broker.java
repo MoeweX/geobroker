@@ -1,5 +1,6 @@
 package de.hasenburg.geofencebroker.communication;
 
+import de.hasenburg.geofencebroker.main.BenchmarkHelper;
 import de.hasenburg.geofencebroker.main.LoadTest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -46,7 +47,7 @@ class ZMQProcess_Broker implements Runnable {
 		poller.register(backend, ZMQ.Poller.POLLIN);
 
 		while (!Thread.currentThread().isInterrupted()) {
-
+			long time = System.nanoTime();
 			logger.trace("Waiting {}s for a message", TIMEOUT_SECONDS);
 			poller.poll(TIMEOUT_SECONDS * 1000);
 
@@ -66,7 +67,7 @@ class ZMQProcess_Broker implements Runnable {
 					logger.warn("Dropping client request as HWM reached.");
 				}
 			}
-
+			BenchmarkHelper.addEntry("brokerForward", System.nanoTime() - time);
 		} // end while loop
 
 		context.destroySocket(frontend);
