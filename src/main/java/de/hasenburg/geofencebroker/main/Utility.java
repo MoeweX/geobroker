@@ -4,12 +4,19 @@ import de.hasenburg.geofencebroker.communication.ControlPacketType;
 import de.hasenburg.geofencebroker.model.*;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
 import de.hasenburg.geofencebroker.model.payload.*;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.LoggerConfig;
+
+import java.util.Random;
 
 public class Utility {
 
 	private static final Logger logger = LogManager.getLogger();
+	private static Random r = new Random();
 
 	public static void sleep(long millis, int nanos) {
 		try {
@@ -26,6 +33,46 @@ public class Utility {
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		}
+	}
+
+	/**
+	 * Returns true with the given chance.
+	 *
+	 * @param chance - the chance to return true (0 - 100)
+	 * @return true, if lucky
+	 */
+	public static boolean getTrueWithChance(int chance) {
+		// normalize
+		if (chance > 100) {
+			chance = 100;
+		} else if (chance < 0) {
+			chance = 0;
+		}
+		int random = r.nextInt(100) + 1; // not 0
+		return random <= chance;
+	}
+
+	/**
+	 *
+	 * @param bound - int, must be > 0
+	 * @return a random int between 0 (inclusive) and bound (exclusive)
+	 */
+	public static int randomInt(int bound) {
+		return r.nextInt(bound);
+	}
+
+	/**
+	 * Set the logger level of the given logger to the given level.
+	 *
+	 * @param logger - the logger
+	 * @param level - the level
+	 */
+	public static void setLogLevel(Logger logger, Level level) {
+		LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+		Configuration conf = ctx.getConfiguration();
+		LoggerConfig loggerConfig = conf.getLoggerConfig(logger.getName());
+		loggerConfig.setLevel(level);
+		ctx.updateLoggers(conf);
 	}
 
 	/**
