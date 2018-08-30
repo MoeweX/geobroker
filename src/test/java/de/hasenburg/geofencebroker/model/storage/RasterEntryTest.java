@@ -45,9 +45,9 @@ public class RasterEntryTest {
 	public void testSingleThreaded() throws InterruptedException, ExecutionException, TimeoutException {
 		RasterEntry rasterEntry = new RasterEntry("a");
 		String clientIdentifier = "U3";
-		Future<Set<Integer>> f =
+		Future<Set<ImmutablePair<String, Integer>>> f =
 				executorService.submit(new FakeClientCallable(clientIdentifier, OPERATIONS_PER_CLIENT, rasterEntry, new AtomicInteger(0)));
-		Set<Integer> resultList = f.get(3, TimeUnit.SECONDS);
+		Set<ImmutablePair<String, Integer>> resultList = f.get(3, TimeUnit.SECONDS);
 
 		// test size
 		assertEquals(resultList.size(), rasterEntry.getNumSubscriptionIds().intValue());
@@ -65,7 +65,7 @@ public class RasterEntryTest {
 	@Test
 	public void testMultiThreadedDifferentClientIds() throws InterruptedException, ExecutionException, TimeoutException {
 		RasterEntry rasterEntry = new RasterEntry("a");
-		HashMap<String, Future<Set<Integer>>> futures = new HashMap<>();
+		HashMap<String, Future<Set<ImmutablePair<String, Integer>>>> futures = new HashMap<>();
 
 		for (int i = 0; i < THREADS; i++) {
 			String clientIdentifier = System.nanoTime()+"";
@@ -77,16 +77,16 @@ public class RasterEntryTest {
 		executorService.awaitTermination(10, TimeUnit.SECONDS);
 
 		int sum = 0;
-		for (Map.Entry<String, Future<Set<Integer>>> item : futures.entrySet()) {
+		for (Map.Entry<String, Future<Set<ImmutablePair<String, Integer>>>> item : futures.entrySet()) {
 			String clientIdentifier = item.getKey();
-			Future<Set<Integer>> future = item.getValue();
+			Future<Set<ImmutablePair<String, Integer>>> future = item.getValue();
 
 			// add to sum
-			Set<Integer> idsFromThread = future.get(1, TimeUnit.SECONDS);
+			Set<ImmutablePair<String, Integer>> idsFromThread = future.get(1, TimeUnit.SECONDS);
 			sum += idsFromThread.size();
 
 			// check content
-			Set<Integer> idsFromRaster = rasterEntry.getSubscriptionIdsForClientIdentifier(clientIdentifier);
+			Set<ImmutablePair<String, Integer>> idsFromRaster = rasterEntry.getSubscriptionIdsForClientIdentifier(clientIdentifier);
 			assertEquals(idsFromThread, idsFromRaster);
 			logger.info("SubscriptionsIds of client {} match", clientIdentifier);
 		}
@@ -104,7 +104,7 @@ public class RasterEntryTest {
 	@Test
 	public void testMultiThreadedSameClientIdSynchronized() throws InterruptedException, ExecutionException, TimeoutException {
 		RasterEntry rasterEntry = new RasterEntry("a");
-		List<Future<Set<Integer>>> futures = new ArrayList<>();
+		List<Future<Set<ImmutablePair<String, Integer>>>> futures = new ArrayList<>();
 		AtomicInteger atomicInteger = new AtomicInteger();
 		String clientIdentifier = "U3";
 
@@ -116,12 +116,12 @@ public class RasterEntryTest {
 		executorService.shutdown();
 		executorService.awaitTermination(10, TimeUnit.SECONDS);
 
-		Set<Integer> idsFromRaster = rasterEntry.getSubscriptionIdsForClientIdentifier(clientIdentifier);
+		Set<ImmutablePair<String, Integer>> idsFromRaster = rasterEntry.getSubscriptionIdsForClientIdentifier(clientIdentifier);
 
 		int sum = 0;
-		for (Future<Set<Integer>> future : futures) {
+		for (Future<Set<ImmutablePair<String, Integer>>> future : futures) {
 			// add to sum
-			Set<Integer> idsFromThread = future.get(1, TimeUnit.SECONDS);
+			Set<ImmutablePair<String, Integer>> idsFromThread = future.get(1, TimeUnit.SECONDS);
 			sum += idsFromThread.size();
 
 			// remove all found ids from idsFromRaster, should be empty in the end
@@ -144,7 +144,7 @@ public class RasterEntryTest {
 	@Test
 	public void testMultiThreadedSameClientIdNotSynchronized() throws InterruptedException, ExecutionException, TimeoutException {
 		RasterEntry rasterEntry = new RasterEntry("a");
-		List<Future<Set<Integer>>> futures = new ArrayList<>();
+		List<Future<Set<ImmutablePair<String, Integer>>>> futures = new ArrayList<>();
 		String clientIdentifier = "U3";
 
 		for (int i = 0; i < THREADS; i++) {
@@ -155,12 +155,12 @@ public class RasterEntryTest {
 		executorService.shutdown();
 		executorService.awaitTermination(10, TimeUnit.SECONDS);
 
-		Set<Integer> idsFromRaster = rasterEntry.getSubscriptionIdsForClientIdentifier(clientIdentifier);
+		Set<ImmutablePair<String, Integer>> idsFromRaster = rasterEntry.getSubscriptionIdsForClientIdentifier(clientIdentifier);
 
 		int sum = 0;
-		for (Future<Set<Integer>> future : futures) {
+		for (Future<Set<ImmutablePair<String, Integer>>> future : futures) {
 			// add to sum
-			Set<Integer> idsFromThread = future.get(1, TimeUnit.SECONDS);
+			Set<ImmutablePair<String, Integer>> idsFromThread = future.get(1, TimeUnit.SECONDS);
 			sum += idsFromThread.size();
 
 			// remove all found ids from idsFromRaster, should be empty in the end
@@ -176,7 +176,7 @@ public class RasterEntryTest {
 		logger.info("Raster entry has not subscriptionIds that have not been added for client {}", clientIdentifier);
 	}
 
-	private class FakeClientCallable implements Callable<Set<Integer>> {
+	private class FakeClientCallable implements Callable<Set<ImmutablePair<String, Integer>>> {
 
 		private final String clientIdentifier;
 		private final int numberOfOperations;
@@ -195,8 +195,8 @@ public class RasterEntryTest {
 		 * @return the number of Ids that should be inside the {@link RasterEntry} for this {@link FakeClientCallable}.
 		 */
 		@Override
-		public Set<Integer> call() {
-			List<Integer> existingIds = new ArrayList<>();
+		public Set<ImmutablePair<String, Integer>> call() {
+			List<ImmutablePair<String, Integer>> existingIds = new ArrayList<>();
 
 			for (int i = 0; i < numberOfOperations; i++) {
 				if (Utility.getTrueWithChance(70)) {
@@ -204,14 +204,13 @@ public class RasterEntryTest {
 					ImmutablePair<String, Integer> subscriptionId = ImmutablePair.of(clientIdentifier, id);
 					rasterEntry.addSubscriptionId(subscriptionId);
 					logger.trace("Added subscriptionId {}", subscriptionId);
-					existingIds.add(id);
+					existingIds.add(subscriptionId);
 				} else {
 					if (!existingIds.isEmpty()) {
-						ImmutablePair<String, Integer> subscriptionId = ImmutablePair
-								.of(clientIdentifier, existingIds.get(Utility.randomInt(existingIds.size())));
+						ImmutablePair<String, Integer> subscriptionId = existingIds.get(Utility.randomInt(existingIds.size()));
 						rasterEntry.removeSubscriptionId(subscriptionId);
 						logger.trace("Removed subscriptionId {}", subscriptionId);
-						existingIds.remove(subscriptionId.right);
+						existingIds.remove(subscriptionId);
 					}
 				}
 			}

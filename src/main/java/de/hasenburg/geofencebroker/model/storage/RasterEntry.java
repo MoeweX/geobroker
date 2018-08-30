@@ -2,6 +2,7 @@ package de.hasenburg.geofencebroker.model.storage;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -9,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class RasterEntry {
 
 	private final String topicPart;
-	private final ConcurrentHashMap<String, Set<Integer>> existingSubscriptionIds = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<String, Set<ImmutablePair<String, Integer>>> existingSubscriptionIds = new ConcurrentHashMap<>();
 	private final AtomicInteger numSubscriptionIds = new AtomicInteger(0);
 
 	public RasterEntry(String topicPart) {
@@ -26,9 +27,9 @@ public class RasterEntry {
 	 */
 	public int addSubscriptionId(ImmutablePair<String, Integer> subscriptionId) {
 		// get the set or create a new one and place in map
-		Set<Integer> set = existingSubscriptionIds.computeIfAbsent(subscriptionId.left, k -> ConcurrentHashMap.newKeySet());
+		Set<ImmutablePair<String, Integer>> set = existingSubscriptionIds.computeIfAbsent(subscriptionId.left, k -> ConcurrentHashMap.newKeySet());
 		// add integer part of id
-		set.add(subscriptionId.right);
+		set.add(subscriptionId);
 		return numSubscriptionIds.incrementAndGet();
 	}
 
@@ -41,8 +42,8 @@ public class RasterEntry {
 	 * @return the number of subscriptionIds stored in the {@link RasterEntry} after the operation completed
 	 */
 	public int removeSubscriptionId(ImmutablePair<String, Integer> subscriptionId) {
-		Set<Integer> set = existingSubscriptionIds.get(subscriptionId.left);
-		if (set != null && set.remove(subscriptionId.right)) {
+		Set<ImmutablePair<String, Integer>> set = existingSubscriptionIds.get(subscriptionId.left);
+		if (set != null && set.remove(subscriptionId)) {
 			// if the client has entries + the id is part of the client's entries
 			return numSubscriptionIds.decrementAndGet();
 		}
@@ -67,11 +68,11 @@ public class RasterEntry {
 	 * @param clientId - the clientId
 	 * @return the specified set
 	 */
-	public Set<Integer> getSubscriptionIdsForClientIdentifier(String clientId) {
+	public Set<ImmutablePair<String, Integer>> getSubscriptionIdsForClientIdentifier(String clientId) {
 		return existingSubscriptionIds.get(clientId);
 	}
 
-	public ConcurrentHashMap<String, Set<Integer>> getAllSubscriptionIds() {
+	public Map<String, Set<ImmutablePair<String, Integer>>> getAllSubscriptionIds() {
 		return existingSubscriptionIds;
 	}
 
