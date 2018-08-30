@@ -1,8 +1,6 @@
 package de.hasenburg.geofencebroker.model.storage;
 
 import de.hasenburg.geofencebroker.main.Utility;
-import de.hasenburg.geofencebroker.model.connections.Subscription;
-import jdk.jshell.execution.Util;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -11,11 +9,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.sql.Time;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -31,15 +27,53 @@ public class RasterEntryTest {
 	private final int OPERATIONS_PER_CLIENT = 10000;
 
 	@Before
-	public void setUp() throws Exception {
+	public void setUp() {
 		executorService = Executors.newFixedThreadPool(THREADS);
 	}
 
 	@After
-	public void tearDown() throws Exception {
+	public void tearDown() {
 		executorService.shutdownNow();
 		assertTrue(executorService.isShutdown());
 	}
+
+	/*****************************************************************
+	 * Immutability
+	 ****************************************************************/
+
+	@SuppressWarnings("UnusedAssignment")
+	@Test
+	public void testTopicPartImmutability() {
+		RasterEntry entry = new RasterEntry("topic part");
+		String topic = entry.getTopicPart();
+		topic = "new topic part";
+		assertNotEquals(entry.getTopicPart(), topic);
+	}
+
+	@Test(expected = UnsupportedOperationException.class)
+	public void testGetAllImmutability() throws InterruptedException {
+		RasterEntry rasterEntry = new RasterEntry("a");
+
+		for (int i = 0; i < THREADS; i++) {
+			String clientIdentifier = System.nanoTime()+"";
+			// every client has its own client identifier and ids are not synchronized
+			executorService.submit(new FakeClientCallable(clientIdentifier, OPERATIONS_PER_CLIENT, rasterEntry, new AtomicInteger(0)));
+		}
+
+		executorService.shutdown();
+		executorService.awaitTermination(10, TimeUnit.SECONDS);
+
+		// small speed test
+		for (int i = 0; i < 100 * OPERATIONS_PER_CLIENT; i++) {
+			int size = rasterEntry.getAllSubscriptionIds().size();
+		}
+
+		rasterEntry.getAllSubscriptionIds().put("fail", Set.of(ImmutablePair.of("fail", 1)));
+	}
+
+	/*****************************************************************
+	 * Threading
+	 ****************************************************************/
 
 	@Test
 	public void testSingleThreaded() throws InterruptedException, ExecutionException, TimeoutException {
@@ -117,6 +151,7 @@ public class RasterEntryTest {
 		executorService.awaitTermination(10, TimeUnit.SECONDS);
 
 		Set<ImmutablePair<String, Integer>> idsFromRaster = rasterEntry.getSubscriptionIdsForClientIdentifier(clientIdentifier);
+		Set<ImmutablePair<String, Integer>> idsFromThreads = new HashSet<>();
 
 		int sum = 0;
 		for (Future<Set<ImmutablePair<String, Integer>>> future : futures) {
@@ -124,8 +159,8 @@ public class RasterEntryTest {
 			Set<ImmutablePair<String, Integer>> idsFromThread = future.get(1, TimeUnit.SECONDS);
 			sum += idsFromThread.size();
 
-			// remove all found ids from idsFromRaster, should be empty in the end
-			idsFromRaster.removeAll(idsFromThread);
+			// add to idsFromThreads
+			idsFromThreads.addAll(idsFromThread);
 		}
 
 		// check size
@@ -133,7 +168,7 @@ public class RasterEntryTest {
 		logger.info("Raster entry stored {} subscriptionIds", rasterEntry.getNumSubscriptionIds());
 
 		// check if all ids in raster have been in threads lists
-		assertEquals(0, idsFromRaster.size());
+		assertEquals(idsFromThreads, idsFromRaster);
 		logger.info("SubscriptionsIds of client {} match", clientIdentifier);
 	}
 
@@ -156,6 +191,7 @@ public class RasterEntryTest {
 		executorService.awaitTermination(10, TimeUnit.SECONDS);
 
 		Set<ImmutablePair<String, Integer>> idsFromRaster = rasterEntry.getSubscriptionIdsForClientIdentifier(clientIdentifier);
+		Set<ImmutablePair<String, Integer>> idsFromThreads = new HashSet<>();
 
 		int sum = 0;
 		for (Future<Set<ImmutablePair<String, Integer>>> future : futures) {
@@ -163,8 +199,8 @@ public class RasterEntryTest {
 			Set<ImmutablePair<String, Integer>> idsFromThread = future.get(1, TimeUnit.SECONDS);
 			sum += idsFromThread.size();
 
-			// remove all found ids from idsFromRaster, should be empty in the end
-			idsFromRaster.removeAll(idsFromThread);
+			// add to idsFromThreads
+			idsFromThreads.addAll(idsFromThread);
 		}
 
 		// check size
@@ -172,7 +208,7 @@ public class RasterEntryTest {
 		logger.info("Raster entry stored {} subscriptionIds, threads stored {}", rasterEntry.getNumSubscriptionIds(), sum);
 
 		// check if all ids in raster have been in threads lists
-		assertEquals(0, idsFromRaster.size());
+		assertNotEquals(idsFromThreads, idsFromRaster);
 		logger.info("Raster entry has not subscriptionIds that have not been added for client {}", clientIdentifier);
 	}
 

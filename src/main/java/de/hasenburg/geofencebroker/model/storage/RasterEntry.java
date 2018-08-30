@@ -2,6 +2,7 @@ package de.hasenburg.geofencebroker.model.storage;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -63,17 +64,32 @@ public class RasterEntry {
 	}
 
 	/**
-	 * Returns a set of integers that together with the given clientId represent the subscriptionsIds for the given client.
+	 * Returns all subscriptionIds for a given client.
+	 *
+	 * NOTE: for performance reason, this method returns a reference to the internal set of {@link RasterEntry},
+	 * so do not update it!
+	 * Instead, use {@link #addSubscriptionId(ImmutablePair)} and {@link #removeSubscriptionId(ImmutablePair)}.
 	 *
 	 * @param clientId - the clientId
 	 * @return the specified set
 	 */
 	public Set<ImmutablePair<String, Integer>> getSubscriptionIdsForClientIdentifier(String clientId) {
-		return existingSubscriptionIds.get(clientId);
+		return Collections.unmodifiableSet(existingSubscriptionIds.get(clientId));
 	}
 
+	/**
+	 * Returns all subscriptions.
+	 *
+	 * NOTE: for performance reason, this method returns a reference to the internal map of {@link RasterEntry},
+	 * so do not update it!
+	 * Instead, use {@link #addSubscriptionId(ImmutablePair)} and {@link #removeSubscriptionId(ImmutablePair)}.
+	 *
+	 * @return all subscriptions
+	 */
 	public Map<String, Set<ImmutablePair<String, Integer>>> getAllSubscriptionIds() {
-		return existingSubscriptionIds;
+		// it would be best to also make the set immutable, but this were a big performance loss
+		// -> only the map and the set's values are immutable
+		return Collections.unmodifiableMap(existingSubscriptionIds);
 	}
 
 }
