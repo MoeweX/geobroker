@@ -49,6 +49,18 @@ public class RasterEntry {
 		return numSubscriptionIds.get();
 	}
 
+	/*****************************************************************
+	 * Getters
+	 ****************************************************************/
+
+	public String getTopicPart() {
+		return topicPart;
+	}
+
+	public Integer getNumSubscriptionIds() {
+		return numSubscriptionIds.get();
+	}
+
 	/**
 	 * Returns a set of integers that together with the given clientId represent the subscriptionsIds for the given client.
 	 *
@@ -59,15 +71,8 @@ public class RasterEntry {
 		return existingSubscriptionIds.get(clientId);
 	}
 
-	/*****************************************************************
-	 * Generated methods
-	 ****************************************************************/
-
-	public String getTopicPart() {
-		return topicPart;
+	public ConcurrentHashMap<String, Set<Integer>> getAllSubscriptionIds() {
+		return existingSubscriptionIds;
 	}
 
-	public Integer getNumSubscriptionIds() {
-		return numSubscriptionIds.get();
-	}
 }
