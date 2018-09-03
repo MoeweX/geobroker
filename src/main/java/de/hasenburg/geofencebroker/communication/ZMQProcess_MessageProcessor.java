@@ -90,8 +90,12 @@ class ZMQProcess_MessageProcessor implements Runnable {
 
 		} // end while loop
 
+		// sub control socket (might be optional, kill nevertheless)
+		context.destroySocket(poller.getSocket(0));
+
+		// processor socket
 		context.destroySocket(processor);
-		logger.info("Shut down ZMQProcess_MessageProcessor, socket was destroyed.");
+		logger.info("Shut down ZMQProcess_MessageProcessor, socket were destroyed.");
 	}
 
 	/*****************************************************************

@@ -70,6 +70,10 @@ class ZMQProcess_Broker implements Runnable {
 			BenchmarkHelper.addEntry("brokerForward", System.nanoTime() - time);
 		} // end while loop
 
+		// sub control socket (might be optional, kill nevertheless)
+		context.destroySocket(poller.getSocket(0));
+
+		// other sockets
 		context.destroySocket(frontend);
 		context.destroySocket(backend);
 		logger.info("Shut down ZMQProcess_Broker, frontend and backend sockets were destroyed.");

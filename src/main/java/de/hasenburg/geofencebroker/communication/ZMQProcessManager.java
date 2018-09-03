@@ -58,6 +58,13 @@ public class ZMQProcessManager {
 			return false;
 		}
 
+		// now we can close the zmq controller
+		context.destroySocket(zmqController);
+
+		if (!context.getSockets().isEmpty()) {
+			logger.warn("There are still open sockets in ZContext: {}, better to close them manually!", context.getSockets());
+		}
+
 		context.destroy();
 		logger.info("Teared down ZMQProcessManager");
 		return true;

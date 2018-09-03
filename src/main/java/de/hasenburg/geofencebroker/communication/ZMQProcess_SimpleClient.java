@@ -102,6 +102,10 @@ class ZMQProcess_SimpleClient implements Runnable {
 
 		} // end while loop
 
+		// sub control socket
+		context.destroySocket(poller.getSocket(0));
+
+		// other sockets (might be optional, kill nevertheless)
 		context.destroySocket(orders);
 		context.destroySocket(brokerSocket);
 		logger.info("Shut down ZMQProcess_SimpleClient, orders and broker sockets were destroyed.");
