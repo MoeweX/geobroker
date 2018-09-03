@@ -11,13 +11,15 @@ import org.locationtech.spatial4j.io.jackson.ShapesAsWKTModule;
 
 import java.io.InputStream;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public interface JSONable {
 
 	Logger logger = LogManager.getLogger();
+	ObjectMapper mapper = new ObjectMapper();
+	AtomicBoolean configured = new AtomicBoolean(false);
 
 	static <T> Optional<T> fromJSON(String json, Class<T> targetClass) {
-		ObjectMapper mapper = new ObjectMapper();
 		try {
 			return Optional.of(mapper.readValue(json, targetClass));
 		} catch (Exception e) {
@@ -27,7 +29,6 @@ public interface JSONable {
 	}
 	
 	static <T> Optional<T> fromJSON(InputStream stream, Class<T> targetClass) {
-		ObjectMapper mapper = new ObjectMapper();
 		try {
 			return Optional.of(mapper.readValue(stream, targetClass));
 		} catch (Exception e) {
@@ -37,17 +38,13 @@ public interface JSONable {
 	}
 
 	static String toJSON(JSONable obj) {
-		return JSONable.toJSON(obj, true);
-	}
-
-	static String toJSON(JSONable obj, boolean indent) {
-		// Only include non-null field
-		ObjectMapper mapper = new ObjectMapper()
-				.setSerializationInclusion(Include.NON_NULL)
-				.setSerializationInclusion(Include.NON_EMPTY);
-		mapper.registerModule(new Jdk8Module());
-		if (indent) {
+		// configure if necessary
+		if (!configured.get()) {
+			// Only include non-null and non-empty fields
+			mapper.setSerializationInclusion(Include.NON_NULL).setSerializationInclusion(Include.NON_EMPTY);
+			mapper.registerModule(new Jdk8Module());
 			mapper.enable(SerializationFeature.INDENT_OUTPUT);
+			configured.set(true);
 		}
 
 		String json = null;

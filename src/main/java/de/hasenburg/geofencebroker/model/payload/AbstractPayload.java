@@ -117,13 +117,9 @@ public abstract class AbstractPayload implements JSONable {
 	 * JSON and String
 	 ****************************************************************/
 
-	public String toJSON() {
-		return JSONable.toJSON(this, false);
-	}
-
 	@Override
 	public String toString() {
-		return JSONable.toJSON(this, true);
+		return JSONable.toJSON(this);
 	}
 
 }
