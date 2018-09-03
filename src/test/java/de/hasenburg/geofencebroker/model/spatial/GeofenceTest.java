@@ -8,7 +8,9 @@ import org.junit.Test;
 import java.util.List;
 
 import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("ConstantConditions")
 public class GeofenceTest {
@@ -35,6 +37,22 @@ public class GeofenceTest {
 		logger.info("JSON 2: {}", JSONable.toJSON(fence2));
 		assertEquals(fence, fence2);
 		logger.info("Geofences {} and {} still equal after JSON stuff", fence, fence2);
+	}
+
+	@Test
+	public void testContains() {
+		Location berlin = new Location(52.52, 13.405);
+		Location hamburg = new Location(53.511, 9.9937);
+		assertTrue(getRectAroundBerlin().contains(berlin));
+		assertFalse(getRectAroundBerlin().contains(hamburg));
+		logger.info("Rect contains Berlin but not Hamburg");
+	}
+
+	@Test
+	public void testRect() {
+		assertTrue(getRectAroundBerlin().isRectangle());
+		assertFalse(getTriangleAroundBerlin().isRectangle());
+		logger.info("Able to detect rectangles");
 	}
 
 	private static Geofence getRectAroundBerlin() {

@@ -58,11 +58,11 @@ public class Geofence implements JSONable  {
 		return new Geofence(polygonBuilder.build());
 	}
 
-	public boolean isRectangle(Geofence geofence) {
-		return GEO.getShapeFactory().getGeometryFrom(geofence.shape).isRectangle();
+	public boolean isRectangle() {
+		return GEO.getShapeFactory().getGeometryFrom(shape).isRectangle();
 	}
 
-	public boolean testContains(Location location) {
+	public boolean contains(Location location) {
 		return shape.relate(location.getPoint()).equals(SpatialRelation.CONTAINS);
 	}
 
