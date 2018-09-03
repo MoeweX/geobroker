@@ -12,8 +12,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 
-import static org.locationtech.spatial4j.context.jts.JtsSpatialContext.GEO;
+import static de.hasenburg.geofencebroker.model.spatial.SpatialContext.GEO;
 
+// TODO: use wktString as JSON and String output
 public class Location implements JSONable {
 
 	private static final Logger logger = LogManager.getLogger();
