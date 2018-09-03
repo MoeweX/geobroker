@@ -56,6 +56,7 @@ public class Geofence implements JSONable  {
 		return new Geofence(polygonBuilder.build());
 	}
 
+	@JsonIgnore
 	public boolean isRectangle() {
 		return GEO.getShapeFactory().getGeometryFrom(shape).isRectangle();
 	}
