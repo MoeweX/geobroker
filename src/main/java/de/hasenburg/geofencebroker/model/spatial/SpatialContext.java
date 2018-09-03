@@ -3,8 +3,6 @@ package de.hasenburg.geofencebroker.model.spatial;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContextFactory;
 
-import java.util.Map;
-
 public class SpatialContext {
 
 	public static final JtsSpatialContext GEO;
@@ -13,6 +11,8 @@ public class SpatialContext {
 		factory.geo = true;
 		factory.readers.clear();
 		factory.readers.add(WKTReader.class);
+		factory.writers.clear();
+		factory.writers.add(WKTWriter.class);
 		GEO = new JtsSpatialContext(factory);
 	}
 

@@ -6,27 +6,40 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import de.hasenburg.geofencebroker.model.JSONable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.locationtech.spatial4j.io.ShapeWriter;
 import org.locationtech.spatial4j.shape.Point;
 
+import java.text.ParseException;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Random;
 
 import static de.hasenburg.geofencebroker.model.spatial.SpatialContext.GEO;
+import static org.locationtech.spatial4j.distance.DistanceUtils.DEG_TO_KM;
 
-// TODO: use wktString as JSON and String output
 public class Location implements JSONable {
 
 	private static final Logger logger = LogManager.getLogger();
+
 	@JsonIgnore
 	private final Point point;
 
-	public Location(Point point) {
+	private Location(Point point) {
 		this.point = point;
 	}
 
 	@JsonCreator
-	public Location(@JsonProperty("lat") double lat, @JsonProperty("lon") double lon) {
+	private Location(@JsonProperty("WKT") String wkt) throws ParseException {
+		WKTReader reader = (WKTReader) GEO.getFormats().getWktReader();
+		this.point = (Point) reader.parse(wkt);
+	}
+
+	/**
+	 * Creates a location with the given lat/lon coordinates.
+	 *
+	 * @param lat - the latitude
+	 * @param lon - the longitude
+	 */
+	public Location(double lat, double lon) {
 		point = GEO.getShapeFactory().pointLatLon(lat, lon);
 	}
 
@@ -38,44 +51,46 @@ public class Location implements JSONable {
 		return new Location((random.nextDouble() * -180.0) + 90.0, (random.nextDouble() * -360.0) + 180.0);
 	}
 
-	/*****************************************************************
-	 * String serialization
-	 ****************************************************************/
-
-	public static Optional<Location> fromString(String s) {
-		try {
-			String[] split = s.substring(1, s.length() - 1).split(",");
-			return Optional.of(new Location(Double.parseDouble(split[0]), Double.parseDouble(split[1])));
-		} catch (Exception e) {
-			logger.warn("Could not build Location from String {}", s);
-			return Optional.empty();
-		}
+	public double distanceDegreeTo(Location toL) {
+		return GEO.getDistCalc().distance(point, toL.getPoint());
 	}
 
-	@Override
-	public String toString() {
-		return String.format("(%s,%s)", point.getLat(), point.getLon());
+	public double distanceKmTo(Location toL) {
+		return distanceDegreeTo(toL) * DEG_TO_KM;
 	}
 
 	/*****************************************************************
-	 * Convenience methods (also used by Jackson)
-	 ****************************************************************/
-
-	public double getLat() {
-		return point.getLat();
-	}
-
-	public double getLon() {
-		return point.getLon();
-	}
-
-	/*****************************************************************
-	 * Generated methods
+	 * Getters and String
 	 ****************************************************************/
 
 	public Point getPoint() {
 		return point;
 	}
+
+	@JsonIgnore
+	public double getLat() {
+		return point.getLat();
+	}
+
+	@JsonIgnore
+	public double getLon() {
+		return point.getLon();
+	}
+
+	@JsonProperty("WKT")
+	public String getWKTString() {
+		ShapeWriter writer = GEO.getFormats().getWktWriter();
+		return writer.toString(point);
+	}
+
+	@Override
+	public String toString() {
+		return getWKTString();
+	}
+
+	/*****************************************************************
+	 * Generated methods
+	 ****************************************************************/
 
 	@Override
 	public boolean equals(Object o) {

@@ -29,26 +29,10 @@ public class LocationTest {
 	}
 
 	@Test
-	public void toAndFromString() {
-		String s = location.toString();
-		logger.info("Location: {}", s);
-		assertEquals(location, Location.fromString(s).orElse(null));
-	}
-
-	@Test
 	public void toAndFromJson() {
 		String json = JSONable.toJSON(location);
 		logger.info("Location JSON: {}", json);
 		assertEquals(location, JSONable.fromJSON(json, Location.class).orElse(null));
-	}
-
-	@Test
-	public void toAndFromStringN() {
-		long time = System.currentTimeMillis();
-		for (int i = 0; i < N; i++) {
-			assertEquals(location, Location.fromString(location.toString()).orElse(null));
-		}
-		logger.info("Created and read {} Strings in {}ms", N, System.currentTimeMillis() - time);
 	}
 
 	@Test
@@ -58,5 +42,22 @@ public class LocationTest {
 			assertEquals(location, JSONable.fromJSON(JSONable.toJSON(location), Location.class).orElse(null));
 		}
 		logger.info("Created and read {} JSONs in {}ms", N, System.currentTimeMillis() - time);
+	}
+
+	@Test
+	public void testDistance() {
+		Location location = new Location(40.0, 40.0);
+		Location location2 = new Location(35.0, 35.0);
+		logger.info(location.distanceKmTo(location2));
+		assertTrue(location.distanceKmTo(location2) < 710.000);
+		assertTrue(location.distanceKmTo(location2) > 700.000);
+	}
+
+	@Test
+	public void testDistanceBerlinHamburg() {
+		Location berlin = new Location(52.5200, 13.4050);
+		Location hamburg = new Location(53.511, 9.9937);
+		logger.info(berlin.distanceKmTo(hamburg));
+		assertEquals(253.375, berlin.distanceKmTo(hamburg), 0.5);
 	}
 }
