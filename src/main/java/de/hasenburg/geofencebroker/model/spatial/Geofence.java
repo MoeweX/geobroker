@@ -8,6 +8,7 @@ import de.hasenburg.geofencebroker.model.exceptions.RuntimeShapeException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.locationtech.spatial4j.io.ShapeWriter;
+import org.locationtech.spatial4j.shape.Rectangle;
 import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.ShapeFactory;
 import org.locationtech.spatial4j.shape.SpatialRelation;
@@ -25,14 +26,20 @@ public class Geofence implements JSONable  {
 	@JsonIgnore
 	private final Shape shape;
 
+	// we need it most times anyways, so let's buffer it
+	@JsonIgnore
+	private final Rectangle boundingBox;
+
 	private Geofence(Shape shape) {
 		this.shape = shape;
+		this.boundingBox = shape.getBoundingBox();
 	}
 
 	@JsonCreator
 	private Geofence(@JsonProperty("WKT") String wkt) throws ParseException {
 		WKTReader reader = (WKTReader) GEO.getFormats().getWktReader();
 		this.shape = reader.parse(wkt);
+		this.boundingBox = this.shape.getBoundingBox();
 	}
 
 	/**
@@ -59,6 +66,16 @@ public class Geofence implements JSONable  {
 	@JsonIgnore
 	public boolean isRectangle() {
 		return GEO.getShapeFactory().getGeometryFrom(shape).isRectangle();
+	}
+
+	@JsonIgnore
+	public Location getBoundingBoxNorthWest() {
+		return new Location(boundingBox.getMaxY(), boundingBox.getMinX());
+	}
+
+	@JsonIgnore
+	public Location getBoundingBoxSouthEast() {
+		return new Location(boundingBox.getMinY(), boundingBox.getMaxX());
 	}
 
 	public boolean contains(Location location) {

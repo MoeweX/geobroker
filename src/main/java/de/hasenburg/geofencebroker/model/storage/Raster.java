@@ -20,7 +20,8 @@ public class Raster {
 	 *
 	 * TODO: might make sense to define height and width in km so that all squares have the same size
 	 *
-	 * @param dimensions - the raster dimensions described by a {@link Geofence}. Must be a square.
+	 * @param dimensions - the raster dimensions described by a {@link Geofence}. Must be a rectangle, otherwise,
+	 *                   the given geofences bounding box will be used.
 	 * @param height - the height of each {@link RasterEntry} in degree
 	 * @param width - the width of each {@link RasterEntry} in degree
 	 */
