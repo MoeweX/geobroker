@@ -68,14 +68,44 @@ public class Geofence implements JSONable  {
 		return GEO.getShapeFactory().getGeometryFrom(shape).isRectangle();
 	}
 
+	/*****************************************************************
+	 * BoundingBox
+	 ****************************************************************/
+
 	@JsonIgnore
 	public Location getBoundingBoxNorthWest() {
 		return new Location(boundingBox.getMaxY(), boundingBox.getMinX());
 	}
 
 	@JsonIgnore
+	public Location getBoundingBoxNorthEast() {
+		return new Location(boundingBox.getMaxY(), boundingBox.getMaxX());
+	}
+
+	@JsonIgnore
 	public Location getBoundingBoxSouthEast() {
 		return new Location(boundingBox.getMinY(), boundingBox.getMaxX());
+	}
+
+	@JsonIgnore
+	public Location getBoundingBoxSouthWest() {
+		return new Location(boundingBox.getMinY(), boundingBox.getMinX());
+	}
+
+	/**
+	 * See {@link Rectangle#getHeight()}, is the latitude distance in degree
+	 */
+	@JsonIgnore
+	public double getBoundingBoxLatDistanceInDegree() {
+		return boundingBox.getHeight();
+	}
+
+	/**
+	 * See {@link Rectangle#getWidth()}, is the longitude distance in degree
+	 */
+	@JsonIgnore
+	public double getBoundingBoxLonDistanceInDegree() {
+		return boundingBox.getWidth();
 	}
 
 	public boolean contains(Location location) {

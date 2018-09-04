@@ -8,9 +8,7 @@ import org.junit.Test;
 import java.util.List;
 
 import static junit.framework.TestCase.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @SuppressWarnings("ConstantConditions")
 public class GeofenceTest {
@@ -19,9 +17,9 @@ public class GeofenceTest {
 
 	@Test
 	public void testEquals() {
-		Geofence fence = getRectAroundBerlin();
-		Geofence fence2 = getRectAroundBerlin();
-		Geofence fence3 = getTriangleAroundBerlin();
+		Geofence fence = berlinRectangle();
+		Geofence fence2 = berlinRectangle();
+		Geofence fence3 = berlinTriangle();
 		assertEquals(fence, fence2);
 		logger.info("Geofences {} and {} equal", fence, fence2);
 		assertNotEquals(fence, fence3);
@@ -30,7 +28,7 @@ public class GeofenceTest {
 
 	@Test
 	public void toAndFromJson() {
-		Geofence fence = getRectAroundBerlin();
+		Geofence fence = berlinRectangle();
 		String json = JSONable.toJSON(fence);
 		logger.info("JSON 1: {}", json);
 		Geofence fence2 = JSONable.fromJSON(json, Geofence.class).get();
@@ -43,43 +41,47 @@ public class GeofenceTest {
 	public void testContains() {
 		Location berlin = new Location(52.52, 13.405);
 		Location hamburg = new Location(53.511, 9.9937);
-		assertTrue(getRectAroundBerlin().contains(berlin));
-		assertFalse(getRectAroundBerlin().contains(hamburg));
+		assertTrue(berlinRectangle().contains(berlin));
+		assertFalse(berlinRectangle().contains(hamburg));
 		logger.info("Geofence contains Berlin but not Hamburg");
 	}
 
 	@Test
 	public void testRect() {
-		assertTrue(getRectAroundBerlin().isRectangle());
-		assertFalse(getTriangleAroundBerlin().isRectangle());
+		assertTrue(berlinRectangle().isRectangle());
+		assertFalse(berlinTriangle().isRectangle());
 		logger.info("Able to detect rectangles");
 	}
 
 	@Test
 	public void testBoundingBoxBerlin() {
-		Geofence geofence = getRectAroundBerlin();
+		Geofence geofence = berlinRectangle();
 		assertEquals(new Location(53, 13), geofence.getBoundingBoxNorthWest());
+		assertEquals(new Location(53, 14), geofence.getBoundingBoxNorthEast());
 		assertEquals(new Location(52, 14), geofence.getBoundingBoxSouthEast());
+		assertEquals(new Location(52, 13), geofence.getBoundingBoxSouthWest());
 		logger.info("Bounding box calculations work properly for Berlin");
 	}
 
 	@Test
 	public void testBoundingBoxDateline() {
-		Geofence geofence = getDatelineRect();
+		Geofence geofence = datelineRectangle();
 		assertEquals(new Location(10, -10), geofence.getBoundingBoxNorthWest());
+		assertEquals(new Location(10, 10), geofence.getBoundingBoxNorthEast());
 		assertEquals(new Location(-10, 10), geofence.getBoundingBoxSouthEast());
+		assertEquals(new Location(-10, -10), geofence.getBoundingBoxSouthWest());
 		logger.info("Bounding box calculations work properly for Dateline");
 	}
 
-	private static Geofence getDatelineRect() {
+	public static Geofence datelineRectangle() {
 		return Geofence.polygon(List.of(
-				new Location(-10, 10),
+				new Location(-9, 10),
 				new Location(10, 10),
 				new Location(10, -10),
-				new Location(-10, -10)));
+				new Location(-9, -10)));
 	}
 
-	private static Geofence getRectAroundBerlin() {
+	public static Geofence berlinRectangle() {
 		return Geofence.polygon(List.of(
 				new Location(53.0, 14.0),
 				new Location(53.0, 13.0),
@@ -87,7 +89,7 @@ public class GeofenceTest {
 				new Location(52.0, 14.0)));
 	}
 
-	private static Geofence getTriangleAroundBerlin() {
+	public static Geofence berlinTriangle() {
 		return Geofence.polygon(List.of(
 				new Location(54, 12.0),
 				new Location(52, 15.0),

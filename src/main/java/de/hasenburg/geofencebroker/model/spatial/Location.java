@@ -51,12 +51,24 @@ public class Location implements JSONable {
 		return new Location((random.nextDouble() * -180.0) + 90.0, (random.nextDouble() * -360.0) + 180.0);
 	}
 
-	public double distanceDegreeTo(Location toL) {
+	/**
+	 * Distance between this location and the given one, as determined by the Haversine formula, in radians
+	 *
+	 * @param toL - the other location
+	 * @return distance in radians
+	 */
+	public double distanceRadiansTo(Location toL) {
 		return GEO.getDistCalc().distance(point, toL.getPoint());
 	}
 
+	/**
+	 * Distance between this location and the given one, as determined by the Haversine formula, in km
+	 *
+	 * @param toL - the other location
+	 * @return distance in km
+	 */
 	public double distanceKmTo(Location toL) {
-		return distanceDegreeTo(toL) * DEG_TO_KM;
+		return distanceRadiansTo(toL) * DEG_TO_KM;
 	}
 
 	/*****************************************************************

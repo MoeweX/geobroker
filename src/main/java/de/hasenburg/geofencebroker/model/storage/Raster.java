@@ -1,5 +1,7 @@
 package de.hasenburg.geofencebroker.model.storage;
 
+import de.hasenburg.geofencebroker.model.exceptions.RuntimeShapeException;
+import de.hasenburg.geofencebroker.model.exceptions.RuntimeStorageException;
 import de.hasenburg.geofencebroker.model.spatial.Geofence;
 import de.hasenburg.geofencebroker.model.spatial.Location;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -13,20 +15,33 @@ public class Raster {
 
 	private static final Logger logger = LogManager.getLogger();
 
-	private final ConcurrentHashMap<Location, RasterEntry> rasterEntries = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<Location, RasterEntry> rasterEntries =
+			new ConcurrentHashMap<>();
+
+	public final int granularity;
 
 	/**
-	 * Create a new Raster
+	 * Creates a new Raster. The index of each raster entry is the location of the entry's south west corner
 	 *
-	 * TODO: might make sense to define height and width in km so that all squares have the same size
+	 * The raster always contains the whole world. Limitations to allowed subscriptions, e.g., the broker should only
+	 * accept subscriptions from Europe, have to be made on another level
 	 *
-	 * @param dimensions - the raster dimensions described by a {@link Geofence}. Must be a rectangle, otherwise,
-	 *                   the given geofences bounding box will be used.
-	 * @param height - the height of each {@link RasterEntry} in degree
-	 * @param width - the width of each {@link RasterEntry} in degree
+	 * The granularity is used to calculate the size of each {@link RasterEntry} in degrees. The size equals 1 degree /
+	 * granularity
+	 *
+	 * @param granularity - must be >= 1
+	 * @throws RuntimeStorageException if granularity < 1
 	 */
-	public Raster(Geofence dimensions, double height, double width) {
+	public Raster(int granularity) {
+		if (granularity < 1) {
+			throw new RuntimeStorageException("Granularity must be >= 1, is " + granularity);
+		}
 
+		this.granularity = granularity;
+	}
+
+	public int getNumberOfExistingRasterEntries() {
+		return rasterEntries.size();
 	}
 
 	/**
@@ -70,8 +85,10 @@ public class Raster {
 	 * @return - the index
 	 */
 	private Location calculateIndexLocation(Location location) {
+		double latIndex = Math.floor(location.getLat() * granularity) / granularity;
+		double lonIndex = Math.floor(location.getLon() * granularity) / granularity;
 
-		return null;
+		return new Location(latIndex, lonIndex);
 	}
 
 	/**
