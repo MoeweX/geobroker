@@ -17,8 +17,6 @@ public class ZMQProcessManagerTest {
 
 	private static final Logger logger = LogManager.getLogger();
 
-	// TODO: Fix when resolved: https://github.com/zeromq/jeromq/issues/595
-	@Ignore
 	@Test
 	public void tearUpTearDown() throws CommunicatorException {
 		// prepare
