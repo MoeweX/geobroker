@@ -4,6 +4,7 @@ import de.hasenburg.geofencebroker.main.BenchmarkHelper;
 import de.hasenburg.geofencebroker.main.LoadTest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
@@ -32,12 +33,12 @@ class ZMQProcess_Broker implements Runnable {
 
 	@Override
 	public void run() {
-		ZMQ.Socket frontend = context.createSocket(ZMQ.ROUTER);
+		ZMQ.Socket frontend = context.createSocket(SocketType.ROUTER);
 		frontend.bind(address + ":" + port);
 		frontend.setIdentity(identity.getBytes());
 		frontend.setSendTimeOut(1);
 
-		ZMQ.Socket backend = context.createSocket(ZMQ.DEALER);
+		ZMQ.Socket backend = context.createSocket(SocketType.DEALER);
 		backend.bind(BROKER_PROCESSING_BACKEND);
 		backend.setSendTimeOut(1);
 

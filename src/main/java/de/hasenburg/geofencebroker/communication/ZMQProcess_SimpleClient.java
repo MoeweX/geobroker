@@ -5,6 +5,7 @@ import de.hasenburg.geofencebroker.main.Utility;
 import de.hasenburg.geofencebroker.model.InternalClientMessage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
@@ -39,10 +40,10 @@ class ZMQProcess_SimpleClient implements Runnable {
 
 	@Override
 	public void run() {
-		ZMQ.Socket orders = context.createSocket(ZMQ.REP);
+		ZMQ.Socket orders = context.createSocket(SocketType.REP);
 		orders.bind(CLIENT_ORDER_BACKEND);
 
-		ZMQ.Socket brokerSocket = context.createSocket(ZMQ.DEALER);
+		ZMQ.Socket brokerSocket = context.createSocket(SocketType.DEALER);
 		brokerSocket.setIdentity(identity.getBytes());
 		brokerSocket.connect(address + ":" + port);
 

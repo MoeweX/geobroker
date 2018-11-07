@@ -2,6 +2,7 @@ package de.hasenburg.geofencebroker.communication;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
@@ -25,7 +26,7 @@ public class ZMQControlUtility {
 	 * Fails if someone already bound to the control socket.
 	 */
 	public static ZMQ.Socket createZMQControlSocket(ZContext context) {
-		ZMQ.Socket zmqController = context.createSocket(ZMQ.PUB);
+		ZMQ.Socket zmqController = context.createSocket(SocketType.PUB);
 		zmqController.bind(CONTROL_CHANNEL);
 		return zmqController;
 	}
@@ -44,7 +45,7 @@ public class ZMQControlUtility {
 	 * @return - the index in the poller of the subscriber socket
 	 */
 	public static int connectWithPoller(ZContext context, ZMQ.Poller poller, String identity) {
-		ZMQ.Socket zmqControl = context.createSocket(ZMQ.SUB);
+		ZMQ.Socket zmqControl = context.createSocket(SocketType.SUB);
 		zmqControl.connect(CONTROL_CHANNEL);
 		zmqControl.subscribe(identity);
 

@@ -8,6 +8,7 @@ import de.hasenburg.geofencebroker.model.connections.Subscription;
 import de.hasenburg.geofencebroker.model.payload.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
@@ -33,7 +34,7 @@ class ZMQProcess_MessageProcessor implements Runnable {
 
 	@Override
 	public void run() {
-		processor = context.createSocket(ZMQ.DEALER);
+		processor = context.createSocket(SocketType.DEALER);
 		processor.setIdentity(identity.getBytes());
 		processor.connect(ZMQProcess_Broker.BROKER_PROCESSING_BACKEND);
 

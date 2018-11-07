@@ -3,6 +3,7 @@ package de.hasenburg.geofencebroker.communication;
 import de.hasenburg.geofencebroker.main.Utility;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
 import org.apache.logging.log4j.Logger;
+import org.zeromq.SocketType;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
 
@@ -84,9 +85,9 @@ public abstract class ZMQCommunicator {
 			while (!Thread.currentThread().isInterrupted()) {
 
 				ZMsg message = ZMsg.recvMsg(socket);
-				if (socket.getType() == ZMQ.DEALER) {
+				if (SocketType.DEALER.equals(socket.getSocketType())) {
 					logger.trace("Received InternalClientMessage: {}", message.toString());
-				} else if (socket.getType() == ZMQ.ROUTER) {
+				} else if (SocketType.ROUTER.equals(socket.getType())) {
 					logger.trace("Received InternalBrokerMessage: {}", message.toString());
 				}
 
@@ -109,9 +110,9 @@ public abstract class ZMQCommunicator {
 	 ****************************************************************/
 
 	protected synchronized void sendMessage(ZMsg message) {
-		if (socket.getType() == ZMQ.DEALER) {
+		if (SocketType.DEALER.equals(socket.getSocketType())) {
 			logger.trace("Sending InternalClientMessage: {}", message.toString());
-		} else if (socket.getType() == ZMQ.ROUTER) {
+		} else if (SocketType.ROUTER.equals(socket.getSocketType())) {
 			logger.trace("Sending InternalBrokerMessage: {}", message.toString());
 		}
 

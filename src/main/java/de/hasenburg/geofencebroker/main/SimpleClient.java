@@ -10,6 +10,7 @@ import de.hasenburg.geofencebroker.model.payload.CONNECTPayload;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
+import org.zeromq.SocketType;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
 
@@ -43,7 +44,7 @@ public class SimpleClient {
 		this.identifier = identifier;
 		this.processManager = processManager;
 		processManager.runZMQProcess_SimpleClient(address, port, identifier);
-		orderSocket = processManager.getContext().createSocket(ZMQ.REQ);
+		orderSocket = processManager.getContext().createSocket(SocketType.REQ);
 		orderSocket.setIdentity(identifier.getBytes());
 		orderSocket.connect(Utility.generateClientOrderBackendString(identifier));
 

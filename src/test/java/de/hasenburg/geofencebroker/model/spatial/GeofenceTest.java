@@ -68,8 +68,8 @@ public class GeofenceTest {
 		Geofence geofence = datelineRectangle();
 		assertEquals(new Location(10, -10), geofence.getBoundingBoxNorthWest());
 		assertEquals(new Location(10, 10), geofence.getBoundingBoxNorthEast());
-		assertEquals(new Location(-10, 10), geofence.getBoundingBoxSouthEast());
-		assertEquals(new Location(-10, -10), geofence.getBoundingBoxSouthWest());
+		assertEquals(new Location(-9, 10), geofence.getBoundingBoxSouthEast());
+		assertEquals(new Location(-9, -10), geofence.getBoundingBoxSouthWest());
 		logger.info("Bounding box calculations work properly for Dateline");
 	}
 

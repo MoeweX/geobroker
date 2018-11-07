@@ -4,6 +4,7 @@ import de.hasenburg.geofencebroker.model.InternalClientMessage;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.zeromq.SocketType;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
 
@@ -25,7 +26,7 @@ public class DealerCommunicator extends ZMQCommunicator {
 	@Override
 	public void init(String identity) {
 		context = ZMQ.context(1);
-		socket = context.socket(ZMQ.DEALER);
+		socket = context.socket(SocketType.DEALER);
 
 		if (identity != null) { socket.setIdentity(identity.getBytes()); }
 
