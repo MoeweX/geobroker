@@ -45,7 +45,7 @@ public class Raster {
 	}
 
 	/**
-	 * Adds a subscriptionId to the fitting {@link RasterEntry}
+	 * Adds a subscriptionId to the fitting {@link RasterEntry}s
 	 *
 	 * @param geofence - the geofence used to calculate the fitting {@link RasterEntry}
 	 * @param subscriptionId - the subscriptionId to be added
@@ -55,7 +55,7 @@ public class Raster {
 	}
 
 	/**
-	 * Removes a subscriptionId from the fitting {@link RasterEntry}
+	 * Removes a subscriptionId from the fitting {@link RasterEntry}s
 	 *
 	 * @param geofence - the geofence used to calculate the fitting {@link RasterEntry}
 	 * @param subscriptionId - the subscriptionId to be removed
@@ -65,7 +65,7 @@ public class Raster {
 	}
 
 	/**
-	 * Returns all subscriptionIds that in the fitting {@link RasterEntry}
+	 * Returns all subscriptionIds that are in the fitting {@link RasterEntry}
 	 *
 	 * @param location - the location that determines which {@link RasterEntry} fits
 	 */

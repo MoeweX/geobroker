@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class RasterEntry {
 
-	private final String topicPart;
+	private final String topicPart; // TODO might be unnecessary
 	private final ConcurrentHashMap<String, Set<ImmutablePair<String, Integer>>> existingSubscriptionIds = new ConcurrentHashMap<>();
 	private final AtomicInteger numSubscriptionIds = new AtomicInteger(0);
 
@@ -21,7 +21,7 @@ public class RasterEntry {
 	/**
 	 * Adds the given subscriptionId to the {@link RasterEntry}.
 	 *
-	 * It is assumed that every subscriptionId is unique and also added ONCE only. Otherwise, inconsistencies may arise.
+	 * It is assumed that every subscriptionId is unique. Otherwise, inconsistencies may arise.
 	 *
 	 * @param subscriptionId - unique identifier for a subscription that comprises a clientId and an integer
 	 * @return the number of subscriptionIds stored in the {@link RasterEntry} after the operation completed

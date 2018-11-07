@@ -3,6 +3,8 @@ package de.hasenburg.geofencebroker.model.storage;
 import de.hasenburg.geofencebroker.model.spatial.Location;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.spatial4j.exception.InvalidShapeException;
 
@@ -10,93 +12,101 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class RasterTest {
 
 	private static final Logger logger = LogManager.getLogger();
 
+	Method privateMethod_calculateIndexLocation;
+	Raster raster;
+
+	@Before
+	public void setUpTest() throws NoSuchMethodException {
+		privateMethod_calculateIndexLocation = Raster.class.getDeclaredMethod("calculateIndexLocation", Location.class);
+		privateMethod_calculateIndexLocation.setAccessible(true);
+	}
+
+	@After
+	public void tearDownTest() {
+		privateMethod_calculateIndexLocation = null;
+	    raster = null;
+	}
+
+	public Location invokeCalculateIndexLocation(Location location) {
+		try {
+			return (Location) privateMethod_calculateIndexLocation.invoke(raster, location);
+		} catch (IllegalAccessException | InvocationTargetException e) {
+			e.printStackTrace();
+			fail("Could not invoke private method");
+		}
+		// Stupid, I never get here, why do I need to return something?
+		return null;
+	}
+
 	@Test(expected = InvalidShapeException.class)
-	public void testPrivateCalculateIndexGranularity1()
-			throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-
-		Raster raster = new Raster(1);
-
-		// make calculateIndexLocation testable
-		Method calculateIndexLocation = raster.getClass().getDeclaredMethod("calculateIndexLocation", Location.class);
-		calculateIndexLocation.setAccessible(true);
-
+	public void testCalculateIndexGranularity1() {
+		raster = new Raster(1);
 		Location calculatedIndex;
 
 		// even
-		calculatedIndex = (Location) calculateIndexLocation.invoke(raster, new Location(10, -10));
+		calculatedIndex = invokeCalculateIndexLocation(new Location(10, -10));
 		assertEquals(new Location(10, -10), calculatedIndex);
 
 		// many fractions
-		calculatedIndex = (Location) calculateIndexLocation.invoke(raster, new Location(10.198, -11.198));
+		calculatedIndex = invokeCalculateIndexLocation(new Location(10.198, -11.198));
 		assertEquals(new Location(10, -12), calculatedIndex);
 
 		// exact boundary
-		calculatedIndex = (Location) calculateIndexLocation.invoke(raster, new Location(90, -180));
+		calculatedIndex = invokeCalculateIndexLocation(new Location(90, -180));
 		assertEquals(new Location(90, -180), calculatedIndex);
 
 		// out of bounds, expect throw
-		calculateIndexLocation.invoke(raster, new Location(91, -181));
+		invokeCalculateIndexLocation(new Location(91, -181));
 	}
 
 	@Test(expected = InvalidShapeException.class)
-	public void testPrivateCalculateIndexGranularity10()
-			throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+	public void testCalculateIndexGranularity10() {
 
-		Raster raster = new Raster(10);
-
-		// make calculateIndexLocation testable
-		Method calculateIndexLocation = raster.getClass().getDeclaredMethod("calculateIndexLocation", Location.class);
-		calculateIndexLocation.setAccessible(true);
-
+		raster = new Raster(10);
 		Location calculatedIndex;
 
 		// even
-		calculatedIndex = (Location) calculateIndexLocation.invoke(raster, new Location(10, -10));
+		calculatedIndex = invokeCalculateIndexLocation(new Location(10, -10));
 		assertEquals(new Location(10, -10), calculatedIndex);
 
 		// many fractions
-		calculatedIndex = (Location) calculateIndexLocation.invoke(raster, new Location(10.198, -11.198));
+		calculatedIndex = invokeCalculateIndexLocation(new Location(10.198, -11.198));
 		assertEquals(new Location(10.1, -11.2), calculatedIndex);
 
 		// exact boundary
-		calculatedIndex = (Location) calculateIndexLocation.invoke(raster, new Location(90, -180));
+		calculatedIndex = invokeCalculateIndexLocation(new Location(90, -180));
 		assertEquals(new Location(90, -180), calculatedIndex);
 
 		// out of bounds, expect throw
-		calculateIndexLocation.invoke(raster, new Location(91, -181));
+		invokeCalculateIndexLocation(new Location(91, -181));
 	}
 
 	@Test(expected = InvalidShapeException.class)
-	public void testPrivateCalculateIndexGranularity100()
-			throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+	public void testCalculateIndexGranularity100() {
 
-		Raster raster = new Raster(100);
-
-		// make calculateIndexLocation testable
-		Method calculateIndexLocation = raster.getClass().getDeclaredMethod("calculateIndexLocation", Location.class);
-		calculateIndexLocation.setAccessible(true);
-
+		raster = new Raster(100);
 		Location calculatedIndex;
 
 		// even
-		calculatedIndex = (Location) calculateIndexLocation.invoke(raster, new Location(10, -10));
+		calculatedIndex = invokeCalculateIndexLocation(new Location(10, -10));
 		assertEquals(new Location(10, -10), calculatedIndex);
 
 		// many fractions
-		calculatedIndex = (Location) calculateIndexLocation.invoke(raster, new Location(10.198, -11.198));
+		calculatedIndex = invokeCalculateIndexLocation(new Location(10.198, -11.198));
 		assertEquals(new Location(10.19, -11.2), calculatedIndex);
 
 		// exact boundary
-		calculatedIndex = (Location) calculateIndexLocation.invoke(raster, new Location(90, -180));
+		calculatedIndex = invokeCalculateIndexLocation(new Location(90, -180));
 		assertEquals(new Location(90, -180), calculatedIndex);
 
 		// out of bounds, expect throw
-		calculateIndexLocation.invoke(raster, new Location(91, -181));
+		invokeCalculateIndexLocation(new Location(91, -181));
 	}
 
 }
