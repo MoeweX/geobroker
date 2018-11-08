@@ -18,7 +18,7 @@ public class Raster {
 	private final ConcurrentHashMap<Location, RasterEntry> rasterEntries =
 			new ConcurrentHashMap<>();
 
-	public final int granularity;
+	protected final int granularity;
 
 	/**
 	 * Creates a new Raster. The index of each raster entry is the location of the entry's south west corner
@@ -32,7 +32,7 @@ public class Raster {
 	 * @param granularity - must be >= 1
 	 * @throws RuntimeStorageException if granularity < 1
 	 */
-	public Raster(int granularity) {
+	protected Raster(int granularity) {
 		if (granularity < 1) {
 			throw new RuntimeStorageException("Granularity must be >= 1, is " + granularity);
 		}
@@ -40,7 +40,7 @@ public class Raster {
 		this.granularity = granularity;
 	}
 
-	public int getNumberOfExistingRasterEntries() {
+	protected int getNumberOfExistingRasterEntries() {
 		return rasterEntries.size();
 	}
 
@@ -50,7 +50,7 @@ public class Raster {
 	 * @param geofence - the geofence used to calculate the fitting {@link RasterEntry}
 	 * @param subscriptionId - the subscriptionId to be added
 	 */
-	public void addSubscriptionId(Geofence geofence, ImmutablePair<String, Integer> subscriptionId) {
+	protected void addSubscriptionId(Geofence geofence, ImmutablePair<String, Integer> subscriptionId) {
 		// TODO return current size
 	}
 
@@ -60,7 +60,7 @@ public class Raster {
 	 * @param geofence - the geofence used to calculate the fitting {@link RasterEntry}
 	 * @param subscriptionId - the subscriptionId to be removed
 	 */
-	public void removeSubscriptionId(Geofence geofence, ImmutablePair<String, Integer> subscriptionId) {
+	protected void removeSubscriptionId(Geofence geofence, ImmutablePair<String, Integer> subscriptionId) {
 		// TODO return current size
 	}
 
@@ -69,7 +69,7 @@ public class Raster {
 	 *
 	 * @param location - the location that determines which {@link RasterEntry} fits
 	 */
-	public void getSubscriptionIdsForPublisherLocation(Location location) {
+	protected void getSubscriptionIdsForPublisherLocation(Location location) {
 		// TODO add return type
 	}
 
