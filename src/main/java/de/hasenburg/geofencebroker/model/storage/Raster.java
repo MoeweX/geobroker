@@ -1,6 +1,5 @@
 package de.hasenburg.geofencebroker.model.storage;
 
-import de.hasenburg.geofencebroker.model.exceptions.RuntimeShapeException;
 import de.hasenburg.geofencebroker.model.exceptions.RuntimeStorageException;
 import de.hasenburg.geofencebroker.model.spatial.Geofence;
 import de.hasenburg.geofencebroker.model.spatial.Location;
@@ -8,15 +7,14 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Raster {
 
 	private static final Logger logger = LogManager.getLogger();
 
-	private final ConcurrentHashMap<Location, RasterEntry> rasterEntries =
-			new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<Location, RasterEntry> rasterEntries = new ConcurrentHashMap<>();
 
 	protected final int granularity;
 
@@ -50,29 +48,61 @@ public class Raster {
 	 * @param geofence - the geofence used to calculate the fitting {@link RasterEntry}
 	 * @param subscriptionId - the subscriptionId to be added
 	 */
-	protected void addSubscriptionId(Geofence geofence, ImmutablePair<String, Integer> subscriptionId) {
-		// TODO return current size
+	protected void putSubscriptionIdIntoRasterEntries(Geofence geofence,
+													  ImmutablePair<String, Integer> subscriptionId) {
+		// get all RasterEntries to which the id should be added
+		List<RasterEntry> viableRasterEntries = calculateIndexLocations(geofence);
+
+		// add the subscriptionId to the RasterEntries
+		for (RasterEntry viableRasterEntry : viableRasterEntries) {
+			viableRasterEntry.putSubscriptionId(subscriptionId);
+		}
 	}
 
 	/**
-	 * Removes a subscriptionId from the fitting {@link RasterEntry}s
+	 * Removes a subscriptionId from the fitting {@link RasterEntry}s. Probably used for unsubscribe operations.
 	 *
 	 * @param geofence - the geofence used to calculate the fitting {@link RasterEntry}
-	 * @param subscriptionId - the subscriptionId to be removed
+	 * @param subscriptionId - the subscription id to be removed
 	 */
-	protected void removeSubscriptionId(Geofence geofence, ImmutablePair<String, Integer> subscriptionId) {
-		// TODO return current size
+	protected void removeSubscriptionIdFromRasterEntries(Geofence geofence,
+														 ImmutablePair<String, Integer> subscriptionId) {
+		// get all RasterEntries from which the id should be removed
+		List<RasterEntry> viableRasterEntries = calculateIndexLocations(geofence);
+
+		// remove the subscriptionId from the RasterEntries
+		for (RasterEntry viableRasterEntry : viableRasterEntries) {
+			viableRasterEntry.removeSubscriptionId(subscriptionId);
+		}
 	}
 
 	/**
-	 * Returns all subscriptionIds that are in the fitting {@link RasterEntry}
+	 * Removes a subscriptionId from a single {@link RasterEntry}. Probably used when a subscription is renewed with a
+	 * new geofence and outdated subscription ids need to be removed.
 	 *
-	 * @param location - the location that determines which {@link RasterEntry} fits
+	 * @param index - index of {@link RasterEntry} from which the subscription id should be removed
+	 * @param subscriptionId - the subscription id to be removed
 	 */
-	protected void getSubscriptionIdsForPublisherLocation(Location location) {
-		// TODO add return type
+	protected void removeSubscriptionIdFromRasterEntry(Location index, ImmutablePair<String, Integer> subscriptionId) {
+		RasterEntry re = rasterEntries.get(index);
+		re.removeSubscriptionId(subscriptionId);
 	}
 
+	/**
+	 * Returns all subscriptionIds that are in the fitting {@link RasterEntry}. In case no subscription ids exist, the
+	 * returned Map is empty.
+	 *
+	 * @param location - the location that determines which {@link RasterEntry} fits
+	 * @return a Map containing all fitting subscriptionIds; client -> set of subscription ids
+	 */
+	protected Map<String, Set<ImmutablePair<String, Integer>>> getSubscriptionIdsForPublisherLocation(Location location) {
+		Location index = calculateIndexLocation(location);
+		RasterEntry re = rasterEntries.get(location);
+		if (re != null) {
+			return re.getAllSubscriptionIds();
+		}
+		return Collections.unmodifiableMap(new HashMap<>());
+	}
 
 	/*****************************************************************
 	 * Private methods
@@ -92,14 +122,37 @@ public class Raster {
 	}
 
 	/**
-	 * Calculates the indices of all {@link RasterEntry} the given geofence intersects with
+	 * Calculates with which {@link RasterEntry} the given geofence intersects with.
 	 *
 	 * @param geofence - the geofence
-	 * @return - a list of indices
+	 * @return - a list of {@link RasterEntry}s
 	 */
-	private List<Location> calculateIndexLocations(Geofence geofence) {
+	private List<RasterEntry> calculateIndexLocations(Geofence geofence) {
 
-		return null;
+		// get north east and south west indices
+		Location northEastIndex = calculateIndexLocation(geofence.getBoundingBoxNorthEast());
+		Location southWestIndex = calculateIndexLocation(geofence.getBoundingBoxSouthWest());
+
+		// get raster entries that have to be checked for intersection
+		List<RasterEntry> rasterEntriesToCheckForIntersection = new ArrayList<>();
+		for (double lat = southWestIndex.getLat(); lat <= northEastIndex.getLat(); lat = lat + granularity) {
+			for (double lon = southWestIndex.getLon(); lon <= northEastIndex.getLon(); lon = lon + granularity) {
+				Location index = new Location(lat, lon);
+				RasterEntry re = rasterEntries.computeIfAbsent(index, k -> new RasterEntry(index, granularity));
+				rasterEntriesToCheckForIntersection.add(re);
+			}
+		}
+
+		// if geofence is a rectangle, we can collect the indices
+		if (geofence.isRectangle()) {
+			return rasterEntriesToCheckForIntersection;
+		}
+
+		// remove raster entries whose box is disjoint with the actual geofence
+		rasterEntriesToCheckForIntersection.removeIf(re -> re.getRasterEntryBox().disjoint(geofence));
+
+		// return
+		return rasterEntriesToCheckForIntersection;
 	}
 
 }

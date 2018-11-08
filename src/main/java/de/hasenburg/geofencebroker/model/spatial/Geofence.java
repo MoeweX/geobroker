@@ -112,6 +112,10 @@ public class Geofence implements JSONable  {
 		return shape.relate(location.getPoint()).equals(SpatialRelation.CONTAINS);
 	}
 
+	public boolean disjoint(Geofence geofence) {
+		return shape.relate(geofence.shape).equals(SpatialRelation.DISJOINT);
+	}
+
 	/*****************************************************************
 	 * Getters and String
 	 ****************************************************************/

@@ -1,21 +1,42 @@
 package de.hasenburg.geofencebroker.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.Objects;
 
 public class Topic {
 
-	private String topic;
+	public static final String TOPIC_LEVEL_SEPARATOR = "/";
 
-	private Topic() {
-		// JSON
-	}
+	private final String topic;
+	@JsonIgnore
+	private final String[] levelSpecifiers;
 
-	public Topic(String topic) {
+	@JsonCreator
+	public Topic(@JsonProperty("topic") String topic) {
 		this.topic = topic;
+		this.levelSpecifiers = topic.split(TOPIC_LEVEL_SEPARATOR);
 	}
 
 	public String getTopic() {
 		return topic;
+	}
+
+	public String getLevelSpecifier(int levelIndex) {
+		if (levelIndex >= getNumberOfLevels()) {
+			throw new RuntimeException(
+					"Look what you did, you killed the broker by not checking the number of levels beforehand!");
+		}
+		return levelSpecifiers[levelIndex];
+	}
+
+	/**
+	 * @return the number of available levels
+	 */
+	public int getNumberOfLevels() {
+		return levelSpecifiers.length;
 	}
 
 	/*****************************************************************

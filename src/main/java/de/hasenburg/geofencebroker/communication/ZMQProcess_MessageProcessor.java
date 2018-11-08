@@ -176,7 +176,7 @@ class ZMQProcess_MessageProcessor implements Runnable {
 			SUBSCRIBEPayload payload = message.getPayload().getSUBSCRIBEPayload().get();
 
 			// update subscription
-			Subscription subscription = new Subscription(payload.getTopic(), payload.getGeofence());
+			Subscription subscription = new Subscription(null, payload.getTopic(), payload.getGeofence());
 			connection.putSubscription(subscription);
 			logger.debug("Client {} subscribed to topic {}", message.getClientIdentifier(), payload.getTopic());
 			response = new InternalBrokerMessage(message.getClientIdentifier(), ControlPacketType.SUBACK,

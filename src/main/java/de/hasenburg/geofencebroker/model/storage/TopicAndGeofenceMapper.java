@@ -3,8 +3,12 @@ package de.hasenburg.geofencebroker.model.storage;
 import de.hasenburg.geofencebroker.main.Configuration;
 import de.hasenburg.geofencebroker.model.Topic;
 import de.hasenburg.geofencebroker.model.spatial.Geofence;
+import de.hasenburg.geofencebroker.model.spatial.Location;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -19,7 +23,11 @@ public class TopicAndGeofenceMapper {
 		anchor = new TopicLevel("ANCHOR", configuration.getGranularity());
 	}
 
-	public Set<ImmutablePair<String, Integer>> getSubscriptionIds(Topic topic, Geofence geofence) {
+	public Set<ImmutablePair<String, Integer>> getSubscriptionIds(Topic topic, Location publisherLocation) {
+		// get TopicLevel that match Topic
+		List<TopicLevel> matchingTopicLevels = getMatchingTopicLevels(topic);
+
+		// get subscription ids from raster for publisher location
 		// TODO
 		return null;
 	}
@@ -31,6 +39,49 @@ public class TopicAndGeofenceMapper {
 	public void removeSubscriptionId(Set<ImmutablePair<String, Integer>> subscriptionId, Topic topic,
 									 Geofence geofence) {
 		// TODO
+	}
+
+	/**
+	 * Gets all {@link TopicLevel} that match the given topic. The given topic may not have any wildcards, as this
+	 * method is used to get all subscribers to a published message.
+	 *
+	 *
+	 * @param topic - the topic used; it may not have any wildcards
+	 * @return
+	 */
+	private List<TopicLevel> getMatchingTopicLevels(Topic topic) {
+		List<TopicLevel> currentLevelsInWhichChildrenHaveToBeChecked = new ArrayList<>();
+		List<TopicLevel> nextLevelsInWhichChildrenHaveToBeChecked = new ArrayList<>();
+		List<TopicLevel> multiLevelWildcardTopicLevels = new ArrayList<>();
+
+		// add anchor
+		currentLevelsInWhichChildrenHaveToBeChecked.add(anchor);
+
+		// traverse the TopicLevel tree
+		for (int levelIndex = 0; levelIndex < topic.getNumberOfLevels(); levelIndex++) {
+			String levelSpecifier = topic.getLevelSpecifier(levelIndex);
+			// look into each to be checked topic level
+			for (TopicLevel topicLevel : currentLevelsInWhichChildrenHaveToBeChecked) {
+				// for each children, check whether important
+				Collection<TopicLevel> children = topicLevel.getAllDirectChildren();
+				for (TopicLevel child : children) {
+					if (levelSpecifier.equals(child.getLevelSpecifier()) || TopicLevel.SINGLE_LEVEL_WILDCARD.equals(child.getLevelSpecifier())) {
+						// important for single level
+						nextLevelsInWhichChildrenHaveToBeChecked.add(child);
+					} else if (TopicLevel.MULTI_LEVEL_WILDCARD.equals(child.getLevelSpecifier())) {
+						// important for multi level
+						multiLevelWildcardTopicLevels.add(child);
+					}
+				}
+			}
+			// update currentLevelsInWhichChildrenHaveToBeChecked
+			currentLevelsInWhichChildrenHaveToBeChecked = nextLevelsInWhichChildrenHaveToBeChecked;
+			nextLevelsInWhichChildrenHaveToBeChecked = new ArrayList<>();
+		}
+
+		// add remaining topic levels for each multi level wildcard TODO
+
+		return currentLevelsInWhichChildrenHaveToBeChecked;
 	}
 
 }

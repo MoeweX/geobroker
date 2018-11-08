@@ -47,6 +47,13 @@ public class GeofenceTest {
 	}
 
 	@Test
+	public void testDisjoint() {
+		assertTrue(berlinRectangle().disjoint(datelineRectangle()));
+		assertFalse(berlinRectangle().disjoint(berlinTriangle()));
+		logger.info("Disjoint calculation works properly");
+	}
+
+	@Test
 	public void testRect() {
 		assertTrue(berlinRectangle().isRectangle());
 		assertFalse(berlinTriangle().isRectangle());

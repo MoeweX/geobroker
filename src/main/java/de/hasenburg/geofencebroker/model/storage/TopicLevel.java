@@ -27,7 +27,7 @@ public class TopicLevel {
 		return children.computeIfAbsent(levelSpecifier, k -> new TopicLevel(levelSpecifier, raster.granularity));
 	}
 
-	protected Collection<TopicLevel> getAllChildren() {
+	protected Collection<TopicLevel> getAllDirectChildren() {
 		return Collections.unmodifiableCollection(children.values());
 	}
 
