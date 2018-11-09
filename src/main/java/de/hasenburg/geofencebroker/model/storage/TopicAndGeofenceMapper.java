@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * The {@link TopicAndGeofenceMapper} maps provided topics and geofences to subscription ids. Thus, it helps to identify
@@ -43,13 +45,12 @@ public class TopicAndGeofenceMapper {
 
 	/**
 	 * Gets all {@link TopicLevel} that match the given topic. The given topic may not have any wildcards, as this
-	 * method is used to get all subscribers to a published message.
-	 *
+	 * method is used to get all subscribers for a published message.
 	 *
 	 * @param topic - the topic used; it may not have any wildcards
-	 * @return
+	 * @return the matching {@link TopicLevel}
 	 */
-	private List<TopicLevel> getMatchingTopicLevels(Topic topic) {
+	protected List<TopicLevel> getMatchingTopicLevels(Topic topic) {
 		List<TopicLevel> currentLevelsInWhichChildrenHaveToBeChecked = new ArrayList<>();
 		List<TopicLevel> nextLevelsInWhichChildrenHaveToBeChecked = new ArrayList<>();
 		List<TopicLevel> multiLevelWildcardTopicLevels = new ArrayList<>();
@@ -65,7 +66,8 @@ public class TopicAndGeofenceMapper {
 				// for each children, check whether important
 				Collection<TopicLevel> children = topicLevel.getAllDirectChildren();
 				for (TopicLevel child : children) {
-					if (levelSpecifier.equals(child.getLevelSpecifier()) || TopicLevel.SINGLE_LEVEL_WILDCARD.equals(child.getLevelSpecifier())) {
+					if (levelSpecifier.equals(child.getLevelSpecifier()) || TopicLevel.SINGLE_LEVEL_WILDCARD.equals(
+							child.getLevelSpecifier())) {
 						// important for single level
 						nextLevelsInWhichChildrenHaveToBeChecked.add(child);
 					} else if (TopicLevel.MULTI_LEVEL_WILDCARD.equals(child.getLevelSpecifier())) {
@@ -79,9 +81,16 @@ public class TopicAndGeofenceMapper {
 			nextLevelsInWhichChildrenHaveToBeChecked = new ArrayList<>();
 		}
 
-		// add remaining topic levels for each multi level wildcard TODO
-
-		return currentLevelsInWhichChildrenHaveToBeChecked;
+		// add multilevel wildcards to all others and return
+		return Stream.concat(currentLevelsInWhichChildrenHaveToBeChecked.stream(),
+							 multiLevelWildcardTopicLevels.stream()).collect(Collectors.toList());
 	}
 
+	/*****************************************************************
+	 * Generated methods
+	 ****************************************************************/
+
+	protected TopicLevel getAnchor() {
+		return anchor;
+	}
 }

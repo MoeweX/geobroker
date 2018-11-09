@@ -1,5 +1,8 @@
 package de.hasenburg.geofencebroker.model.storage;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
@@ -11,6 +14,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class TopicLevel {
 
+	private static final Logger logger = LogManager.getLogger();
+
 	public static final String SINGLE_LEVEL_WILDCARD = "+";
 	public static final String MULTI_LEVEL_WILDCARD = "#";
 
@@ -20,11 +25,29 @@ public class TopicLevel {
 	private final ConcurrentHashMap<String, TopicLevel> children = new ConcurrentHashMap<>();
 
 	protected TopicLevel(String levelSpecifier, int granularity) {
-		this.levelSpecifier = levelSpecifier; raster = new Raster(granularity);
+		this.levelSpecifier = levelSpecifier;
+		raster = new Raster(granularity);
 	}
 
-	protected TopicLevel getOrCreateChild(String levelSpecifier) {
-		return children.computeIfAbsent(levelSpecifier, k -> new TopicLevel(levelSpecifier, raster.granularity));
+	/**
+	 * Gets an already existing child for the given level specifiers. A minimum of one specifier must be provided. If at
+	 * one point none exist yet, it and all subsequent ones will be created.
+	 *
+	 * @param levelSpecifiers - the given level specifier
+	 * @return the child
+	 */
+	protected TopicLevel getOrCreateChildren(String... levelSpecifiers) {
+		TopicLevel currentChild = this;
+		for (String specifier : levelSpecifiers) {
+			currentChild = currentChild.children.computeIfAbsent(specifier,
+																 k -> new TopicLevel(specifier, raster.granularity));
+		}
+
+		return currentChild;
+	}
+
+	protected TopicLevel getDirectChild(String levelSpecifier) {
+		return children.get(levelSpecifier);
 	}
 
 	protected Collection<TopicLevel> getAllDirectChildren() {
