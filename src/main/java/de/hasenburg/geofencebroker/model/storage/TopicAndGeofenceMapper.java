@@ -25,6 +25,10 @@ public class TopicAndGeofenceMapper {
 		anchor = new TopicLevel("ANCHOR", configuration.getGranularity());
 	}
 
+	/*****************************************************************
+	 * Subscribe/Unsubscribe Operations
+	 ****************************************************************/
+
 	public Set<ImmutablePair<String, Integer>> getSubscriptionIds(Topic topic, Location publisherLocation) {
 		// get TopicLevel that match Topic
 		List<TopicLevel> matchingTopicLevels = getMatchingTopicLevels(topic);
@@ -42,6 +46,10 @@ public class TopicAndGeofenceMapper {
 									 Geofence geofence) {
 		// TODO
 	}
+
+	/*****************************************************************
+	 * Process Published Message Operations
+	 ****************************************************************/
 
 	/**
 	 * Gets all {@link TopicLevel} that match the given topic. The given topic may not have any wildcards, as this

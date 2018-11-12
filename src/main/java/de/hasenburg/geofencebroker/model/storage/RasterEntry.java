@@ -29,6 +29,10 @@ public class RasterEntry {
 		));
 	}
 
+	/*****************************************************************
+	 * Subscribe/Unsubscribe Operations
+	 ****************************************************************/
+
 	/**
 	 * Puts the given subscriptionId to the {@link RasterEntry}.
 	 *
@@ -63,20 +67,8 @@ public class RasterEntry {
 	}
 
 	/*****************************************************************
-	 * Getters
+	 * Process Published Message Operations
 	 ****************************************************************/
-
-	protected Integer getNumSubscriptionIds() {
-		return numSubscriptionIds.get();
-	}
-
-	protected Location getIndex() {
-		return index;
-	}
-
-	protected Geofence getRasterEntryBox() {
-		return rasterEntryBox;
-	}
 
 	/**
 	 * Returns all subscriptionIds for a given client.
@@ -105,6 +97,22 @@ public class RasterEntry {
 		// it would be best to also make the set immutable, but this were a big performance loss
 		// -> only the map and the set's values are immutable
 		return Collections.unmodifiableMap(existingSubscriptionIds);
+	}
+
+	/*****************************************************************
+	 * Getters
+	 ****************************************************************/
+
+	protected Integer getNumSubscriptionIds() {
+		return numSubscriptionIds.get();
+	}
+
+	protected Location getIndex() {
+		return index;
+	}
+
+	protected Geofence getRasterEntryBox() {
+		return rasterEntryBox;
 	}
 
 }

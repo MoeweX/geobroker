@@ -38,9 +38,9 @@ public class Raster {
 		this.granularity = granularity;
 	}
 
-	protected int getNumberOfExistingRasterEntries() {
-		return rasterEntries.size();
-	}
+	/*****************************************************************
+	 * Subscribe/Unsubscribe Operations
+	 ****************************************************************/
 
 	/**
 	 * Adds a subscriptionId to the fitting {@link RasterEntry}s
@@ -88,6 +88,10 @@ public class Raster {
 		re.removeSubscriptionId(subscriptionId);
 	}
 
+	/*****************************************************************
+	 * Process Published Message Operations
+	 ****************************************************************/
+
 	/**
 	 * Returns all subscriptionIds that are in the fitting {@link RasterEntry}. In case no subscription ids exist, the
 	 * returned Map is empty.
@@ -102,6 +106,14 @@ public class Raster {
 			return re.getAllSubscriptionIds();
 		}
 		return Collections.unmodifiableMap(new HashMap<>());
+	}
+
+	/*****************************************************************
+	 * Getters
+	 ****************************************************************/
+
+	protected int getNumberOfExistingRasterEntries() {
+		return rasterEntries.size();
 	}
 
 	/*****************************************************************

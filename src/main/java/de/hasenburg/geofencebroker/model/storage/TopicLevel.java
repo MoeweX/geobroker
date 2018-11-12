@@ -29,6 +29,10 @@ public class TopicLevel {
 		raster = new Raster(granularity);
 	}
 
+	/*****************************************************************
+	 * Subscribe/Unsubscribe Operations
+	 ****************************************************************/
+
 	/**
 	 * Gets an already existing child for the given level specifiers. A minimum of one specifier must be provided. If at
 	 * one point none exist yet, it and all subsequent ones will be created.
@@ -45,6 +49,10 @@ public class TopicLevel {
 
 		return currentChild;
 	}
+
+	/*****************************************************************
+	 * Process Published Message Operations
+	 ****************************************************************/
 
 	protected TopicLevel getDirectChild(String levelSpecifier) {
 		return children.get(levelSpecifier);
