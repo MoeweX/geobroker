@@ -101,7 +101,7 @@ public class Raster {
 	 */
 	protected Map<String, Set<ImmutablePair<String, Integer>>> getSubscriptionIdsForPublisherLocation(Location location) {
 		Location index = calculateIndexLocation(location);
-		RasterEntry re = rasterEntries.get(location);
+		RasterEntry re = rasterEntries.get(index);
 		if (re != null) {
 			return re.getAllSubscriptionIds();
 		}

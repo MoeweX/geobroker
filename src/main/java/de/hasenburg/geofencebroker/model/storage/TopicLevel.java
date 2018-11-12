@@ -37,16 +37,34 @@ public class TopicLevel {
 	 * Gets an already existing child for the given level specifiers. A minimum of one specifier must be provided. If at
 	 * one point none exist yet, it and all subsequent ones will be created.
 	 *
-	 * @param levelSpecifiers - the given level specifier
+	 * @param levelSpecifiers - the given level specifiers
 	 * @return the child
 	 */
 	protected TopicLevel getOrCreateChildren(String... levelSpecifiers) {
 		TopicLevel currentChild = this;
 		for (String specifier : levelSpecifiers) {
-			currentChild = currentChild.children.computeIfAbsent(specifier,
-																 k -> new TopicLevel(specifier, raster.granularity));
+			currentChild = currentChild.children
+					.computeIfAbsent(specifier, k -> new TopicLevel(specifier, raster.granularity));
 		}
 
+		return currentChild;
+	}
+
+	/**
+	 * Gets an already existing child for the given level specifiers. A minimum of one specifier must be provided. If at
+	 * one point none exist yet, this method returns null
+	 *
+	 * @param levelSpecifiers - the given level specifiers
+	 * @return the child or null
+	 */
+	protected TopicLevel getChildren(String... levelSpecifiers) {
+		TopicLevel currentChild = this;
+		for (String specifier : levelSpecifiers) {
+			currentChild = currentChild.children.get(levelSpecifier);
+			if (currentChild == null) {
+				return null;
+			}
+		}
 		return currentChild;
 	}
 

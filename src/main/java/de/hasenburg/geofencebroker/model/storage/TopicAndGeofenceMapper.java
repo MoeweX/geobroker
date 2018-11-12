@@ -6,10 +6,7 @@ import de.hasenburg.geofencebroker.model.spatial.Geofence;
 import de.hasenburg.geofencebroker.model.spatial.Location;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -29,27 +26,44 @@ public class TopicAndGeofenceMapper {
 	 * Subscribe/Unsubscribe Operations
 	 ****************************************************************/
 
-	public Set<ImmutablePair<String, Integer>> getSubscriptionIds(Topic topic, Location publisherLocation) {
-		// get TopicLevel that match Topic
-		List<TopicLevel> matchingTopicLevels = getMatchingTopicLevels(topic);
-
-		// get subscription ids from raster for publisher location
-		// TODO
-		return null;
+	public void putSubscriptionId(ImmutablePair<String, Integer> subscriptionId, Topic topic, Geofence geofence) {
+		TopicLevel level = anchor.getOrCreateChildren(topic.getLevelSpecifiers());
+		level.getRaster().putSubscriptionIdIntoRasterEntries(geofence, subscriptionId);
 	}
 
-	public void putSubscriptionId(Set<ImmutablePair<String, Integer>> subscriptionId, Topic topic, Geofence geofence) {
-		// TODO
-	}
-
-	public void removeSubscriptionId(Set<ImmutablePair<String, Integer>> subscriptionId, Topic topic,
-									 Geofence geofence) {
-		// TODO
+	public void removeSubscriptionId(ImmutablePair<String, Integer> subscriptionId, Topic topic, Geofence geofence) {
+		TopicLevel level = anchor.getChildren(topic.getLevelSpecifiers());
+		level.getRaster().removeSubscriptionIdFromRasterEntries(geofence, subscriptionId);
 	}
 
 	/*****************************************************************
 	 * Process Published Message Operations
 	 ****************************************************************/
+
+	/**
+	 * Gets all subscription ids for clients that subscribed to the given {@link Topic} and that have subscribed to a
+	 * {@link Geofence} which contains the publisher's current {@link Location}.
+	 *
+	 * @param topic - see above
+	 * @param publisherLocation - see above
+	 * @return see above
+	 */
+	public Set<ImmutablePair<String, Integer>> getSubscriptionIds(Topic topic, Location publisherLocation) {
+		// get TopicLevel that match Topic
+		List<TopicLevel> matchingTopicLevels = getMatchingTopicLevels(topic);
+
+		// get subscription ids from raster for publisher location
+		HashSet<ImmutablePair<String, Integer>> subscriptionIds = new HashSet<>();
+		for (TopicLevel matchingTopicLevel : matchingTopicLevels) {
+			Map<String, Set<ImmutablePair<String, Integer>>> tmp =
+					matchingTopicLevel.getRaster().getSubscriptionIdsForPublisherLocation(publisherLocation);
+			for (Set<ImmutablePair<String, Integer>> set : tmp.values()) {
+				subscriptionIds.addAll(set);
+			}
+		}
+
+		return subscriptionIds;
+	}
 
 	/**
 	 * Gets all {@link TopicLevel} that match the given topic. The given topic may not have any wildcards, as this
@@ -74,14 +88,20 @@ public class TopicAndGeofenceMapper {
 				// for each children, check whether important
 				Collection<TopicLevel> children = topicLevel.getAllDirectChildren();
 				for (TopicLevel child : children) {
-					if (levelSpecifier.equals(child.getLevelSpecifier()) || TopicLevel.SINGLE_LEVEL_WILDCARD.equals(
-							child.getLevelSpecifier())) {
+
+					if (levelSpecifier.equals(child.getLevelSpecifier()) ||
+							TopicLevel.SINGLE_LEVEL_WILDCARD.equals(child.getLevelSpecifier())) {
+
 						// important for single level
 						nextLevelsInWhichChildrenHaveToBeChecked.add(child);
+
 					} else if (TopicLevel.MULTI_LEVEL_WILDCARD.equals(child.getLevelSpecifier())) {
+
 						// important for multi level
 						multiLevelWildcardTopicLevels.add(child);
+
 					}
+					
 				}
 			}
 			// update currentLevelsInWhichChildrenHaveToBeChecked
@@ -90,8 +110,9 @@ public class TopicAndGeofenceMapper {
 		}
 
 		// add multilevel wildcards to all others and return
-		return Stream.concat(currentLevelsInWhichChildrenHaveToBeChecked.stream(),
-							 multiLevelWildcardTopicLevels.stream()).collect(Collectors.toList());
+		return Stream
+				.concat(currentLevelsInWhichChildrenHaveToBeChecked.stream(), multiLevelWildcardTopicLevels.stream())
+				.collect(Collectors.toList());
 	}
 
 	/*****************************************************************

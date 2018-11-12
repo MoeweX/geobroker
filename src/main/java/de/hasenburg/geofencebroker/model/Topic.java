@@ -20,10 +20,6 @@ public class Topic {
 		this.levelSpecifiers = topic.split(TOPIC_LEVEL_SEPARATOR);
 	}
 
-	public String getTopic() {
-		return topic;
-	}
-
 	public String getLevelSpecifier(int levelIndex) {
 		if (levelIndex >= getNumberOfLevels()) {
 			throw new RuntimeException(
@@ -42,6 +38,14 @@ public class Topic {
 	/*****************************************************************
 	 * Generated Code
 	 ****************************************************************/
+
+	public String getTopic() {
+		return topic;
+	}
+
+	public String[] getLevelSpecifiers() {
+		return levelSpecifiers;
+	}
 
 	@Override
 	public boolean equals(Object o) {

@@ -4,10 +4,7 @@ import de.hasenburg.geofencebroker.model.spatial.Geofence;
 import de.hasenburg.geofencebroker.model.spatial.Location;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -16,16 +13,21 @@ public class RasterEntry {
 	private final Location index;
 	private final Geofence rasterEntryBox; // let's buffer this
 
-	private final ConcurrentHashMap<String, Set<ImmutablePair<String, Integer>>> existingSubscriptionIds = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<String, Set<ImmutablePair<String, Integer>>> existingSubscriptionIds =
+			new ConcurrentHashMap<>();
 	private final AtomicInteger numSubscriptionIds = new AtomicInteger(0);
 
 	public RasterEntry(Location index, int granularity) {
 		this.index = index;
-		this.rasterEntryBox = Geofence.polygon(Arrays.asList(
-				index, // south west
-				new Location(index.getLat() + granularity, index.getLon()), // north west
-				new Location(index.getLat() + granularity, index.getLon() + granularity), // north east
-				new Location(index.getLat(), index.getLon() + granularity) // south east
+		this.rasterEntryBox = Geofence.polygon(Arrays.asList(index,
+															 // south west
+															 new Location(index.getLat() + granularity, index.getLon()),
+															 // north west
+															 new Location(index.getLat() + granularity,
+																		  index.getLon() + granularity),
+															 // north east
+															 new Location(index.getLat(), index.getLon() + granularity)
+															 // south east
 		));
 	}
 
@@ -43,7 +45,8 @@ public class RasterEntry {
 	 */
 	protected int putSubscriptionId(ImmutablePair<String, Integer> subscriptionId) {
 		// get the set or create a new one and place in map
-		Set<ImmutablePair<String, Integer>> set = existingSubscriptionIds.computeIfAbsent(subscriptionId.left, k -> ConcurrentHashMap.newKeySet());
+		Set<ImmutablePair<String, Integer>> set =
+				existingSubscriptionIds.computeIfAbsent(subscriptionId.left, k -> ConcurrentHashMap.newKeySet());
 		// add integer part of id
 		set.add(subscriptionId);
 		return numSubscriptionIds.incrementAndGet();
@@ -73,9 +76,9 @@ public class RasterEntry {
 	/**
 	 * Returns all subscriptionIds for a given client.
 	 *
-	 * NOTE: for performance reason, this method returns a reference to the internal set of {@link RasterEntry},
-	 * so do not update it!
-	 * Instead, use {@link #putSubscriptionId(ImmutablePair)} and {@link #removeSubscriptionId(ImmutablePair)}.
+	 * NOTE: for performance reason, this method returns a reference to the internal set of {@link RasterEntry}, so do
+	 * not update it! Instead, use {@link #putSubscriptionId(ImmutablePair)} and {@link
+	 * #removeSubscriptionId(ImmutablePair)}.
 	 *
 	 * @param clientId - the clientId
 	 * @return the specified set
@@ -87,9 +90,9 @@ public class RasterEntry {
 	/**
 	 * Returns all subscriptions.
 	 *
-	 * NOTE: for performance reason, this method returns a reference to the internal map of {@link RasterEntry},
-	 * so do not update it!
-	 * Instead, use {@link #putSubscriptionId(ImmutablePair)} and {@link #removeSubscriptionId(ImmutablePair)}.
+	 * NOTE: for performance reason, this method returns a reference to the internal map of {@link RasterEntry}, so do
+	 * not update it! Instead, use {@link #putSubscriptionId(ImmutablePair)} and {@link
+	 * #removeSubscriptionId(ImmutablePair)}.
 	 *
 	 * @return all subscriptions
 	 */

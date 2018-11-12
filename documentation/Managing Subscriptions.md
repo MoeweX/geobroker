@@ -18,7 +18,8 @@ Clients subscribe to topics while providing a geofence, possible cases:
 - Acknowledge (ReasonCode.Success)
 
 ### Steps Case 2.
-- Calculate which RasterEntries are affected by geofence Update and add/remove necessary SubscriptionIds
+- Calculate which RasterEntries are affected by geofence Update and add/remove necessary SubscriptionIds (This requires a COMPLEMENT operations, which seems not to be available for
+spatial4j shapes. As a work around, one could also unsubscribe first)
 - Update geofence of existing client subscription
 - Acknowledge (ReasonCode.Success)
 
