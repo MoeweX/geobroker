@@ -68,11 +68,12 @@ public class TopicAndGeofenceMapperTest {
 		mapper = new TopicAndGeofenceMapper(new Configuration());
 
 		// prepare
-		Set<ImmutablePair<String, Integer>> testIds = testIds(2, 4);
+		Set<ImmutablePair<String, Integer>> testIds = testIds(Utility.randomInt(20), Utility.randomInt(100));
+		logger.info("Generated {} testing ids", testIds.size());
 		Topic t = new Topic("test/topic");
 
 		// test berlin
-		testIds.forEach(id -> mapper.putSubscriptionId(id, new Topic("test/topic"), berlinRectangle()));
+		testIds.forEach(id -> mapper.putSubscriptionId(id, t, berlinRectangle()));
 		Set<ImmutablePair<String, Integer>> returnedIds = mapper.getSubscriptionIds(t, berlinPoint());
 
 		// verify berlin
@@ -81,11 +82,83 @@ public class TopicAndGeofenceMapperTest {
 		assertTrue(returnedIds.isEmpty());
 
 		// test hamburg
-		testIds.forEach(id -> mapper.putSubscriptionId(id, new Topic("test/topic"), berlinRectangle()));
 		returnedIds = mapper.getSubscriptionIds(t, hamburgPoint());
 
 		// verify hamburg
 		assertEquals(0, returnedIds.size());
+	}
+
+	@Test
+	public void testOneGeofenceManyTopics() {
+		mapper = new TopicAndGeofenceMapper(new Configuration());
+
+		// prepare
+		Set<ImmutablePair<String, Integer>> testIds1 = testIds(Utility.randomInt(20), Utility.randomInt(100));
+		Set<ImmutablePair<String, Integer>> testIds2 = testIds(Utility.randomInt(20), Utility.randomInt(100));
+		logger.info("Generated {} and {} testing ids", testIds1.size(), testIds2.size());
+		Topic t1 = new Topic("t/1");
+		Topic t2 = new Topic("t/+/2");
+
+		// test berlin
+		testIds1.forEach(id -> mapper.putSubscriptionId(id, t1, berlinRectangle()));
+		testIds2.forEach(id -> mapper.putSubscriptionId(id, t2, berlinRectangle()));
+
+		Set<ImmutablePair<String, Integer>> returnedIds1 = mapper.getSubscriptionIds(t1, berlinPoint());
+		Set<ImmutablePair<String, Integer>> returnedIds2 = mapper.getSubscriptionIds(new Topic("t/a/2"), berlinPoint());
+
+		// verify berlin
+		assertEquals(testIds1.size(), returnedIds1.size());
+		returnedIds1.removeAll(testIds1);
+		assertTrue(returnedIds1.isEmpty());
+
+		assertEquals(testIds2.size(), returnedIds2.size());
+		returnedIds2.removeAll(testIds2);
+		assertTrue(returnedIds2.isEmpty());
+
+		// test hamburg
+		returnedIds1 = mapper.getSubscriptionIds(t1, hamburgPoint());
+		returnedIds2 = mapper.getSubscriptionIds(new Topic("t/a/2"), hamburgPoint());
+
+		// verify hamburg
+		assertEquals(0, returnedIds1.size());
+		assertEquals(0, returnedIds2.size());
+	}
+
+	@Test
+	public void testManyGeofencesManyTopics() {
+		mapper = new TopicAndGeofenceMapper(new Configuration());
+
+		// prepare
+		Set<ImmutablePair<String, Integer>> testIds1 = testIds(Utility.randomInt(20), Utility.randomInt(100));
+		Set<ImmutablePair<String, Integer>> testIds2 = testIds(Utility.randomInt(20), Utility.randomInt(100));
+		logger.info("Generated {} and {} testing ids", testIds1.size(), testIds2.size());
+		Topic t1 = new Topic("t/1");
+		Topic t2 = new Topic("t/+/2");
+
+		// test
+		testIds1.forEach(id -> mapper.putSubscriptionId(id, t1, berlinRectangle()));
+		testIds2.forEach(id -> mapper.putSubscriptionId(id, t2, datelineRectangle()));
+
+		Set<ImmutablePair<String, Integer>> returnedIds1 = mapper.getSubscriptionIds(t1, berlinPoint());
+		Set<ImmutablePair<String, Integer>> returnedIds2 =
+				mapper.getSubscriptionIds(new Topic("t/x/2"), datelinePoint());
+
+		// verify
+		assertEquals(testIds1.size(), returnedIds1.size());
+		returnedIds1.removeAll(testIds1);
+		assertTrue(returnedIds1.isEmpty());
+
+		assertEquals(testIds2.size(), returnedIds2.size());
+		returnedIds2.removeAll(testIds2);
+		assertTrue(returnedIds2.isEmpty());
+
+		// test hamburg
+		returnedIds1 = mapper.getSubscriptionIds(t1, hamburgPoint());
+		returnedIds2 = mapper.getSubscriptionIds(new Topic("t/a/2"), hamburgPoint());
+
+		// verify hamburg
+		assertEquals(0, returnedIds1.size());
+		assertEquals(0, returnedIds2.size());
 	}
 
 	private void checkTopicLevels(String[] expected, List<TopicLevel> actual) {
@@ -104,6 +177,13 @@ public class TopicAndGeofenceMapperTest {
 										new Location(52.0, 14.0)));
 	}
 
+	private static Geofence datelineRectangle() {
+		return Geofence.polygon(List.of(new Location(-9, 10),
+										new Location(10, 10),
+										new Location(10, -10),
+										new Location(-9, -10)));
+	}
+
 	private static Location berlinPoint() {
 		return new Location(52.52, 13.405);
 	}
@@ -112,6 +192,9 @@ public class TopicAndGeofenceMapperTest {
 		return new Location(53.511, 9.9937);
 	}
 
+	private static Location datelinePoint() {
+		return new Location(-1.2, 1.4);
+	}
 
 	private static Set<ImmutablePair<String, Integer>> testIds(int numClient, int numIds) {
 		long seed = System.nanoTime();
