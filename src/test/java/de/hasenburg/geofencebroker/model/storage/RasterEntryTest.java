@@ -1,6 +1,8 @@
 package de.hasenburg.geofencebroker.model.storage;
 
 import de.hasenburg.geofencebroker.main.Utility;
+import de.hasenburg.geofencebroker.model.spatial.Geofence;
+import de.hasenburg.geofencebroker.model.spatial.Location;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -41,18 +43,9 @@ public class RasterEntryTest {
 	 * Immutability
 	 ****************************************************************/
 
-	@SuppressWarnings("UnusedAssignment")
-	@Test
-	public void testTopicPartImmutability() {
-		RasterEntry entry = new RasterEntry("topic part");
-		String topic = entry.getTopicPart();
-		topic = "new topic part";
-		assertNotEquals(entry.getTopicPart(), topic);
-	}
-
 	@Test(expected = UnsupportedOperationException.class)
 	public void testGetAllImmutability() throws InterruptedException {
-		RasterEntry rasterEntry = new RasterEntry("a");
+		RasterEntry rasterEntry = new RasterEntry(Location.random(), 1);
 
 		for (int i = 0; i < THREADS; i++) {
 			String clientIdentifier = System.nanoTime()+"";
@@ -72,12 +65,28 @@ public class RasterEntryTest {
 	}
 
 	/*****************************************************************
+	 * RasterEntryBox
+	 ****************************************************************/
+
+	@Test
+	public void testRasterEntryBox() {
+		RasterEntry entry = new RasterEntry(new Location(1.5, 1.2), 1);
+		Geofence expectedBox = Geofence.polygon(Arrays.asList(
+				new Location(1.5, 1.2),
+				new Location(2.5, 1.2),
+				new Location(2.5, 2.2),
+				new Location(1.5, 2.2)
+		));
+		assertEquals(expectedBox, entry.getRasterEntryBox());
+	}
+
+	/*****************************************************************
 	 * Threading
 	 ****************************************************************/
 
 	@Test
 	public void testSingleThreaded() throws InterruptedException, ExecutionException, TimeoutException {
-		RasterEntry rasterEntry = new RasterEntry("a");
+		RasterEntry rasterEntry = new RasterEntry(Location.random(), 1);
 		String clientIdentifier = "U3";
 		Future<Set<ImmutablePair<String, Integer>>> f =
 				executorService.submit(new FakeClientCallable(clientIdentifier, OPERATIONS_PER_CLIENT, rasterEntry, new AtomicInteger(0)));
@@ -98,7 +107,7 @@ public class RasterEntryTest {
 	 */
 	@Test
 	public void testMultiThreadedDifferentClientIds() throws InterruptedException, ExecutionException, TimeoutException {
-		RasterEntry rasterEntry = new RasterEntry("a");
+		RasterEntry rasterEntry = new RasterEntry(Location.random(), 1);
 		HashMap<String, Future<Set<ImmutablePair<String, Integer>>>> futures = new HashMap<>();
 
 		for (int i = 0; i < THREADS; i++) {
@@ -137,7 +146,7 @@ public class RasterEntryTest {
 	 */
 	@Test
 	public void testMultiThreadedSameClientIdSynchronized() throws InterruptedException, ExecutionException, TimeoutException {
-		RasterEntry rasterEntry = new RasterEntry("a");
+		RasterEntry rasterEntry = new RasterEntry(Location.random(), 1);
 		List<Future<Set<ImmutablePair<String, Integer>>>> futures = new ArrayList<>();
 		AtomicInteger atomicInteger = new AtomicInteger();
 		String clientIdentifier = "U3";
@@ -178,7 +187,7 @@ public class RasterEntryTest {
 	 */
 	@Test
 	public void testMultiThreadedSameClientIdNotSynchronized() throws InterruptedException, ExecutionException, TimeoutException {
-		RasterEntry rasterEntry = new RasterEntry("a");
+		RasterEntry rasterEntry = new RasterEntry(Location.random(), 1);
 		List<Future<Set<ImmutablePair<String, Integer>>>> futures = new ArrayList<>();
 		String clientIdentifier = "U3";
 
@@ -238,7 +247,7 @@ public class RasterEntryTest {
 				if (Utility.getTrueWithChance(70)) {
 					int id = currentId.incrementAndGet();
 					ImmutablePair<String, Integer> subscriptionId = ImmutablePair.of(clientIdentifier, id);
-					rasterEntry.addSubscriptionId(subscriptionId);
+					rasterEntry.putSubscriptionId(subscriptionId);
 					logger.trace("Added subscriptionId {}", subscriptionId);
 					existingIds.add(subscriptionId);
 				} else {

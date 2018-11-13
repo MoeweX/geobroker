@@ -16,7 +16,7 @@ public class Connection {
 	private static final Logger logger = LogManager.getLogger();
 
 	private long heartbeat;
-	private final String clientIdentifier;
+	private final String clientIdentifier; // every clientId may only exist once
 	private Location location = null;
 
 	private final ConcurrentHashMap<Topic, Subscription> subscriptions = new ConcurrentHashMap<>();

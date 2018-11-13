@@ -4,6 +4,7 @@ import de.hasenburg.geofencebroker.communication.ControlPacketType;
 import de.hasenburg.geofencebroker.model.*;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
 import de.hasenburg.geofencebroker.model.payload.*;
+import me.atrox.haikunator.Haikunator;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -17,6 +18,10 @@ public class Utility {
 
 	private static final Logger logger = LogManager.getLogger();
 	private static Random r = new Random();
+	private static Haikunator haikunator;
+	static {
+		haikunator = new Haikunator().setRandom(r);
+	}
 
 	public static void sleep(long millis, int nanos) {
 		try {
@@ -59,6 +64,16 @@ public class Utility {
 	 */
 	public static int randomInt(int bound) {
 		return r.nextInt(bound);
+	}
+
+	public static String randomName() {
+		return haikunator.haikunate();
+	}
+
+	public static String randomName(Random r) {
+		Haikunator h = new Haikunator().setRandom(r);
+		h.setRandom(r);
+		return h.haikunate();
 	}
 
 	/**
@@ -158,5 +173,4 @@ public class Utility {
 	public static String generateClientOrderBackendString(String identity) {
 		return "inproc://" + identity;
 	}
-
 }
