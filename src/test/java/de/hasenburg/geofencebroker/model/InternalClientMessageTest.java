@@ -3,6 +3,7 @@ package de.hasenburg.geofencebroker.model;
 import de.hasenburg.geofencebroker.communication.ControlPacketType;
 import de.hasenburg.geofencebroker.model.payload.CONNECTPayload;
 import de.hasenburg.geofencebroker.model.payload.PINGREQPayload;
+import de.hasenburg.geofencebroker.model.spatial.Location;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Test;
@@ -10,7 +11,6 @@ import org.zeromq.ZMsg;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
 
 @SuppressWarnings("ConstantConditions")
 public class InternalClientMessageTest {

@@ -1,6 +1,6 @@
 package de.hasenburg.geofencebroker.model.payload;
 
-import de.hasenburg.geofencebroker.model.Location;
+import de.hasenburg.geofencebroker.model.spatial.Location;
 
 import java.util.Objects;
 

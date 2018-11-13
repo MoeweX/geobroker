@@ -6,6 +6,7 @@ import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
 import de.hasenburg.geofencebroker.model.payload.AbstractPayload;
 import de.hasenburg.geofencebroker.model.payload.CONNECTPayload;
 import de.hasenburg.geofencebroker.model.payload.PINGREQPayload;
+import de.hasenburg.geofencebroker.model.spatial.Location;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Test;

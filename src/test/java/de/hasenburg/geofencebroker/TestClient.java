@@ -5,8 +5,9 @@ import de.hasenburg.geofencebroker.communication.DealerCommunicator;
 import de.hasenburg.geofencebroker.communication.ReasonCode;
 import de.hasenburg.geofencebroker.model.*;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
-import de.hasenburg.geofencebroker.model.geofence.Geofence;
 import de.hasenburg.geofencebroker.model.payload.*;
+import de.hasenburg.geofencebroker.model.spatial.Geofence;
+import de.hasenburg.geofencebroker.model.spatial.Location;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.ZMsg;
@@ -67,7 +68,7 @@ public class TestClient {
 
 	public void sendSUBSCRIBE(Topic topic) {
 		logger.trace("Subscribing with client {} to topic {}", getIdentity(), topic);
-		Geofence geofence = new Geofence(Location.random(), 20.0);
+		Geofence geofence = Geofence.circle(Location.random(), 20.0);
 		SUBSCRIBEPayload payload = new SUBSCRIBEPayload(topic, geofence);
 		dealer.sendDealerMessage(new InternalClientMessage(ControlPacketType.SUBSCRIBE, payload));
 	}
@@ -79,7 +80,7 @@ public class TestClient {
 
 	public void sendPublish(Topic topic, String content) {
 		logger.trace("Publishing with client {} to topic {}: {}", getIdentity(), topic, content);
-		Geofence geofence = new Geofence(Location.random(), 20.0);
+		Geofence geofence = Geofence.circle(Location.random(), 20.0);
 		dealer.sendDealerMessage(new InternalClientMessage(ControlPacketType.PUBLISH, new PUBLISHPayload(topic, geofence, content)));
 	}
 
@@ -93,8 +94,8 @@ public class TestClient {
 		client.sendCONNECT();
 		Location l = Location.random();
 		client.sendPINGREQ(l);
-		client.sendSUBSCRIBE(new Topic("Test Topic"), new Geofence(l, 20.0));
-		client.sendPublish(new Topic("Test Topic"), new Geofence(l, 20.0), "My message content");
+		client.sendSUBSCRIBE(new Topic("Test Topic"), Geofence.circle(l, 20.0));
+		client.sendPublish(new Topic("Test Topic"), Geofence.circle(l, 20.0), "My message content");
 
 		System.in.read();
 

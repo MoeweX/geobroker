@@ -3,14 +3,14 @@ package de.hasenburg.geofencebroker.main;
 import de.hasenburg.geofencebroker.communication.ControlPacketType;
 import de.hasenburg.geofencebroker.communication.ZMQProcessManager;
 import de.hasenburg.geofencebroker.model.InternalClientMessage;
-import de.hasenburg.geofencebroker.model.Location;
 import de.hasenburg.geofencebroker.model.Topic;
 import de.hasenburg.geofencebroker.model.connections.ConnectionManager;
-import de.hasenburg.geofencebroker.model.geofence.Geofence;
 import de.hasenburg.geofencebroker.model.payload.CONNECTPayload;
 import de.hasenburg.geofencebroker.model.payload.PINGREQPayload;
 import de.hasenburg.geofencebroker.model.payload.PUBLISHPayload;
 import de.hasenburg.geofencebroker.model.payload.SUBSCRIBEPayload;
+import de.hasenburg.geofencebroker.model.spatial.Geofence;
+import de.hasenburg.geofencebroker.model.spatial.Location;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -58,7 +58,7 @@ public class LoadTest {
 		int numberOfClients = 20;
 
 		Location location = Location.random();
-		Geofence geofence = new Geofence(location, 0.0); // does not matter as topics are different
+		Geofence geofence = Geofence.circle(location, 0.0); // does not matter as topics are different
 
 		// create clients
 		for (int i = 0; i < numberOfClients; i++) {
@@ -95,7 +95,7 @@ public class LoadTest {
 			simpleClient.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.CONNECT, new CONNECTPayload()));
 			logger.info(simpleClient.receiveInternalClientMessage());
 			simpleClient.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.SUBSCRIBE,
-					new SUBSCRIBEPayload(new Topic(simpleClient.getIdentity()), new Geofence(location, 0.0))));
+					new SUBSCRIBEPayload(new Topic(simpleClient.getIdentity()), Geofence.circle(location, 0.0))));
 			logger.info(simpleClient.receiveInternalClientMessage());
 		}
 
@@ -133,7 +133,7 @@ public class LoadTest {
 				sendMessageAndProcessResponses(new InternalClientMessage(ControlPacketType.PUBLISH,
 						new PUBLISHPayload(
 								new Topic(simpleClient.getIdentity()),
-								new Geofence(location, 0.0),
+								Geofence.circle(location, 0.0),
 								"Some Test content that is being published.")),
 						2);
 				BenchmarkHelper.addEntry("clientPUBLISH", System.nanoTime() - time);

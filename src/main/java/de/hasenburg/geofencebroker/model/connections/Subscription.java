@@ -1,7 +1,7 @@
 package de.hasenburg.geofencebroker.model.connections;
 
 import de.hasenburg.geofencebroker.model.Topic;
-import de.hasenburg.geofencebroker.model.geofence.Geofence;
+import de.hasenburg.geofencebroker.model.spatial.Geofence;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
 public class Subscription {

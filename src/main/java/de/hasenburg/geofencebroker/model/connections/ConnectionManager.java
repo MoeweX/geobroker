@@ -1,8 +1,8 @@
 package de.hasenburg.geofencebroker.model.connections;
 
-import de.hasenburg.geofencebroker.model.Location;
 import de.hasenburg.geofencebroker.model.Topic;
-import de.hasenburg.geofencebroker.model.geofence.Geofence;
+import de.hasenburg.geofencebroker.model.spatial.Geofence;
+import de.hasenburg.geofencebroker.model.spatial.Location;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
@@ -31,7 +31,7 @@ public class ConnectionManager {
 	 * Gets all subscribers for a given topic. See {@link Connection#clientIsSubscriber(Topic, Geofence, Location)} for
 	 * more information on when a client is a subscriber.
 	 *
-	 * @param publisherLocation - can be null if publisher has not set his location yet
+	 * @param publisherLocation - can be null if publisher has not set his location yet // TODO should never be null
 	 * @return a list of subscribers
 	 */
 	public List<Connection> getSubscribers(Topic topic, Geofence publisherGeofence, @Nullable Location publisherLocation) {

@@ -1,8 +1,8 @@
 package de.hasenburg.geofencebroker.model.connections;
 
-import de.hasenburg.geofencebroker.model.Location;
 import de.hasenburg.geofencebroker.model.Topic;
-import de.hasenburg.geofencebroker.model.geofence.Geofence;
+import de.hasenburg.geofencebroker.model.spatial.Geofence;
+import de.hasenburg.geofencebroker.model.spatial.Location;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
@@ -68,17 +68,18 @@ public class Connection {
 		Subscription subscription = subscriptions.get(topic);
 
 		// test whether the location of this client is inside the geofence of the published message
-		if (!publisherGeofence.locationInFence(location)) {
+		if (!publisherGeofence.contains(location)) {
 			return false;
 		}
 
-		// when there is no publisher location, the subscriber geofence has to be infinite
-		if (publisherLocation == null && subscription.getGeofence().getCircleDiameterInMeter() >= 0) {
-			return false;
-		}
+		// TODO publishers always have to have a location
+//		// when there is no publisher location, the subscriber geofence has to be infinite
+//		if (publisherLocation == null && subscription.getGeofence().getCircleDiameterInMeter() >= 0) {
+//			return false;
+//		}
 
 		// last check: when publisher in subscription geofence, the client is subscribed
-		return subscription.getGeofence().locationInFence(publisherLocation);
+		return subscription.getGeofence().contains(publisherLocation);
 	}
 
 	@Override
