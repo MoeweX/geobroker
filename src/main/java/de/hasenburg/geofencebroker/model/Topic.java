@@ -31,6 +31,7 @@ public class Topic {
 	/**
 	 * @return the number of available levels
 	 */
+	@JsonIgnore
 	public int getNumberOfLevels() {
 		return levelSpecifiers.length;
 	}

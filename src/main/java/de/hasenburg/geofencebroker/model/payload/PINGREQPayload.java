@@ -18,7 +18,7 @@ public class PINGREQPayload extends AbstractPayload {
 	}
 
 	/*****************************************************************
-	 * Getter & Setter
+	 * Getter & setter
 	 ****************************************************************/
 
 	public Location getLocation() {
@@ -26,7 +26,7 @@ public class PINGREQPayload extends AbstractPayload {
 	}
 
 	/*****************************************************************
-	 * Generated Code
+	 * Generated methods
 	 ****************************************************************/
 
 	@Override

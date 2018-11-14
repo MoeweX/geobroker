@@ -2,10 +2,14 @@ package de.hasenburg.geofencebroker.communication;
 
 import de.hasenburg.geofencebroker.main.BenchmarkHelper;
 import de.hasenburg.geofencebroker.model.InternalBrokerMessage;
-import de.hasenburg.geofencebroker.model.connections.Connection;
-import de.hasenburg.geofencebroker.model.connections.ConnectionManager;
+import de.hasenburg.geofencebroker.model.connections.Client;
+import de.hasenburg.geofencebroker.model.connections.ClientDirectory;
 import de.hasenburg.geofencebroker.model.connections.Subscription;
 import de.hasenburg.geofencebroker.model.payload.*;
+import de.hasenburg.geofencebroker.model.spatial.Geofence;
+import de.hasenburg.geofencebroker.model.spatial.Location;
+import de.hasenburg.geofencebroker.model.storage.TopicAndGeofenceMapper;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.SocketType;
@@ -15,21 +19,25 @@ import org.zeromq.ZMsg;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 class ZMQProcess_MessageProcessor implements Runnable {
 
 	private static final Logger logger = LogManager.getLogger();
 	private static final int TIMEOUT_SECONDS = 10; // logs when not received in time, but repeats
 
-	ConnectionManager connectionManager;
+	ClientDirectory clientDirectory;
+	TopicAndGeofenceMapper topicAndGeofenceMapper;
 	String identity;
 	ZContext context;
 	ZMQ.Socket processor;
 
-	protected ZMQProcess_MessageProcessor(String identity, ZContext context, ConnectionManager connectionManager) {
+	protected ZMQProcess_MessageProcessor(String identity, ZContext context, ClientDirectory clientDirectory,
+										  TopicAndGeofenceMapper topicAndGeofenceMapper) {
 		this.identity = identity;
-		this.connectionManager = connectionManager;
+		this.clientDirectory = clientDirectory;
 		this.context = context;
+		this.topicAndGeofenceMapper = topicAndGeofenceMapper;
 	}
 
 	@Override
@@ -46,18 +54,23 @@ class ZMQProcess_MessageProcessor implements Runnable {
 
 		while (!Thread.currentThread().isInterrupted()) {
 
-			logger.trace("ZMQProcess_MessageProcessor {} waiting {}s for a message", new String(processor.getIdentity()), TIMEOUT_SECONDS);
+			logger.trace("ZMQProcess_MessageProcessor {} waiting {}s for a message",
+						 new String(processor.getIdentity()),
+						 TIMEOUT_SECONDS);
 			poller.poll(TIMEOUT_SECONDS * 1000);
 
 			if (poller.pollin(zmqControlIndex)) {
-				if (ZMQControlUtility.getCommand(poller, zmqControlIndex).equals(ZMQControlUtility.ZMQControlCommand.KILL)) {
+				if (ZMQControlUtility.getCommand(poller, zmqControlIndex)
+									 .equals(ZMQControlUtility.ZMQControlCommand.KILL)) {
 					break;
 				}
 			} else if (poller.pollin(1)) {
 				ZMsg zMsg = ZMsg.recvMsg(processor);
 				number++;
 				Optional<InternalBrokerMessage> messageO = InternalBrokerMessage.buildMessage(zMsg);
-				logger.debug("ZMQProcess_MessageProcessor {} processing message number {}", new String(processor.getIdentity()), number);
+				logger.debug("ZMQProcess_MessageProcessor {} processing message number {}",
+							 new String(processor.getIdentity()),
+							 number);
 				messageO.ifPresentOrElse(message -> {
 					long time = System.nanoTime();
 					switch (message.getControlPacketType()) {
@@ -106,131 +119,152 @@ class ZMQProcess_MessageProcessor implements Runnable {
 	 * 	-> we expect all fields to be set
 	 ****************************************************************/
 
+	@SuppressWarnings("OptionalGetWithoutIsPresent")
 	private void processCONNECT(InternalBrokerMessage message) {
 		InternalBrokerMessage response;
+		CONNECTPayload payload = message.getPayload().getCONNECTPayload().get();
 
-		Connection connection = connectionManager.getConnection(message.getClientIdentifier());
-		if (connection != null) {
-			logger.debug("Connection already exists for {}, so protocol error. Disconnecting.",
-					message.getClientIdentifier());
-			connectionManager.removeConnection(message.getClientIdentifier());
-			response = new InternalBrokerMessage(
-					message.getClientIdentifier(), ControlPacketType.DISCONNECT,
-					new DISCONNECTPayload(ReasonCode.ProtocolError));
+		boolean success = clientDirectory.addClient(message.getClientIdentifier(), payload.getLocation());
+
+		if (success) {
+			logger.debug("Created client for client {}, acknowledging.", message.getClientIdentifier());
+			response = new InternalBrokerMessage(message.getClientIdentifier(),
+												 ControlPacketType.CONNACK,
+												 new CONNACKPayload(ReasonCode.Success));
 		} else {
-			connection = new Connection(message.getClientIdentifier());
-			logger.debug("Created connection for client {}, acknowledging.", message.getClientIdentifier());
-			response = new InternalBrokerMessage(message.getClientIdentifier(), ControlPacketType.CONNACK,
-					new CONNACKPayload(ReasonCode.Success));
-			connectionManager.putConnection(connection);
+			logger.debug("Client already exists for {}, so protocol error. Disconnecting.",
+						 message.getClientIdentifier());
+			clientDirectory.removeClient(message.getClientIdentifier());
+			response = new InternalBrokerMessage(message.getClientIdentifier(),
+												 ControlPacketType.DISCONNECT,
+												 new DISCONNECTPayload(ReasonCode.ProtocolError));
 		}
 
-		logger.debug("Sending response " + response);
+		logger.trace("Sending response " + response);
 		response.getZMsg().send(processor);
 	}
 
-	@SuppressWarnings("ConstantConditions")
+	@SuppressWarnings("OptionalGetWithoutIsPresent")
 	private void processDISCONNECT(InternalBrokerMessage message) {
-		Connection connection = connectionManager.getConnection(message.getClientIdentifier());
-		if (connection == null) {
-			logger.trace("Connection for {} did not exist", message.getClientIdentifier());
+		DISCONNECTPayload payload = message.getPayload().getDISCONNECTPayload().get();
+
+		boolean success = clientDirectory.removeClient(message.getClientIdentifier());
+		if (!success) {
+			logger.trace("Client for {} did not exist", message.getClientIdentifier());
 			return;
 		}
 
-		// remove connection
-		DISCONNECTPayload payload = message.getPayload().getDISCONNECTPayload().get();
 		logger.debug("Disconnected client {}, code {}", message.getClientIdentifier(), payload.getReasonCode());
-		connectionManager.removeConnection(connection.getClientIdentifier());
 	}
 
-	@SuppressWarnings("ConstantConditions")
+	@SuppressWarnings("OptionalGetWithoutIsPresent")
 	private void processPINGREQ(InternalBrokerMessage message) {
 		InternalBrokerMessage response;
+		PINGREQPayload payload = message.getPayload().getPINGREQPayload().get();
 
-		Connection connection = connectionManager.getConnection(message.getClientIdentifier());
-		if (connection != null) {
-			PINGREQPayload payload = message.getPayload().getPINGREQPayload().get();
-
-			// update location
-			connection.updateLocation(payload.getLocation());
+		boolean success = clientDirectory.updateClientLocation(message.getClientIdentifier(), payload.getLocation());
+		if (success) {
 			logger.debug("Updated location of {} to {}", message.getClientIdentifier(), payload.getLocation());
 
-			response = new InternalBrokerMessage(message.getClientIdentifier(), ControlPacketType.PINGRESP,
-					new PINGRESPPayload(ReasonCode.LocationUpdated));
+			response = new InternalBrokerMessage(message.getClientIdentifier(),
+												 ControlPacketType.PINGRESP,
+												 new PINGRESPPayload(ReasonCode.LocationUpdated));
 		} else {
-			logger.trace("Client {} is not connected", message.getClientIdentifier());
-			response = new InternalBrokerMessage(message.getClientIdentifier(), ControlPacketType.PINGRESP,
-					new PINGRESPPayload(ReasonCode.NotConnected));
+			logger.debug("Client {} is not connected", message.getClientIdentifier());
+			response = new InternalBrokerMessage(message.getClientIdentifier(),
+												 ControlPacketType.PINGRESP,
+												 new PINGRESPPayload(ReasonCode.NotConnected));
 		}
 
-		logger.debug("Sending response " + response);
+		logger.trace("Sending response " + response);
 		response.getZMsg().send(processor);
 	}
 
-	@SuppressWarnings("ConstantConditions")
+	@SuppressWarnings("OptionalGetWithoutIsPresent")
 	private void processSUBSCRIBEforConnection(InternalBrokerMessage message) {
 		InternalBrokerMessage response;
+		SUBSCRIBEPayload payload = message.getPayload().getSUBSCRIBEPayload().get();
 
-		Connection connection = connectionManager.getConnection(message.getClientIdentifier());
-		if (connection != null) {
-			SUBSCRIBEPayload payload = message.getPayload().getSUBSCRIBEPayload().get();
+		ImmutablePair<ImmutablePair<String, Integer>, Geofence> subscribed = clientDirectory
+				.checkIfSubscribed(message.getClientIdentifier(), payload.getTopic(), payload.getGeofence());
 
-			// update subscription
-			Subscription subscription = new Subscription(null, payload.getTopic(), payload.getGeofence());
-			connection.putSubscription(subscription);
-			logger.debug("Client {} subscribed to topic {}", message.getClientIdentifier(), payload.getTopic());
-			response = new InternalBrokerMessage(message.getClientIdentifier(), ControlPacketType.SUBACK,
-					new SUBACKPayload(ReasonCode.GrantedQoS1));
-		} else {
-			response = new InternalBrokerMessage(message.getClientIdentifier(), ControlPacketType.SUBACK,
-					new SUBACKPayload(ReasonCode.NotConnected));
+		// if already subscribed -> remove subscription id from now unrelated geofence parts
+		if (subscribed != null) {
+			topicAndGeofenceMapper.removeSubscriptionId(subscribed.left, payload.getTopic(), subscribed.right);
 		}
 
-		logger.debug("Sending response " + response);
+		ImmutablePair<String, Integer> subscriptionId = clientDirectory
+				.putSubscription(message.getClientIdentifier(), payload.getTopic(), payload.getGeofence());
+
+		if (subscriptionId == null) {
+			logger.debug("Client {} is not connected", message.getClientIdentifier());
+			response = new InternalBrokerMessage(message.getClientIdentifier(),
+												 ControlPacketType.SUBACK,
+												 new SUBACKPayload(ReasonCode.NotConnected));
+		} else {
+			topicAndGeofenceMapper.putSubscriptionId(subscriptionId, payload.getTopic(), payload.getGeofence());
+			logger.debug("Client {} subscribed to topic {}", message.getClientIdentifier(), payload.getTopic());
+			response = new InternalBrokerMessage(message.getClientIdentifier(),
+												 ControlPacketType.SUBACK,
+												 new SUBACKPayload(ReasonCode.GrantedQoS1));
+		}
+
+		logger.trace("Sending response " + response);
 		response.getZMsg().send(processor);
 	}
 
 	public void processUNSUBSCRIBEforConnection(InternalBrokerMessage message) {
+		// TODO Implement
 		throw new RuntimeException("Not yet implemented");
 	}
 
-	@SuppressWarnings("ConstantConditions")
+	@SuppressWarnings("OptionalGetWithoutIsPresent")
 	public void processPublish(InternalBrokerMessage message) {
 		InternalBrokerMessage response;
+		PUBLISHPayload payload = message.getPayload().getPUBLISHPayload().get();
 
-		Connection connection = connectionManager.getConnection(message.getClientIdentifier());
-		if (connection != null) {
-			PUBLISHPayload payload = message.getPayload().getPUBLISHPayload().get();
-
+		Location publisherLocation = clientDirectory.getClientLocation(message.getClientIdentifier());
+		if (publisherLocation != null) {
 			logger.debug("Publishing topic {} to all subscribers", payload.getTopic());
-			List<Connection> subscribers = connectionManager
-					.getSubscribers(payload.getTopic(), payload.getGeofence(),
-							connection.getLocation().orElseGet(null));
 
-			for (Connection subscriber : subscribers) {
-				logger.trace("Client {} is a subscriber", subscriber.getClientIdentifier());
-				InternalBrokerMessage toPublish = new InternalBrokerMessage(subscriber.getClientIdentifier(),
-						ControlPacketType.PUBLISH, payload);
-				logger.debug("Publishing " + toPublish);
+			// get subscriptions that have a geofence containing the publisher location
+			Set<ImmutablePair<String, Integer>> subscriptionIds =
+					topicAndGeofenceMapper.getSubscriptionIds(payload.getTopic(), publisherLocation);
+
+			// only keep subscription if subscriber location is insider publisher geofence
+			subscriptionIds
+					.removeIf(subId -> !payload.getGeofence().contains(clientDirectory.getClientLocation(subId.left)));
+
+			// publish message to remaining subscribers
+			for (ImmutablePair<String, Integer> subscriptionId : subscriptionIds) {
+				String subscriberClientIdentifier = subscriptionId.left;
+				logger.debug("Client {} is a subscriber", subscriberClientIdentifier);
+				InternalBrokerMessage toPublish =
+						new InternalBrokerMessage(subscriberClientIdentifier, ControlPacketType.PUBLISH, payload);
+				logger.trace("Publishing " + toPublish);
 				toPublish.getZMsg().send(processor);
 			}
 
-			if (!subscribers.isEmpty()) {
-				response = new InternalBrokerMessage(message.getClientIdentifier(), ControlPacketType.PUBACK,
-						new PUBACKPayload(ReasonCode.Success));
+			if (subscriptionIds.isEmpty()) {
+				response = new InternalBrokerMessage(message.getClientIdentifier(),
+													 ControlPacketType.PUBACK,
+													 new PUBACKPayload(ReasonCode.NoMatchingSubscribers));
 			} else {
 				logger.trace("No subscriber exists.");
-				response = new InternalBrokerMessage(message.getClientIdentifier(), ControlPacketType.PUBACK,
-						new PUBACKPayload(ReasonCode.NoMatchingSubscribers));
+				response = new InternalBrokerMessage(message.getClientIdentifier(),
+													 ControlPacketType.PUBACK,
+													 new PUBACKPayload(ReasonCode.Success));
 			}
 
 		} else {
-			response = new InternalBrokerMessage(message.getClientIdentifier(), ControlPacketType.PUBACK,
-					new PUBACKPayload(ReasonCode.NotConnected));
+			logger.debug("Client {} is not connected", message.getClientIdentifier());
+			response = new InternalBrokerMessage(message.getClientIdentifier(),
+												 ControlPacketType.PUBACK,
+												 new PUBACKPayload(ReasonCode.NotConnected));
 		}
 
 		// send response to publisher
-		logger.debug("Sending response " + response);
+		logger.trace("Sending response " + response);
 		response.getZMsg().send(processor);
 	}
 

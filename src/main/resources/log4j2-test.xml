@@ -18,16 +18,19 @@
         <Logger name="de.hasenburg.geofencebroker.communication.ZMQProcess_Broker" level="debug" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
-        <Logger name="de.hasenburg.geofencebroker.communication.ZMQProcess_MessageProcessor" level="info" additivity="false">
+        <Logger name="de.hasenburg.geofencebroker.communication.ZMQProcess_MessageProcessor" level="debug" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
         <Logger name="de.hasenburg.geofencebroker.communication.ZMQCommunicator" level="warn" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
-        <Logger name="de.hasenburg.geofencebroker.main.LoadTest" level="debug" additivity="false">
+        <Logger name="de.hasenburg.geofencebroker.main.LoadTest" level="info" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
         <Logger name="de.hasenburg.geofencebroker.communication.ZMQProcess_SimpleClient" level="info" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+        <Logger name="de.hasenburg.geofencebroker.model.connections" level="info" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
     </Loggers>

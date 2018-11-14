@@ -48,7 +48,7 @@ public class TestClient {
 
 	public void sendCONNECT() {
 		logger.trace("Connecting with client " + getIdentity());
-		dealer.sendDealerMessage(new InternalClientMessage(ControlPacketType.CONNECT, new CONNECTPayload()));
+		dealer.sendDealerMessage(new InternalClientMessage(ControlPacketType.CONNECT, new CONNECTPayload(Location.random())));
 	}
 
 	public void sendPINGREQ() {

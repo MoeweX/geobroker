@@ -24,7 +24,7 @@ public class InternalClientMessageTest {
 	@Test
 	public void testPayloadConnect() {
 		logger.info("RUNNING testPayloadConnect TEST");
-		InternalClientMessage message = new InternalClientMessage(ControlPacketType.CONNECT, new CONNECTPayload());
+		InternalClientMessage message = new InternalClientMessage(ControlPacketType.CONNECT, new CONNECTPayload(Location.random()));
 		logger.debug(message);
 		ZMsg zmsg = message.getZMsg();
 		InternalClientMessage message2 = InternalClientMessage.buildMessage(zmsg).get();

@@ -1,7 +1,8 @@
 package de.hasenburg.geofencebroker.communication;
 
 import de.hasenburg.geofencebroker.main.Utility;
-import de.hasenburg.geofencebroker.model.connections.ConnectionManager;
+import de.hasenburg.geofencebroker.model.connections.ClientDirectory;
+import de.hasenburg.geofencebroker.model.storage.TopicAndGeofenceMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.ZContext;
@@ -33,8 +34,8 @@ public class ZMQProcessManager {
 	}
 
 	/**
-	 * Tries to tear down ZMQProcessManager. If futures do not complete in the given time,
-	 * returns false and does not kill the context.
+	 * Tries to tear down ZMQProcessManager. If futures do not complete in the given time, returns false and does not
+	 * kill the context.
 	 *
 	 * @param timeout - timeout in microseconds
 	 * @return true if teared down in timeout time
@@ -62,7 +63,8 @@ public class ZMQProcessManager {
 		context.destroySocket(zmqController);
 
 		if (!context.getSockets().isEmpty()) {
-			logger.warn("There are still open sockets in ZContext: {}, better to close them manually!", context.getSockets());
+			logger.warn("There are still open sockets in ZContext: {}, better to close them manually!",
+						context.getSockets());
 		}
 
 		context.destroy();
@@ -94,19 +96,25 @@ public class ZMQProcessManager {
 	 * Process Starter
 	 ****************************************************************/
 
-	public void runZMQProcess_MessageProcessor(String identity, ConnectionManager connectionManager) {
+	public void runZMQProcess_MessageProcessor(String identity, ClientDirectory clientDirectory,
+											   TopicAndGeofenceMapper topicAndGeofenceMapper) {
 		if (getIncompleteZMQProcesses().contains(identity)) {
-			logger.error("Cannot start ZMQProcess with identity {}, as one with this identity already exists", identity);
+			logger.error("Cannot start ZMQProcess with identity {}, as one with this identity already exists",
+						 identity);
 			return;
 		}
-		Future<?> process = pool.submit(new ZMQProcess_MessageProcessor(identity, context, connectionManager));
+		Future<?> process = pool.submit(new ZMQProcess_MessageProcessor(identity,
+																		context,
+																		clientDirectory,
+																		topicAndGeofenceMapper));
 		zmqProcesses.put(identity, process);
 		logger.info("Started {} with identity {}", ZMQProcess_MessageProcessor.class.getSimpleName(), identity);
 	}
 
 	public void runZMQProcess_Broker(String address, int port, String identity) {
 		if (getIncompleteZMQProcesses().contains(identity)) {
-			logger.error("Cannot start ZMQProcess with identity {}, as one with this identity already exists", identity);
+			logger.error("Cannot start ZMQProcess with identity {}, as one with this identity already exists",
+						 identity);
 			return;
 		}
 		Future<?> process = pool.submit(new ZMQProcess_Broker(address, port, identity, context));
@@ -116,7 +124,8 @@ public class ZMQProcessManager {
 
 	public void runZMQProcess_SimpleClient(String address, int port, String identity) {
 		if (getIncompleteZMQProcesses().contains(identity)) {
-			logger.error("Cannot start ZMQProcess with identity {}, as one with this identity already exists", identity);
+			logger.error("Cannot start ZMQProcess with identity {}, as one with this identity already exists",
+						 identity);
 			return;
 		}
 		Future<?> process = pool.submit(new ZMQProcess_SimpleClient(address, port, identity, context));
