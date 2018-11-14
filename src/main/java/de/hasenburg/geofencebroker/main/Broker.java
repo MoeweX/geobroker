@@ -1,7 +1,7 @@
 package de.hasenburg.geofencebroker.main;
 
 import de.hasenburg.geofencebroker.communication.ZMQProcessManager;
-import de.hasenburg.geofencebroker.model.connections.ClientDirectory;
+import de.hasenburg.geofencebroker.model.clients.ClientDirectory;
 import de.hasenburg.geofencebroker.model.storage.TopicAndGeofenceMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

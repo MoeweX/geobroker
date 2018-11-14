@@ -30,7 +30,7 @@
         <Logger name="de.hasenburg.geofencebroker.communication.ZMQProcess_SimpleClient" level="info" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
-        <Logger name="de.hasenburg.geofencebroker.model.connections" level="info" additivity="false">
+        <Logger name="de.hasenburg.geofencebroker.model.clients" level="info" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
     </Loggers>

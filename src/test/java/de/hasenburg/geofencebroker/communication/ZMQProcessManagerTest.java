@@ -2,7 +2,7 @@ package de.hasenburg.geofencebroker.communication;
 
 import de.hasenburg.geofencebroker.main.Configuration;
 import de.hasenburg.geofencebroker.main.Utility;
-import de.hasenburg.geofencebroker.model.connections.ClientDirectory;
+import de.hasenburg.geofencebroker.model.clients.ClientDirectory;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
 import de.hasenburg.geofencebroker.model.storage.TopicAndGeofenceMapper;
 import org.apache.logging.log4j.LogManager;

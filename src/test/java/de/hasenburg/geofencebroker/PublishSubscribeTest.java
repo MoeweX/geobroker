@@ -6,7 +6,7 @@ import de.hasenburg.geofencebroker.communication.ZMQProcessManager;
 import de.hasenburg.geofencebroker.main.Configuration;
 import de.hasenburg.geofencebroker.model.InternalClientMessage;
 import de.hasenburg.geofencebroker.model.Topic;
-import de.hasenburg.geofencebroker.model.connections.ClientDirectory;
+import de.hasenburg.geofencebroker.model.clients.ClientDirectory;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
 import de.hasenburg.geofencebroker.model.payload.PUBACKPayload;
 import de.hasenburg.geofencebroker.model.payload.PUBLISHPayload;

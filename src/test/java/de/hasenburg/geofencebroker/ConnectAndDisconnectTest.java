@@ -4,7 +4,7 @@ import de.hasenburg.geofencebroker.communication.ControlPacketType;
 import de.hasenburg.geofencebroker.communication.ZMQProcessManager;
 import de.hasenburg.geofencebroker.main.Configuration;
 import de.hasenburg.geofencebroker.model.InternalClientMessage;
-import de.hasenburg.geofencebroker.model.connections.ClientDirectory;
+import de.hasenburg.geofencebroker.model.clients.ClientDirectory;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
 import de.hasenburg.geofencebroker.model.storage.TopicAndGeofenceMapper;
 import org.apache.logging.log4j.LogManager;
@@ -67,7 +67,7 @@ public class ConnectAndDisconnectTest {
 		// check if connection is inactive
 		Thread.sleep(100);
 		assertNull("Client should not exist", clientDirectory.getClientLocation(client.getIdentity()));
-		assertEquals("Wrong number of active connections", 0, clientDirectory.getNumberOfClients());
+		assertEquals("Wrong number of active clients", 0, clientDirectory.getNumberOfClients());
 
 		client.tearDown();
 		logger.info("FINISHED TEST");
@@ -110,8 +110,8 @@ public class ConnectAndDisconnectTest {
 		}
 
 		Thread.sleep(100);
-		// check number of active connections
-		assertEquals("Wrong number of active connections", activeConnections, clientDirectory.getNumberOfClients());
+		// check number of active clients
+		assertEquals("Wrong number of active clients", activeConnections, clientDirectory.getNumberOfClients());
 
 		// tear down clients
 		clients.forEach(c -> c.tearDown());

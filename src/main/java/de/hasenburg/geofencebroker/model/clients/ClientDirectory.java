@@ -1,4 +1,4 @@
-package de.hasenburg.geofencebroker.model.connections;
+package de.hasenburg.geofencebroker.model.clients;
 
 import de.hasenburg.geofencebroker.model.Topic;
 import de.hasenburg.geofencebroker.model.spatial.Geofence;

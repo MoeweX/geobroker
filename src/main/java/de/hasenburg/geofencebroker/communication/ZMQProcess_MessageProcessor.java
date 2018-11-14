@@ -2,9 +2,7 @@ package de.hasenburg.geofencebroker.communication;
 
 import de.hasenburg.geofencebroker.main.BenchmarkHelper;
 import de.hasenburg.geofencebroker.model.InternalBrokerMessage;
-import de.hasenburg.geofencebroker.model.connections.Client;
-import de.hasenburg.geofencebroker.model.connections.ClientDirectory;
-import de.hasenburg.geofencebroker.model.connections.Subscription;
+import de.hasenburg.geofencebroker.model.clients.ClientDirectory;
 import de.hasenburg.geofencebroker.model.payload.*;
 import de.hasenburg.geofencebroker.model.spatial.Geofence;
 import de.hasenburg.geofencebroker.model.spatial.Location;
@@ -17,7 +15,6 @@ import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
