@@ -1,21 +1,45 @@
 package de.hasenburg.geofencebroker.model.payload;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import de.hasenburg.geofencebroker.model.spatial.Location;
 
-@JsonSerialize
-public class CONNECTPayload  extends AbstractPayload {
+import java.util.Objects;
+
+public class CONNECTPayload extends AbstractPayload {
+
+	protected Location location;
 
 	public CONNECTPayload() {
 
 	}
 
+	public CONNECTPayload(Location location) {
+		super();
+		this.location = location;
+	}
+
+	/*****************************************************************
+	 * Getter & setter
+	 ****************************************************************/
+
+	public Location getLocation() {
+		return location;
+	}
+
+	/*****************************************************************
+	 * Generated methods
+	 ****************************************************************/
+
 	@Override
-	public int hashCode() {
-		return super.hashCode();
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		CONNECTPayload that = (CONNECTPayload) o;
+		return Objects.equals(getLocation(), that.getLocation());
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		return obj instanceof CONNECTPayload;
+	public int hashCode() {
+		return Objects.hash(getLocation());
 	}
 }
+

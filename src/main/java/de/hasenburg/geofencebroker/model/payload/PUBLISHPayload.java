@@ -1,7 +1,7 @@
 package de.hasenburg.geofencebroker.model.payload;
 
 import de.hasenburg.geofencebroker.model.Topic;
-import de.hasenburg.geofencebroker.model.geofence.Geofence;
+import de.hasenburg.geofencebroker.model.spatial.Geofence;
 
 import java.util.Objects;
 

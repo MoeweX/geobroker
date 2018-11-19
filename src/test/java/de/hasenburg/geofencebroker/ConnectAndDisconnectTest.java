@@ -2,9 +2,11 @@ package de.hasenburg.geofencebroker;
 
 import de.hasenburg.geofencebroker.communication.ControlPacketType;
 import de.hasenburg.geofencebroker.communication.ZMQProcessManager;
+import de.hasenburg.geofencebroker.main.Configuration;
 import de.hasenburg.geofencebroker.model.InternalClientMessage;
-import de.hasenburg.geofencebroker.model.connections.ConnectionManager;
+import de.hasenburg.geofencebroker.model.clients.ClientDirectory;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
+import de.hasenburg.geofencebroker.model.storage.TopicAndGeofenceMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.After;
@@ -18,13 +20,15 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class ConnectAndDisconnectTest {
 
 	private static final Logger logger = LogManager.getLogger();
 
-	ConnectionManager connectionManager;
+	ClientDirectory clientDirectory;
+	TopicAndGeofenceMapper topicAndGeofenceMapper;
 	ZMQProcessManager processManager;
 
 	@SuppressWarnings("Duplicates")
@@ -32,11 +36,12 @@ public class ConnectAndDisconnectTest {
 	public void setUp() {
 		logger.info("Running test setUp");
 
-		connectionManager = new ConnectionManager();
+		clientDirectory = new ClientDirectory();
+		topicAndGeofenceMapper = new TopicAndGeofenceMapper(new Configuration());
 
 		processManager = new ZMQProcessManager();
 		processManager.runZMQProcess_Broker("tcp://localhost", 5559, "broker");
-		processManager.runZMQProcess_MessageProcessor("message_processor", connectionManager);
+		processManager.runZMQProcess_MessageProcessor("message_processor", clientDirectory, topicAndGeofenceMapper);
 	}
 
 	@After
@@ -61,7 +66,8 @@ public class ConnectAndDisconnectTest {
 
 		// check if connection is inactive
 		Thread.sleep(100);
-		assertEquals("No connection should exist", 0, connectionManager.getActiveConnections().size());
+		assertNull("Client should not exist", clientDirectory.getClientLocation(client.getIdentity()));
+		assertEquals("Wrong number of active clients", 0, clientDirectory.getNumberOfClients());
 
 		client.tearDown();
 		logger.info("FINISHED TEST");
@@ -104,8 +110,8 @@ public class ConnectAndDisconnectTest {
 		}
 
 		Thread.sleep(100);
-		// check number of active connections
-		assertEquals("Wrong number of active connections", activeConnections, connectionManager.getActiveConnections().size());
+		// check number of active clients
+		assertEquals("Wrong number of active clients", activeConnections, clientDirectory.getNumberOfClients());
 
 		// tear down clients
 		clients.forEach(c -> c.tearDown());

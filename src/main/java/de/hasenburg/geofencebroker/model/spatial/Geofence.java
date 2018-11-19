@@ -8,10 +8,7 @@ import de.hasenburg.geofencebroker.model.exceptions.RuntimeShapeException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.locationtech.spatial4j.io.ShapeWriter;
-import org.locationtech.spatial4j.shape.Rectangle;
-import org.locationtech.spatial4j.shape.Shape;
-import org.locationtech.spatial4j.shape.ShapeFactory;
-import org.locationtech.spatial4j.shape.SpatialRelation;
+import org.locationtech.spatial4j.shape.*;
 
 import java.text.ParseException;
 import java.util.List;
@@ -61,6 +58,11 @@ public class Geofence implements JSONable  {
 		// close polygon
 		polygonBuilder.pointLatLon(surroundingLocations.get(0).getLat(), surroundingLocations.get(0).getLon());
 		return new Geofence(polygonBuilder.build());
+	}
+
+	public static Geofence circle(Location location, double radiusDegree) {
+		Circle c = GEO.getShapeFactory().circle(location.getPoint(), radiusDegree);
+		return new Geofence(c);
 	}
 
 	@JsonIgnore

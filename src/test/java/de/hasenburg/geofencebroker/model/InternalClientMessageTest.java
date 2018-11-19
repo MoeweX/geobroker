@@ -3,6 +3,7 @@ package de.hasenburg.geofencebroker.model;
 import de.hasenburg.geofencebroker.communication.ControlPacketType;
 import de.hasenburg.geofencebroker.model.payload.CONNECTPayload;
 import de.hasenburg.geofencebroker.model.payload.PINGREQPayload;
+import de.hasenburg.geofencebroker.model.spatial.Location;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Test;
@@ -10,7 +11,6 @@ import org.zeromq.ZMsg;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
 
 @SuppressWarnings("ConstantConditions")
 public class InternalClientMessageTest {
@@ -24,7 +24,7 @@ public class InternalClientMessageTest {
 	@Test
 	public void testPayloadConnect() {
 		logger.info("RUNNING testPayloadConnect TEST");
-		InternalClientMessage message = new InternalClientMessage(ControlPacketType.CONNECT, new CONNECTPayload());
+		InternalClientMessage message = new InternalClientMessage(ControlPacketType.CONNECT, new CONNECTPayload(Location.random()));
 		logger.debug(message);
 		ZMsg zmsg = message.getZMsg();
 		InternalClientMessage message2 = InternalClientMessage.buildMessage(zmsg).get();

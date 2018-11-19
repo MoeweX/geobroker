@@ -3,9 +3,11 @@ package de.hasenburg.geofencebroker;
 import de.hasenburg.geofencebroker.communication.ControlPacketType;
 import de.hasenburg.geofencebroker.communication.ReasonCode;
 import de.hasenburg.geofencebroker.communication.ZMQProcessManager;
+import de.hasenburg.geofencebroker.main.Configuration;
 import de.hasenburg.geofencebroker.model.InternalClientMessage;
-import de.hasenburg.geofencebroker.model.connections.ConnectionManager;
+import de.hasenburg.geofencebroker.model.clients.ClientDirectory;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
+import de.hasenburg.geofencebroker.model.storage.TopicAndGeofenceMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.After;
@@ -23,7 +25,8 @@ public class PingTest {
 
 	private static final Logger logger = LogManager.getLogger();
 
-	ConnectionManager connectionManager;
+	ClientDirectory clientDirectory;
+	TopicAndGeofenceMapper topicAndGeofenceMapper;
 	ZMQProcessManager processManager;
 
 	@SuppressWarnings("Duplicates")
@@ -31,11 +34,12 @@ public class PingTest {
 	public void setUp() {
 		logger.info("Running test setUp");
 
-		connectionManager = new ConnectionManager();
+		clientDirectory = new ClientDirectory();
+		topicAndGeofenceMapper = new TopicAndGeofenceMapper(new Configuration());
 
 		processManager = new ZMQProcessManager();
 		processManager.runZMQProcess_Broker("tcp://localhost", 5559, "broker");
-		processManager.runZMQProcess_MessageProcessor("message_processor", connectionManager);
+		processManager.runZMQProcess_MessageProcessor("message_processor", clientDirectory, topicAndGeofenceMapper);
 	}
 
 	@After

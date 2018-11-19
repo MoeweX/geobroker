@@ -1,11 +1,12 @@
 package de.hasenburg.geofencebroker.communication;
 
+import de.hasenburg.geofencebroker.main.Configuration;
 import de.hasenburg.geofencebroker.main.Utility;
-import de.hasenburg.geofencebroker.model.connections.ConnectionManager;
+import de.hasenburg.geofencebroker.model.clients.ClientDirectory;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
+import de.hasenburg.geofencebroker.model.storage.TopicAndGeofenceMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -20,13 +21,14 @@ public class ZMQProcessManagerTest {
 	@Test
 	public void tearUpTearDown() throws CommunicatorException {
 		// prepare
-		ConnectionManager cm = new ConnectionManager();
+		ClientDirectory clientDirectory = new ClientDirectory();
+		TopicAndGeofenceMapper topicAndGeofenceMapper = new TopicAndGeofenceMapper(new Configuration());
 		ZMQProcessManager pm = new ZMQProcessManager();
 		assertTrue(pm.getIncompleteZMQProcesses().isEmpty());
 
 		// start two processes
-		pm.runZMQProcess_MessageProcessor("Process 1", cm);
-		pm.runZMQProcess_MessageProcessor("Process 2", cm);
+		pm.runZMQProcess_MessageProcessor("Process 1", clientDirectory, topicAndGeofenceMapper);
+		pm.runZMQProcess_MessageProcessor("Process 2", clientDirectory, topicAndGeofenceMapper);
 		Utility.sleepNoLog(100, 0);
 		assertTrue(pm.getIncompleteZMQProcesses().containsAll(Arrays.asList("Process 1", "Process 2")));
 		logger.info("Started two message processor processes");

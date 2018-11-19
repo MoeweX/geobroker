@@ -1,14 +1,18 @@
 package de.hasenburg.geofencebroker;
 
-import de.hasenburg.geofencebroker.communication.*;
+import de.hasenburg.geofencebroker.communication.ControlPacketType;
+import de.hasenburg.geofencebroker.communication.ReasonCode;
+import de.hasenburg.geofencebroker.communication.ZMQProcessManager;
+import de.hasenburg.geofencebroker.main.Configuration;
 import de.hasenburg.geofencebroker.model.InternalClientMessage;
-import de.hasenburg.geofencebroker.model.Location;
 import de.hasenburg.geofencebroker.model.Topic;
-import de.hasenburg.geofencebroker.model.connections.ConnectionManager;
+import de.hasenburg.geofencebroker.model.clients.ClientDirectory;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
-import de.hasenburg.geofencebroker.model.geofence.Geofence;
 import de.hasenburg.geofencebroker.model.payload.PUBACKPayload;
 import de.hasenburg.geofencebroker.model.payload.PUBLISHPayload;
+import de.hasenburg.geofencebroker.model.spatial.Geofence;
+import de.hasenburg.geofencebroker.model.spatial.Location;
+import de.hasenburg.geofencebroker.model.storage.TopicAndGeofenceMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.After;
@@ -18,27 +22,28 @@ import org.junit.Test;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class PublishSubscribeTest {
 
 	private static final Logger logger = LogManager.getLogger();
 
-	ConnectionManager connectionManager;
+	ClientDirectory clientDirectory;
+	TopicAndGeofenceMapper topicAndGeofenceMapper;
 	ZMQProcessManager processManager;
+
 
 	@SuppressWarnings("Duplicates")
 	@Before
 	public void setUp() {
 		logger.info("Running test setUp");
 
-		connectionManager = new ConnectionManager();
+		clientDirectory = new ClientDirectory();
+		topicAndGeofenceMapper = new TopicAndGeofenceMapper(new Configuration());
 
 		processManager = new ZMQProcessManager();
 		processManager.runZMQProcess_Broker("tcp://localhost", 5559, "broker");
-		processManager.runZMQProcess_MessageProcessor("message_processor", connectionManager);
+		processManager.runZMQProcess_MessageProcessor("message_processor", clientDirectory, topicAndGeofenceMapper);
 	}
 
 	@After
@@ -53,10 +58,11 @@ public class PublishSubscribeTest {
 		logger.info("RUNNING testSubscribeInGeofence TEST");
 
 		// connect, ping, and disconnect
-		Geofence geofence = new Geofence(Location.random(), 20.0);
+		Location l = Location.random();
+		Geofence geofence = Geofence.circle(l, 0.4);
 		TestClient client = new TestClient(null, "tcp://localhost", 5559);
 		client.sendCONNECT();
-		client.sendPINGREQ(geofence.getCircleLocation()); // subscriber = publisher; booth in geofence
+		client.sendPINGREQ(l); // subscriber = publisher; booth in geofence
 		client.sendSUBSCRIBE(new Topic("test"), geofence);
 		client.sendPublish(new Topic("test"), geofence, "Content");
 		client.sendDISCONNECT();
@@ -98,7 +104,8 @@ public class PublishSubscribeTest {
 		logger.info("RUNNING testSubscriberNotInGeofence TEST");
 
 		// subscriber
-		Geofence geofence = new Geofence(Location.random(), 20.0);
+		Location l = Location.random();
+		Geofence geofence = Geofence.circle(l, 0.4);
 		TestClient clientSubscriber = new TestClient(null, "tcp://localhost", 5559);
 		clientSubscriber.sendCONNECT();
 		clientSubscriber.sendPINGREQ(Location.random()); // subscriber is not in geofence
@@ -107,7 +114,7 @@ public class PublishSubscribeTest {
 		// publisher
 		TestClient clientPublisher = new TestClient(null, "tcp://localhost", 5559);
 		clientPublisher.sendCONNECT();
-		clientPublisher.sendPINGREQ(geofence.getCircleLocation()); // publisher is in geofence
+		clientPublisher.sendPINGREQ(l); // publisher is in geofence
 		clientPublisher.sendPublish(new Topic("test"), geofence, "Content");
 
 		clientSubscriber.sendDISCONNECT();
@@ -128,10 +135,11 @@ public class PublishSubscribeTest {
 		logger.info("RUNNING testPublisherNotInGeofence TEST");
 
 		// subscriber
-		Geofence geofence = new Geofence(Location.random(), 20.0);
+		Location l = Location.random();
+		Geofence geofence = Geofence.circle(l, 0.5);
 		TestClient clientSubscriber = new TestClient(null, "tcp://localhost", 5559);
 		clientSubscriber.sendCONNECT();
-		clientSubscriber.sendPINGREQ(geofence.getCircleLocation()); // subscriber is in geofence
+		clientSubscriber.sendPINGREQ(l); // subscriber is in geofence
 		clientSubscriber.sendSUBSCRIBE(new Topic("test"), geofence);
 
 		// publisher

@@ -3,14 +3,15 @@ package de.hasenburg.geofencebroker.main;
 import de.hasenburg.geofencebroker.communication.ControlPacketType;
 import de.hasenburg.geofencebroker.communication.ZMQProcessManager;
 import de.hasenburg.geofencebroker.model.InternalClientMessage;
-import de.hasenburg.geofencebroker.model.Location;
 import de.hasenburg.geofencebroker.model.Topic;
-import de.hasenburg.geofencebroker.model.connections.ConnectionManager;
-import de.hasenburg.geofencebroker.model.geofence.Geofence;
+import de.hasenburg.geofencebroker.model.clients.ClientDirectory;
 import de.hasenburg.geofencebroker.model.payload.CONNECTPayload;
 import de.hasenburg.geofencebroker.model.payload.PINGREQPayload;
 import de.hasenburg.geofencebroker.model.payload.PUBLISHPayload;
 import de.hasenburg.geofencebroker.model.payload.SUBSCRIBEPayload;
+import de.hasenburg.geofencebroker.model.spatial.Geofence;
+import de.hasenburg.geofencebroker.model.spatial.Location;
+import de.hasenburg.geofencebroker.model.storage.TopicAndGeofenceMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -23,7 +24,7 @@ public class LoadTest {
 	private static final Logger logger = LogManager.getLogger();
 
 	ZMQProcessManager processManager;
-	ConnectionManager connectionManager;
+	ClientDirectory clientDirectory;
 
 	public static void main (String[] args) throws Exception {
 	    LoadTest loadTest = new LoadTest();
@@ -35,13 +36,14 @@ public class LoadTest {
 	public void setUp() {
 		logger.info("Running setUp");
 		BenchmarkHelper.startBenchmarking();
-		ConnectionManager connectionManager = new ConnectionManager();
+		ClientDirectory clientDirectory = new ClientDirectory();
+		TopicAndGeofenceMapper topicAndGeofenceMapper = new TopicAndGeofenceMapper(new Configuration());
 
 		processManager = new ZMQProcessManager();
 		processManager.runZMQProcess_Broker("tcp://localhost", 5559, "broker");
-		processManager.runZMQProcess_MessageProcessor("message_processor1", connectionManager);
-		processManager.runZMQProcess_MessageProcessor("message_processor2", connectionManager);
-		//processManager.runZMQProcess_MessageProcessor("message_processor3", connectionManager);
+		processManager.runZMQProcess_MessageProcessor("message_processor1", clientDirectory, topicAndGeofenceMapper);
+		processManager.runZMQProcess_MessageProcessor("message_processor2", clientDirectory, topicAndGeofenceMapper);
+		//processManager.runZMQProcess_MessageProcessor("message_processor3", clientDirectory);
 	}
 
 	public void tearDown() {
@@ -55,14 +57,14 @@ public class LoadTest {
 		logger.info("RUNNING testOneLocations");
 
 		List<Thread> clients = new ArrayList<>();
-		int numberOfClients = 20;
+		int numberOfClients = 5;
 
 		Location location = Location.random();
-		Geofence geofence = new Geofence(location, 0.0); // does not matter as topics are different
+		Geofence geofence = Geofence.circle(location, 0.0); // does not matter as topics are different
 
 		// create clients
 		for (int i = 0; i < numberOfClients; i++) {
-			Thread client = new Thread(new SubscribeOwnTopicProcess("tcp://localhost", 5559, 2000));
+			Thread client = new Thread(new SubscribeOwnTopicProcess("tcp://localhost", 5559, 200));
 			clients.add(client);
 		}
 
@@ -92,10 +94,10 @@ public class LoadTest {
 			this.simpleClient = new SimpleClient(null, address, port, processManager);
 			this.plannedMessageRounds = messagesToSend;
 
-			simpleClient.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.CONNECT, new CONNECTPayload()));
+			simpleClient.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.CONNECT, new CONNECTPayload(location)));
 			logger.info(simpleClient.receiveInternalClientMessage());
 			simpleClient.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.SUBSCRIBE,
-					new SUBSCRIBEPayload(new Topic(simpleClient.getIdentity()), new Geofence(location, 0.0))));
+					new SUBSCRIBEPayload(new Topic(simpleClient.getIdentity()), Geofence.circle(location, 0.0))));
 			logger.info(simpleClient.receiveInternalClientMessage());
 		}
 
@@ -103,6 +105,7 @@ public class LoadTest {
 			simpleClient.sendInternalClientMessage(message);
 			for (int i = 0; i < expectedResponses; i++) {
 				InternalClientMessage response = simpleClient.receiveInternalClientMessage();
+				logger.trace(response);
 				if (message == null) {
 					throw new RuntimeException("Broker answers with invalid messages!!");
 				}
@@ -133,7 +136,7 @@ public class LoadTest {
 				sendMessageAndProcessResponses(new InternalClientMessage(ControlPacketType.PUBLISH,
 						new PUBLISHPayload(
 								new Topic(simpleClient.getIdentity()),
-								new Geofence(location, 0.0),
+								Geofence.circle(location, 0.0),
 								"Some Test content that is being published.")),
 						2);
 				BenchmarkHelper.addEntry("clientPUBLISH", System.nanoTime() - time);
