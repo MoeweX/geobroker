@@ -40,6 +40,8 @@ class ZMQProcess_SimpleClient implements Runnable {
 
 	@Override
 	public void run() {
+		Thread.currentThread().setName(identity);
+
 		ZMQ.Socket orders = context.createSocket(SocketType.REP);
 		orders.bind(CLIENT_ORDER_BACKEND);
 

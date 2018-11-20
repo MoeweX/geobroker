@@ -39,7 +39,7 @@ public class ZMQControlUtility {
 	}
 
 	/**
-	 * Creates and registers a subscribe socket that filters all messages except once send to identity for the
+	 * Creates and registers a subscribe socket that filters all messages except the ones send to the identity of the
 	 * zmqControl publisher. New messages can be polled and received via the socket.
 	 *
 	 * @return - the index in the poller of the subscriber socket

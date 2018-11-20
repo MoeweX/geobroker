@@ -1,12 +1,18 @@
-package de.hasenburg.geofencebroker;
+package de.hasenburg.geofencebroker.scenarios;
 
 import de.hasenburg.geofencebroker.communication.ControlPacketType;
 import de.hasenburg.geofencebroker.communication.ReasonCode;
 import de.hasenburg.geofencebroker.communication.ZMQProcessManager;
 import de.hasenburg.geofencebroker.main.Configuration;
+import de.hasenburg.geofencebroker.main.SimpleClient;
+import de.hasenburg.geofencebroker.main.Utility;
 import de.hasenburg.geofencebroker.model.InternalClientMessage;
 import de.hasenburg.geofencebroker.model.clients.ClientDirectory;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
+import de.hasenburg.geofencebroker.model.payload.CONNECTPayload;
+import de.hasenburg.geofencebroker.model.payload.DISCONNECTPayload;
+import de.hasenburg.geofencebroker.model.payload.PINGREQPayload;
+import de.hasenburg.geofencebroker.model.spatial.Location;
 import de.hasenburg.geofencebroker.model.storage.TopicAndGeofenceMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -50,59 +56,45 @@ public class PingTest {
 
 	@Test
 	public void testPingWhileConnected() throws InterruptedException, CommunicatorException {
-		logger.info("RUNNING testPingWhileConnected TEST");
-
 		// connect, ping, and disconnect
-		TestClient client = new TestClient(null, "tcp://localhost", 5559);
-		client.sendCONNECT();
-
+		SimpleClient client = new SimpleClient(null, "tcp://localhost", 5559, processManager);
+		client.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.CONNECT,
+																   new CONNECTPayload(Location.random())));
 		for (int i = 0; i < 10; i++) {
-			client.sendPINGREQ();
-			Thread.sleep(100);
+			client.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.PINGREQ,
+																	   new PINGREQPayload(Location.random())));
+			Utility.sleepNoLog(100, 0);
 		}
 
-		client.sendDISCONNECT();
+		client.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.DISCONNECT,
+																   new DISCONNECTPayload(ReasonCode.NormalDisconnection)));
 
 		// check dealer messages
 		for (int i = 0; i < 11; i++) {
-			assertEquals("Dealer queue contains wrong number of elements.", 11 - i, client.blockingQueue.size());
-			Optional<InternalClientMessage> dealerMessage = InternalClientMessage
-					.buildMessage(client.blockingQueue.poll(1, TimeUnit.SECONDS));
-			assertTrue("InternalClientMessage is missing", dealerMessage.isPresent());
+			InternalClientMessage internalClientMessage = client.receiveInternalClientMessage();
+
 			if (i == 0) {
-				dealerMessage.ifPresent(message -> assertEquals(ControlPacketType.CONNACK, message.getControlPacketType()));
+				assertEquals(ControlPacketType.CONNACK, internalClientMessage.getControlPacketType());
 			} else {
-				dealerMessage.ifPresent(message -> {
-					assertEquals(ControlPacketType.PINGRESP, message.getControlPacketType());
-					assertEquals(ReasonCode.LocationUpdated, message.getPayload().getPINGRESPPayload().get().getReasonCode());
-				});
+				assertEquals(ControlPacketType.PINGRESP, internalClientMessage.getControlPacketType());
+				assertEquals(ReasonCode.LocationUpdated,
+							 internalClientMessage.getPayload().getPINGRESPPayload().get().getReasonCode());
 			}
 		}
-
-		client.tearDown();
-		logger.info("FINISHED TEST");
 	}
 
 	@SuppressWarnings("ConstantConditions")
 	@Test
 	public void testPingWhileNotConnected() throws InterruptedException, CommunicatorException {
-		logger.info("RUNNING testPingWhileConnected TEST");
+		SimpleClient client = new SimpleClient(null, "tcp://localhost", 5559, processManager);
 
-		// connect, ping, and disconnect
-		TestClient client = new TestClient(null, "tcp://localhost", 5559);
+		client.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.PINGREQ,
+																   new PINGREQPayload(Location.random())));
 
-		client.sendPINGREQ();
+		InternalClientMessage internalClientMessage = client.receiveInternalClientMessage();
 
-		Optional<InternalClientMessage> dealerMessage = InternalClientMessage
-				.buildMessage(client.blockingQueue.poll(1, TimeUnit.SECONDS));
-		assertTrue("InternalClientMessage is missing", dealerMessage.isPresent());
-		dealerMessage.ifPresent(message -> {
-			assertEquals(ControlPacketType.PINGRESP, message.getControlPacketType());
-			assertEquals(ReasonCode.NotConnected, message.getPayload().getPINGRESPPayload().get().getReasonCode());
-		});
-
-		client.tearDown();
-		logger.info("FINISHED TEST");
+		assertEquals(ControlPacketType.PINGRESP, internalClientMessage.getControlPacketType());
+		assertEquals(ReasonCode.NotConnected, internalClientMessage.getPayload().getPINGRESPPayload().get().getReasonCode());
 	}
 
 }

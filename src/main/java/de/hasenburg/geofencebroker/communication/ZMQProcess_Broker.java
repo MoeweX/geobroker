@@ -33,6 +33,8 @@ class ZMQProcess_Broker implements Runnable {
 
 	@Override
 	public void run() {
+		Thread.currentThread().setName(identity);
+
 		ZMQ.Socket frontend = context.createSocket(SocketType.ROUTER);
 		frontend.bind(address + ":" + port);
 		frontend.setIdentity(identity.getBytes());

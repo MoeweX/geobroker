@@ -63,7 +63,8 @@ public class ZMQProcessManager {
 		context.destroySocket(zmqController);
 
 		if (!context.getSockets().isEmpty()) {
-			logger.warn("There are still open sockets in ZContext: {}, better to close them manually!",
+			logger.warn("There are still open sockets in ZContext: {}. " +
+								"They are being closed now, but is it intended that they are still open?",
 						context.getSockets());
 		}
 

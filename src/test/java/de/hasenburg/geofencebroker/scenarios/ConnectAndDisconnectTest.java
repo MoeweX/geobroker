@@ -1,12 +1,19 @@
-package de.hasenburg.geofencebroker;
+package de.hasenburg.geofencebroker.scenarios;
 
 import de.hasenburg.geofencebroker.communication.ControlPacketType;
+import de.hasenburg.geofencebroker.communication.ReasonCode;
 import de.hasenburg.geofencebroker.communication.ZMQProcessManager;
 import de.hasenburg.geofencebroker.main.Configuration;
+import de.hasenburg.geofencebroker.main.SimpleClient;
+import de.hasenburg.geofencebroker.main.Utility;
 import de.hasenburg.geofencebroker.model.InternalClientMessage;
 import de.hasenburg.geofencebroker.model.clients.ClientDirectory;
 import de.hasenburg.geofencebroker.model.exceptions.CommunicatorException;
+import de.hasenburg.geofencebroker.model.payload.CONNECTPayload;
+import de.hasenburg.geofencebroker.model.payload.DISCONNECTPayload;
+import de.hasenburg.geofencebroker.model.spatial.Location;
 import de.hasenburg.geofencebroker.model.storage.TopicAndGeofenceMapper;
+import jdk.jshell.execution.Util;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.After;
@@ -19,9 +26,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class ConnectAndDisconnectTest {
 
@@ -42,6 +47,8 @@ public class ConnectAndDisconnectTest {
 		processManager = new ZMQProcessManager();
 		processManager.runZMQProcess_Broker("tcp://localhost", 5559, "broker");
 		processManager.runZMQProcess_MessageProcessor("message_processor", clientDirectory, topicAndGeofenceMapper);
+
+		assertEquals(0, clientDirectory.getNumberOfClients());
 	}
 
 	@After
@@ -52,72 +59,57 @@ public class ConnectAndDisconnectTest {
 
 	@Test
 	public void testOneClient() throws InterruptedException, CommunicatorException {
-		logger.info("RUNNING testOneClient TEST");
-		TestClient client = new TestClient(null, "tcp://localhost", 5559);
-		client.sendCONNECT();
-		client.sendDISCONNECT();
+		SimpleClient client = new SimpleClient(null, "tcp://localhost", 5559, processManager);
 
-		// check dealer messages
-		Optional<InternalClientMessage> dealerMessage = InternalClientMessage
-				.buildMessage(client.blockingQueue.poll(1, TimeUnit.SECONDS));
-		assertEquals("Dealer queue should not contain any more elements.", 0, client.blockingQueue.size());
-		assertTrue("InternalClientMessage is missing", dealerMessage.isPresent());
-		dealerMessage.ifPresent(message -> assertEquals(ControlPacketType.CONNACK, message.getControlPacketType()));
+		// connect
+		client.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.CONNECT,
+																   new CONNECTPayload(Location.random())));
+		assertEquals(ControlPacketType.CONNACK, client.receiveInternalClientMessage().getControlPacketType());
 
-		// check if connection is inactive
-		Thread.sleep(100);
-		assertNull("Client should not exist", clientDirectory.getClientLocation(client.getIdentity()));
-		assertEquals("Wrong number of active clients", 0, clientDirectory.getNumberOfClients());
+		// check whether client exists
+		assertEquals(1, clientDirectory.getNumberOfClients());
 
-		client.tearDown();
-		logger.info("FINISHED TEST");
+		// disconnect
+		client.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.DISCONNECT,
+																   new DISCONNECTPayload(ReasonCode.NormalDisconnection)));
+
+		// check whether disconnected and no more messages received
+		Utility.sleepNoLog(1, 0);
+		assertEquals(0, clientDirectory.getNumberOfClients());
 	}
 
 	@Test
 	public void testMultipleClients() throws InterruptedException, CommunicatorException {
-		logger.info("RUNNING testMultipleClients TEST");
-
-		List<TestClient> clients = new ArrayList<>();
+		List<SimpleClient> clients = new ArrayList<>();
 		int activeConnections = 10;
 		Random random = new Random();
 
 		// create clients
 		for (int i = 0; i < activeConnections; i++) {
-			TestClient client = new TestClient(null, "tcp://localhost", 5559);
+			SimpleClient client = new SimpleClient(null, "tcp://localhost", 5559, processManager);
 			clients.add(client);
 		}
 
-		// wait for clients to setup
-		Thread.sleep(3000);
-
 		// send connects and randomly also disconnect
-		for (TestClient client : clients) {
-			client.sendCONNECT();
+		for (SimpleClient client : clients) {
+			client.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.CONNECT,
+																	   new CONNECTPayload(Location.random())));
 			if (random.nextBoolean()) {
-				client.sendDISCONNECT();
+				client.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.DISCONNECT,
+																		   new DISCONNECTPayload(ReasonCode.NormalDisconnection)));
 				activeConnections--;
 			}
 		}
 
 		// check acknowledgements
-		for (TestClient client : clients) {
-			Optional<InternalClientMessage> dealerMessage = InternalClientMessage
-					.buildMessage(client.blockingQueue.poll(3, TimeUnit.SECONDS));
-			assertEquals("Queue should not contain any more elements.", 0, client.blockingQueue.size());
-			assertTrue("InternalClientMessage is missing", dealerMessage.isPresent());
-
-			dealerMessage.ifPresent(message -> assertEquals(ControlPacketType.CONNACK, message.getControlPacketType()));
+		for (SimpleClient client : clients) {
+			assertEquals(ControlPacketType.CONNACK, client.receiveInternalClientMessage().getControlPacketType());
 		}
 
-		Thread.sleep(100);
+		Utility.sleepNoLog(1, 0);
 		// check number of active clients
 		assertEquals("Wrong number of active clients", activeConnections, clientDirectory.getNumberOfClients());
-
-		// tear down clients
-		clients.forEach(c -> c.tearDown());
-
-		// wait for receiving to stop
-		logger.info("FINISHED TEST");
+		logger.info("{} out of {} clients were active, so everything fine", activeConnections, 10);
 	}
 
 }

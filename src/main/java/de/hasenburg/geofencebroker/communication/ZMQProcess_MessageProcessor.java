@@ -39,6 +39,8 @@ class ZMQProcess_MessageProcessor implements Runnable {
 
 	@Override
 	public void run() {
+		Thread.currentThread().setName(identity);
+
 		processor = context.createSocket(SocketType.DEALER);
 		processor.setIdentity(identity.getBytes());
 		processor.connect(ZMQProcess_Broker.BROKER_PROCESSING_BACKEND);
