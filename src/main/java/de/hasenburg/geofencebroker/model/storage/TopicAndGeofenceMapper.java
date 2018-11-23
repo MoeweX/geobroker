@@ -105,10 +105,22 @@ public class TopicAndGeofenceMapper {
 					
 				}
 			}
+
 			// update currentLevelsInWhichChildrenHaveToBeChecked
 			currentLevelsInWhichChildrenHaveToBeChecked = nextLevelsInWhichChildrenHaveToBeChecked;
 			nextLevelsInWhichChildrenHaveToBeChecked = new ArrayList<>();
 		}
+
+		// check if there are any multi-level wildcards left in the next level -> if so add to multi level list
+		for (TopicLevel topicLevel : currentLevelsInWhichChildrenHaveToBeChecked) {
+			Collection<TopicLevel> children = topicLevel.getAllDirectChildren();
+			for (TopicLevel child : children) {
+				if (TopicLevel.MULTI_LEVEL_WILDCARD.equals(child.getLevelSpecifier())) {
+					multiLevelWildcardTopicLevels.add(child);
+				}
+			}
+		}
+
 
 		// add multilevel wildcards to all others and return
 		return Stream

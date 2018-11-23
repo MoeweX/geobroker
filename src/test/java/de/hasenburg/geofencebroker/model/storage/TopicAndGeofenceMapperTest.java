@@ -58,7 +58,9 @@ public class TopicAndGeofenceMapperTest {
 		checkTopicLevels(new String[]{"c", "+", "c", "#", "#"}, mapper.getMatchingTopicLevels(new Topic("a/b/c")));
 		checkTopicLevels(new String[]{"+", "#", "#"}, mapper.getMatchingTopicLevels(new Topic("a/b/x")));
 		checkTopicLevels(new String[]{"+", "#", "#"}, mapper.getMatchingTopicLevels(new Topic("a/x")));
-		checkTopicLevels(new String[]{"#", "a"}, mapper.getMatchingTopicLevels(new Topic("a")));
+		// subscription a/# should produce a match for a, and #
+		checkTopicLevels(new String[]{"#", "a", "#"}, mapper.getMatchingTopicLevels(new Topic("a")));
+
 		checkTopicLevels(new String[]{"#"}, mapper.getMatchingTopicLevels(new Topic("b")));
 		checkTopicLevels(new String[]{"#", "#"}, mapper.getMatchingTopicLevels(new Topic("a/b/c/d")));
 	}
