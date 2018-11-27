@@ -136,8 +136,6 @@ public class Raster {
 	/**
 	 * Calculates with which {@link RasterEntry} the given geofence intersects with.
 	 *
-	 * TODO T: Add test for rectangle, polygon, and circle
-	 *
 	 * @param geofence - the geofence
 	 * @return - a list of {@link RasterEntry}s
 	 */
