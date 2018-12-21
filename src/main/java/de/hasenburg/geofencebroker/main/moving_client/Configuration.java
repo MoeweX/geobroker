@@ -28,8 +28,9 @@ public class Configuration {
 	// client properties
 	private Double geofenceSize; // in degree
 	private Integer payloadSize; // in byte
-	private final static String S3_BUCKET_NAME = "geobroker";
-	private final static String S3_CONFIGURATIONS_FOLDER = "Configurations/";
+	protected final static String S3_BUCKET_NAME = "geobroker";
+	protected final static String S3_CONFIGURATIONS_FOLDER = "Configurations/";
+	protected final static String S3_GEOLIFE_FOLDER = "Geolife/";
 
 	/**
 	 * Fails fast in case properties cannot be found

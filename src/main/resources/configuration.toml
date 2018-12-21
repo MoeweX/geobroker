@@ -1,6 +1,7 @@
 [broker]
 granularity = 5
 
+# Configuration related to the moving client experiments
 [clientManager]
 runtime = 10 # runtime of the experiments in min, starts counting at starttime (provided as argv)
 offset = 1 # startup offset between individual clients in sec
