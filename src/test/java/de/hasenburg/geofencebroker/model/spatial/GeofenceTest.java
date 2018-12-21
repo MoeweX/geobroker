@@ -5,6 +5,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static junit.framework.TestCase.assertEquals;
@@ -99,7 +100,7 @@ public class GeofenceTest {
 	}
 
 	public static Geofence datelineRectangle() {
-		return Geofence.polygon(List.of(
+		return Geofence.polygon(Arrays.asList(
 				new Location(-9, 10),
 				new Location(10, 10),
 				new Location(10, -10),
@@ -107,7 +108,7 @@ public class GeofenceTest {
 	}
 
 	public static Geofence berlinRectangle() {
-		return Geofence.polygon(List.of(
+		return Geofence.polygon(Arrays.asList(
 				new Location(53.0, 14.0),
 				new Location(53.0, 13.0),
 				new Location(52.0, 13.0),
@@ -115,7 +116,7 @@ public class GeofenceTest {
 	}
 
 	public static Geofence berlinTriangle() {
-		return Geofence.polygon(List.of(
+		return Geofence.polygon(Arrays.asList(
 				new Location(54, 12.0),
 				new Location(52, 15.0),
 				new Location(50, 12.0)));

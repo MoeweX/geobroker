@@ -59,8 +59,9 @@ class ZMQProcess_MessageProcessor implements Runnable {
 			poller.poll(TIMEOUT_SECONDS * 1000);
 
 			if (poller.pollin(zmqControlIndex)) {
-				if (ZMQControlUtility.getCommand(poller, zmqControlIndex)
-									 .equals(ZMQControlUtility.ZMQControlCommand.KILL)) {
+				if (ZMQControlUtility
+						.getCommand(poller, zmqControlIndex)
+						.equals(ZMQControlUtility.ZMQControlCommand.KILL)) {
 					break;
 				}
 			} else if (poller.pollin(1)) {
@@ -70,7 +71,8 @@ class ZMQProcess_MessageProcessor implements Runnable {
 				logger.debug("ZMQProcess_MessageProcessor {} processing message number {}",
 							 new String(processor.getIdentity()),
 							 number);
-				messageO.ifPresentOrElse(message -> {
+				if (messageO.isPresent()) {
+					InternalBrokerMessage message = messageO.get();
 					long time = System.nanoTime();
 					switch (message.getControlPacketType()) {
 						case CONNECT:
@@ -96,7 +98,9 @@ class ZMQProcess_MessageProcessor implements Runnable {
 						default:
 							logger.warn("Cannot process message {}", message.toString());
 					}
-				}, () -> logger.warn("Received an incompatible message", zMsg));
+				} else {
+					logger.warn("Received an incompatible message", zMsg);
+				}
 			} else {
 				logger.debug("Did not receive a message for {}s", TIMEOUT_SECONDS);
 			}
@@ -184,16 +188,19 @@ class ZMQProcess_MessageProcessor implements Runnable {
 		InternalBrokerMessage response;
 		SUBSCRIBEPayload payload = message.getPayload().getSUBSCRIBEPayload().get();
 
-		ImmutablePair<ImmutablePair<String, Integer>, Geofence> subscribed = clientDirectory
-				.checkIfSubscribed(message.getClientIdentifier(), payload.getTopic(), payload.getGeofence());
+		ImmutablePair<ImmutablePair<String, Integer>, Geofence> subscribed =
+				clientDirectory.checkIfSubscribed(message.getClientIdentifier(),
+												  payload.getTopic(),
+												  payload.getGeofence());
 
 		// if already subscribed -> remove subscription id from now unrelated geofence parts
 		if (subscribed != null) {
 			topicAndGeofenceMapper.removeSubscriptionId(subscribed.left, payload.getTopic(), subscribed.right);
 		}
 
-		ImmutablePair<String, Integer> subscriptionId = clientDirectory
-				.putSubscription(message.getClientIdentifier(), payload.getTopic(), payload.getGeofence());
+		ImmutablePair<String, Integer> subscriptionId = clientDirectory.putSubscription(message.getClientIdentifier(),
+																						payload.getTopic(),
+																						payload.getGeofence());
 
 		if (subscriptionId == null) {
 			logger.debug("Client {} is not connected", message.getClientIdentifier());
@@ -231,8 +238,9 @@ class ZMQProcess_MessageProcessor implements Runnable {
 					topicAndGeofenceMapper.getSubscriptionIds(payload.getTopic(), publisherLocation);
 
 			// only keep subscription if subscriber location is insider publisher geofence
-			subscriptionIds
-					.removeIf(subId -> !payload.getGeofence().contains(clientDirectory.getClientLocation(subId.left)));
+			subscriptionIds.removeIf(subId -> !payload
+					.getGeofence()
+					.contains(clientDirectory.getClientLocation(subId.left)));
 
 			// publish message to remaining subscribers
 			for (ImmutablePair<String, Integer> subscriptionId : subscriptionIds) {

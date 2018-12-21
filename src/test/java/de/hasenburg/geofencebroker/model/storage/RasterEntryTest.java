@@ -14,12 +14,15 @@ import org.junit.Test;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.junit.Assert.*;
 
 public class RasterEntryTest {
 
 	private static final Logger logger = LogManager.getLogger();
+
 	static {
 		Utility.setLogLevel(logger, Level.INFO);
 	}
@@ -48,9 +51,12 @@ public class RasterEntryTest {
 		RasterEntry rasterEntry = new RasterEntry(Location.random(), 1);
 
 		for (int i = 0; i < THREADS; i++) {
-			String clientIdentifier = System.nanoTime()+"";
+			String clientIdentifier = System.nanoTime() + "";
 			// every client has its own client identifier and ids are not synchronized
-			executorService.submit(new FakeClientCallable(clientIdentifier, OPERATIONS_PER_CLIENT, rasterEntry, new AtomicInteger(0)));
+			executorService.submit(new FakeClientCallable(clientIdentifier,
+														  OPERATIONS_PER_CLIENT,
+														  rasterEntry,
+														  new AtomicInteger(0)));
 		}
 
 		executorService.shutdown();
@@ -61,7 +67,9 @@ public class RasterEntryTest {
 			int size = rasterEntry.getAllSubscriptionIds().size();
 		}
 
-		rasterEntry.getAllSubscriptionIds().put("fail", Set.of(ImmutablePair.of("fail", 1)));
+		rasterEntry
+				.getAllSubscriptionIds()
+				.put("fail", Stream.of(ImmutablePair.of("fail", 1)).collect(Collectors.toSet()));
 	}
 
 	/*****************************************************************
@@ -71,12 +79,10 @@ public class RasterEntryTest {
 	@Test
 	public void testRasterEntryBox() {
 		RasterEntry entry = new RasterEntry(new Location(1.5, 1.2), 1);
-		Geofence expectedBox = Geofence.polygon(Arrays.asList(
-				new Location(1.5, 1.2),
-				new Location(2.5, 1.2),
-				new Location(2.5, 2.2),
-				new Location(1.5, 2.2)
-		));
+		Geofence expectedBox = Geofence.polygon(Arrays.asList(new Location(1.5, 1.2),
+															  new Location(2.5, 1.2),
+															  new Location(2.5, 2.2),
+															  new Location(1.5, 2.2)));
 		assertEquals(expectedBox, entry.getRasterEntryBox());
 	}
 
@@ -88,8 +94,11 @@ public class RasterEntryTest {
 	public void testSingleThreaded() throws InterruptedException, ExecutionException, TimeoutException {
 		RasterEntry rasterEntry = new RasterEntry(Location.random(), 1);
 		String clientIdentifier = "U3";
-		Future<Set<ImmutablePair<String, Integer>>> f =
-				executorService.submit(new FakeClientCallable(clientIdentifier, OPERATIONS_PER_CLIENT, rasterEntry, new AtomicInteger(0)));
+		Future<Set<ImmutablePair<String, Integer>>> f = executorService.submit(new FakeClientCallable(clientIdentifier,
+																									  OPERATIONS_PER_CLIENT,
+																									  rasterEntry,
+																									  new AtomicInteger(
+																											  0)));
 		Set<ImmutablePair<String, Integer>> resultList = f.get(3, TimeUnit.SECONDS);
 
 		// test size
@@ -106,14 +115,19 @@ public class RasterEntryTest {
 	 * Clients are ALLOWED to add subscriptionIds concurrently for different clientIds without inconsistencies.
 	 */
 	@Test
-	public void testMultiThreadedDifferentClientIds() throws InterruptedException, ExecutionException, TimeoutException {
+	public void testMultiThreadedDifferentClientIds()
+			throws InterruptedException, ExecutionException, TimeoutException {
 		RasterEntry rasterEntry = new RasterEntry(Location.random(), 1);
 		HashMap<String, Future<Set<ImmutablePair<String, Integer>>>> futures = new HashMap<>();
 
 		for (int i = 0; i < THREADS; i++) {
-			String clientIdentifier = System.nanoTime()+"";
+			String clientIdentifier = System.nanoTime() + "";
 			// every client has its own client identifier and ids are not synchronized
-			futures.put(clientIdentifier, executorService.submit(new FakeClientCallable(clientIdentifier, OPERATIONS_PER_CLIENT, rasterEntry, new AtomicInteger(0))));
+			futures.put(clientIdentifier,
+						executorService.submit(new FakeClientCallable(clientIdentifier,
+																	  OPERATIONS_PER_CLIENT,
+																	  rasterEntry,
+																	  new AtomicInteger(0))));
 		}
 
 		executorService.shutdown();
@@ -129,7 +143,8 @@ public class RasterEntryTest {
 			sum += idsFromThread.size();
 
 			// check content
-			Set<ImmutablePair<String, Integer>> idsFromRaster = rasterEntry.getSubscriptionIdsForClientIdentifier(clientIdentifier);
+			Set<ImmutablePair<String, Integer>> idsFromRaster =
+					rasterEntry.getSubscriptionIdsForClientIdentifier(clientIdentifier);
 			assertEquals(idsFromThread, idsFromRaster);
 			logger.info("SubscriptionsIds of client {} match", clientIdentifier);
 		}
@@ -145,7 +160,8 @@ public class RasterEntryTest {
 	 * without inconsistencies.
 	 */
 	@Test
-	public void testMultiThreadedSameClientIdSynchronized() throws InterruptedException, ExecutionException, TimeoutException {
+	public void testMultiThreadedSameClientIdSynchronized()
+			throws InterruptedException, ExecutionException, TimeoutException {
 		RasterEntry rasterEntry = new RasterEntry(Location.random(), 1);
 		List<Future<Set<ImmutablePair<String, Integer>>>> futures = new ArrayList<>();
 		AtomicInteger atomicInteger = new AtomicInteger();
@@ -153,13 +169,17 @@ public class RasterEntryTest {
 
 		for (int i = 0; i < THREADS; i++) {
 			// every client has its own client identifier and ids are synchronized via an atomic integer
-			futures.add(executorService.submit(new FakeClientCallable(clientIdentifier, OPERATIONS_PER_CLIENT, rasterEntry, atomicInteger)));
+			futures.add(executorService.submit(new FakeClientCallable(clientIdentifier,
+																	  OPERATIONS_PER_CLIENT,
+																	  rasterEntry,
+																	  atomicInteger)));
 		}
 
 		executorService.shutdown();
 		executorService.awaitTermination(10, TimeUnit.SECONDS);
 
-		Set<ImmutablePair<String, Integer>> idsFromRaster = rasterEntry.getSubscriptionIdsForClientIdentifier(clientIdentifier);
+		Set<ImmutablePair<String, Integer>> idsFromRaster =
+				rasterEntry.getSubscriptionIdsForClientIdentifier(clientIdentifier);
 		Set<ImmutablePair<String, Integer>> idsFromThreads = new HashSet<>();
 
 		int sum = 0;
@@ -182,24 +202,29 @@ public class RasterEntryTest {
 	}
 
 	/**
-	 * Clients are NOT ALLOWED to add subscriptionIds concurrently for similar clientIds if subscriptionIds are not unique
-	 * -> leads to INCONSISTENCIES
+	 * Clients are NOT ALLOWED to add subscriptionIds concurrently for similar clientIds if subscriptionIds are not
+	 * unique -> leads to INCONSISTENCIES
 	 */
 	@Test
-	public void testMultiThreadedSameClientIdNotSynchronized() throws InterruptedException, ExecutionException, TimeoutException {
+	public void testMultiThreadedSameClientIdNotSynchronized()
+			throws InterruptedException, ExecutionException, TimeoutException {
 		RasterEntry rasterEntry = new RasterEntry(Location.random(), 1);
 		List<Future<Set<ImmutablePair<String, Integer>>>> futures = new ArrayList<>();
 		String clientIdentifier = "U3";
 
 		for (int i = 0; i < THREADS; i++) {
 			// every client has its own client identifier and ids are synchronized via an atomic integer
-			futures.add(executorService.submit(new FakeClientCallable(clientIdentifier, OPERATIONS_PER_CLIENT, rasterEntry, new AtomicInteger())));
+			futures.add(executorService.submit(new FakeClientCallable(clientIdentifier,
+																	  OPERATIONS_PER_CLIENT,
+																	  rasterEntry,
+																	  new AtomicInteger())));
 		}
 
 		executorService.shutdown();
 		executorService.awaitTermination(10, TimeUnit.SECONDS);
 
-		Set<ImmutablePair<String, Integer>> idsFromRaster = rasterEntry.getSubscriptionIdsForClientIdentifier(clientIdentifier);
+		Set<ImmutablePair<String, Integer>> idsFromRaster =
+				rasterEntry.getSubscriptionIdsForClientIdentifier(clientIdentifier);
 		Set<ImmutablePair<String, Integer>> idsFromThreads = new HashSet<>();
 
 		int sum = 0;
@@ -214,7 +239,9 @@ public class RasterEntryTest {
 
 		// check size
 		assertNotEquals(sum, rasterEntry.getNumSubscriptionIds().intValue());
-		logger.info("Raster entry stored {} subscriptionIds, threads stored {}", rasterEntry.getNumSubscriptionIds(), sum);
+		logger.info("Raster entry stored {} subscriptionIds, threads stored {}",
+					rasterEntry.getNumSubscriptionIds(),
+					sum);
 
 		// check if all ids in raster have been in threads lists
 		assertNotEquals(idsFromThreads, idsFromRaster);
@@ -228,7 +255,8 @@ public class RasterEntryTest {
 		private final RasterEntry rasterEntry;
 		private final AtomicInteger currentId;
 
-		public FakeClientCallable(String clientIdentifier, int numberOfOperations, RasterEntry rasterEntry, AtomicInteger currentId) {
+		public FakeClientCallable(String clientIdentifier, int numberOfOperations, RasterEntry rasterEntry,
+								  AtomicInteger currentId) {
 			this.clientIdentifier = clientIdentifier;
 			this.numberOfOperations = numberOfOperations;
 			this.rasterEntry = rasterEntry;
@@ -236,7 +264,6 @@ public class RasterEntryTest {
 		}
 
 		/**
-		 *
 		 * @return the number of Ids that should be inside the {@link RasterEntry} for this {@link FakeClientCallable}.
 		 */
 		@Override
@@ -252,7 +279,8 @@ public class RasterEntryTest {
 					existingIds.add(subscriptionId);
 				} else {
 					if (!existingIds.isEmpty()) {
-						ImmutablePair<String, Integer> subscriptionId = existingIds.get(Utility.randomInt(existingIds.size()));
+						ImmutablePair<String, Integer> subscriptionId =
+								existingIds.get(Utility.randomInt(existingIds.size()));
 						rasterEntry.removeSubscriptionId(subscriptionId);
 						logger.trace("Removed subscriptionId {}", subscriptionId);
 						existingIds.remove(subscriptionId);

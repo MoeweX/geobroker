@@ -13,7 +13,6 @@ import de.hasenburg.geofencebroker.model.payload.CONNECTPayload;
 import de.hasenburg.geofencebroker.model.payload.DISCONNECTPayload;
 import de.hasenburg.geofencebroker.model.spatial.Location;
 import de.hasenburg.geofencebroker.model.storage.TopicAndGeofenceMapper;
-import jdk.jshell.execution.Util;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.After;
@@ -22,11 +21,10 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class ConnectAndDisconnectTest {
 

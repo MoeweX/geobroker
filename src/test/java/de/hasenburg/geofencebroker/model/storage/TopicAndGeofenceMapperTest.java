@@ -10,10 +10,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Test;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
@@ -173,17 +170,17 @@ public class TopicAndGeofenceMapperTest {
 
 
 	private static Geofence berlinRectangle() {
-		return Geofence.polygon(List.of(new Location(53.0, 14.0),
-										new Location(53.0, 13.0),
-										new Location(52.0, 13.0),
-										new Location(52.0, 14.0)));
+		return Geofence.polygon(Arrays.asList(new Location(53.0, 14.0),
+											  new Location(53.0, 13.0),
+											  new Location(52.0, 13.0),
+											  new Location(52.0, 14.0)));
 	}
 
 	private static Geofence datelineRectangle() {
-		return Geofence.polygon(List.of(new Location(-9, 10),
-										new Location(10, 10),
-										new Location(10, -10),
-										new Location(-9, -10)));
+		return Geofence.polygon(Arrays.asList(new Location(-9, 10),
+											  new Location(10, 10),
+											  new Location(10, -10),
+											  new Location(-9, -10)));
 	}
 
 	private static Location berlinPoint() {
