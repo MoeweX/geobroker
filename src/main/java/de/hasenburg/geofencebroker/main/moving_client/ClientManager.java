@@ -1,15 +1,14 @@
 package de.hasenburg.geofencebroker.main.moving_client;
 
+import de.hasenburg.geofencebroker.communication.ZMQProcessManager;
+import de.hasenburg.geofencebroker.main.Utility;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class ClientManager {
 
@@ -18,6 +17,9 @@ public class ClientManager {
 	private Date startupTime;
 	private String configurationName;
 	private String managerName;
+	private GeolifeDatasetHelper gdh;
+	private Map<Integer, GeolifeClient> geolifeClients = new HashMap<>(); //index -> client
+	private ZMQProcessManager processManager;
 
 	public ClientManager(String managerName, Date startupTime, String configurationName) {
 		this.managerName = managerName;
@@ -28,9 +30,19 @@ public class ClientManager {
 	public void start() {
 		// create configuration
 		Configuration c = Configuration.readConfigurationFromS3(configurationName, managerName);
+		gdh = new GeolifeDatasetHelper();
+		gdh.prepare();
+
+		// create ZMQProcessManager
+		processManager = new ZMQProcessManager();
 
 		// download required files from S3
-		// TODO
+		Map<Integer, Route> routes = downloadRequiredFiles(c.getIndex(), c.getCount());
+
+		// create necessary clients
+		for (int i = c.getIndex(); i <= c.getCount(); i++) {
+			geolifeClients.put(i, new GeolifeClient(c, i, routes.get(i), processManager));
+		}
 
 		// calculate how much time to wait for startup
 		Date now = new Date();
@@ -38,7 +50,7 @@ public class ClientManager {
 		long diff = (startupTime.getTime() - now.getTime());
 
 		if (diff < 0) {
-			logger.fatal("Startup time seems to be {} seconds in the past", diff / -1000);
+			logger.error("Startup time seems to be {} seconds in the past", diff / -1000);
 			System.exit(1);
 		}
 		try {
@@ -50,16 +62,50 @@ public class ClientManager {
 		}
 
 		logger.info("Starting up!");
+		for (int i = c.getIndex(); i <= c.getCount(); i++) {
+			geolifeClients.get(i).start();
+			Utility.sleepNoLog(c.getOffset() * 1000, 0);
+		}
+
+		// calculate how much time to wait for shutdown
+		Date endTime = new Date(startupTime.getTime() + c.getRuntime() * 1000 * 60);
+		now = new Date();
+		long timeUntilEnd = (endTime.getTime() - now.getTime());
+
+		try {
+			logger.info("Waiting {} seconds until shutdown", timeUntilEnd / 1000);
+			if (timeUntilEnd > 0) {
+				Thread.sleep(timeUntilEnd);
+			}
+		} catch (InterruptedException e) {
+			logger.fatal("Interrupted while waiting for shutdown", e);
+			System.exit(1);
+		}
+
+		for (int i = c.getIndex(); i <= c.getCount(); i++) {
+			geolifeClients.get(i).stop();
+		}
+		Utility.sleepNoLog(1000, 0);
+
+		processManager.tearDown(3000);
+
+		logger.info("Experiments stopped");
+		System.exit(0);
 	}
 
-	private List<Route> downloadRequiredFiles(int index, int count) {
-		List<Route> routes = new ArrayList<>();
+	private Map<Integer, Route> downloadRequiredFiles(int index, int count) {
+		Map<Integer, Route> routes = new HashMap<>();
 		for (int i = index; i <= count; i++) {
-			Route r = null;
-			// TODO create route with the help of geolifedatasethelper
-			routes.add(r);
+			logger.trace("Creating route for file at index {}", i);
+			List<String> lines = gdh.getLinesOfRouteFileAtIndex(i);
+			routes.put(i, Route.createRoute(lines));
 		}
-		logger.info("Successfully downloaded {} routes", routes.size());
+		if (routes.size() == 0) {
+			logger.fatal("No routes were created");
+			System.exit(1);
+		}
+
+		logger.info("Successfully created {} routes", routes.size());
 		return routes;
 	}
 

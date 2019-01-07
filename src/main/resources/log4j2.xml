@@ -12,5 +12,8 @@
         <Logger name="de.hasenburg.geofencebroker.main.LoadTest" level="trace" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
+        <Logger name="de.hasenburg.geofencebroker.main.moving_client.Route" level="debug" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
     </Loggers>
 </Configuration>

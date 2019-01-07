@@ -2,22 +2,22 @@ package de.hasenburg.geofencebroker.main.moving_client;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectInputStream;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.moandjiezana.toml.Toml;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.*;
-import java.util.List;
 
 public class Configuration {
 
 	private static final Logger logger = LogManager.getLogger();
 
 	private String managerName = "DefaultManager";
+
+	// broker machine properties
+	private String address;
+	private int port;
 
 	// client manager properties
 	private Integer runtime; // in min
@@ -46,6 +46,10 @@ public class Configuration {
 
 		S3Object o = s3.getObject(S3_BUCKET_NAME, S3_CONFIGURATIONS_FOLDER + configurationName);
 		Toml toml = new Toml().read(new InputStreamReader(o.getObjectContent()));
+
+		Toml brokerMachine = toml.getTable("brokerMachine");
+		c.address = brokerMachine.getString("address");
+		c.port = Math.toIntExact(brokerMachine.getLong("port"));
 
 		Toml clientManager = toml.getTable("clientManager");
 		c.runtime = Math.toIntExact(clientManager.getLong("runtime"));
@@ -80,6 +84,14 @@ public class Configuration {
 		return managerName;
 	}
 
+	public String getAddress() {
+		return address;
+	}
+
+	public int getPort() {
+		return port;
+	}
+
 	public Integer getRuntime() {
 		return runtime;
 	}
@@ -106,8 +118,8 @@ public class Configuration {
 
 	@Override
 	public String toString() {
-		return "Configuration{" + "managerName='" + managerName + '\'' + ", runtime=" + runtime + ", offset=" + offset +
-				", index=" + index + ", count=" + count + ", geofenceSize=" + geofenceSize + ", payloadSize=" +
-				payloadSize + '}';
+		return "Configuration{" + "managerName='" + managerName + '\'' + ", address='" + address + '\'' + ", port=" + port +
+				", runtime=" + runtime + ", offset=" + offset + ", index=" + index + ", count=" + count +
+				", geofenceSize=" + geofenceSize + ", payloadSize=" + payloadSize + '}';
 	}
 }

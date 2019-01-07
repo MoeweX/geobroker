@@ -9,6 +9,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,9 +50,25 @@ public class GeolifeDatasetHelper {
 		}
 	}
 
-	public List<String> getFileContentAtIndex(int index) {
-		// TODO NEXT STEP
-		return null;
+	public List<String> getLinesOfRouteFileAtIndex(int index) {
+		List<String> lines = new ArrayList<>();
+
+		try {
+			// read in route file
+			S3Object o = s3.getObject(Configuration.S3_BUCKET_NAME, keyRoute(indices.get(index)));
+			BufferedReader reader = new BufferedReader(new InputStreamReader(o.getObjectContent()));
+			String line = reader.readLine();
+
+			while (line != null && !line.equals("")) {
+				lines.add(line);
+				line = reader.readLine();
+			}
+		} catch (IOException | NullPointerException e) {
+			logger.fatal("Could not read route file at index {}", index, e);
+			System.exit(1);
+		}
+
+		return lines;
 	}
 
 	/*****************************************************************
@@ -66,10 +83,11 @@ public class GeolifeDatasetHelper {
 		return Configuration.S3_GEOLIFE_FOLDER + relativePath;
 	}
 
-	public static void main (String[] args) {
-	    GeolifeDatasetHelper gdh = new GeolifeDatasetHelper();
-	    gdh.prepare();
-	    logger.info(gdh.indices.get(10));
+	public static void main(String[] args) {
+		GeolifeDatasetHelper gdh = new GeolifeDatasetHelper();
+		gdh.prepare();
+		logger.info("File at index 10 is {}", gdh.indices.get(10));
+		logger.info(gdh.getLinesOfRouteFileAtIndex(10));
 	}
 
 }
