@@ -1,6 +1,5 @@
 package de.hasenburg.geofencebroker.communication;
 
-import de.hasenburg.geofencebroker.main.SimpleClient;
 import de.hasenburg.geofencebroker.main.Utility;
 import de.hasenburg.geofencebroker.model.InternalClientMessage;
 import org.apache.logging.log4j.LogManager;
