@@ -9,6 +9,9 @@
         <Root level="trace" additivity="false">
             <AppenderRef ref="Console"/>
         </Root>
+        <Logger name="de.hasenburg.geofencebroker.main.CSVStorageClient" level="debug" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
         <Logger name="de.hasenburg.geofencebroker.main.LoadTest" level="trace" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>

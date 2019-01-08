@@ -10,13 +10,21 @@ import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Optional;
 
-public class ZMQProcess_SimpleClient implements Runnable {
+/**
+ * This client continuously receives messages from the connected broker and writes them into a csv file.
+ * The csv file is located at ./<identity>.csv
+ *
+ * When the client receives ORDERS.SEND, it sends the attached message to the broker.
+ */
+public class ZMQProcess_CSVStorageClient implements Runnable {
 
 	public enum ORDERS {
 		SEND,
-		RECEIVE,
 		CONFIRM,
 		FAIL
 	}
@@ -35,12 +43,17 @@ public class ZMQProcess_SimpleClient implements Runnable {
 	// Socket and context
 	private ZContext context;
 
-	protected ZMQProcess_SimpleClient(String address, int port, String identity, ZContext context) {
+	// Writer
+	private BufferedWriter writer;
+
+	protected ZMQProcess_CSVStorageClient(String address, int port, String identity, ZContext context)
+			throws IOException {
 		this.address = address;
 		this.port = port;
 		this.identity = identity;
 
 		CLIENT_ORDER_BACKEND = Utility.generateClientOrderBackendString(identity);
+		writer = new BufferedWriter(new FileWriter(identity + ".csv"));
 
 		this.context = context;
 	}
@@ -56,13 +69,14 @@ public class ZMQProcess_SimpleClient implements Runnable {
 		brokerSocket.setIdentity(identity.getBytes());
 		brokerSocket.connect(address + ":" + port);
 
-		ZMQ.Poller poller = context.createPoller(1);
-		int zmqControlIndex = ZMQControlUtility.connectWithPoller(context, poller, identity);
-		poller.register(orders, ZMQ.Poller.POLLIN);
+		ZMQ.Poller poller = context.createPoller(3);
+		int zmqControlIndex = ZMQControlUtility.connectWithPoller(context, poller, identity); // 0
+		poller.register(brokerSocket, ZMQ.Poller.POLLIN); // 1
+		poller.register(orders, ZMQ.Poller.POLLIN); // 2
 
 		while (!Thread.currentThread().isInterrupted()) {
 
-			logger.trace("ZMQProcess_SimpleClient waiting for orders");
+			logger.trace("ZMQProcess_CSVStorageClient waiting for orders");
 			poller.poll(TIMEOUT_SECONDS * 1000);
 
 			if (poller.pollin(zmqControlIndex)) {
@@ -70,7 +84,21 @@ public class ZMQProcess_SimpleClient implements Runnable {
 						.equals(ZMQControlUtility.ZMQControlCommand.KILL)) {
 					break;
 				}
-			} else if (poller.pollin(1)) { // check if we got an order
+			} else if (poller.pollin(1)) { // check if we received a message
+				logger.trace("Received a message, writing it to CSV.");
+				Optional<InternalClientMessage> brokerMessage =
+						InternalClientMessage.buildMessage(ZMsg.recvMsg(brokerSocket, true));
+				if (brokerMessage.isPresent()) {
+					try {
+						writer.write(brokerMessage.get().toString());
+					} catch (IOException e) {
+						logger.error("Could not write broker message to csv file", e);
+					}
+				} else {
+					logger.error("Broker message was malformed or empty, so not written to csv");
+				}
+
+			} else if (poller.pollin(2)) { // check if we got the order to send a message
 				ZMsg order = ZMsg.recvMsg(orders);
 
 				boolean valid = true;
@@ -80,16 +108,7 @@ public class ZMQProcess_SimpleClient implements Runnable {
 				}
 				String orderType = order.popString();
 
-				if (valid && ORDERS.RECEIVE.name().equals(orderType)) {
-					logger.trace("Receiving message from broker");
-					Optional<InternalClientMessage> brokerMessage = InternalClientMessage.buildMessage(ZMsg.recvMsg(brokerSocket, true));
-					if (brokerMessage.isPresent()) {
-						brokerMessage.get().getZMsg().send(orders);
-					} else {
-						logger.warn("Broker message malformed or empty");
-						valid = false;
-					}
-				} else if (valid && ORDERS.SEND.name().equals(orderType)) {
+				if (valid && ORDERS.SEND.name().equals(orderType)) {
 					logger.trace("Sending message to broker");
 
 					//the zMsg should consist of an InternalClientMessage only, as other entries are popped
@@ -103,14 +122,20 @@ public class ZMQProcess_SimpleClient implements Runnable {
 						valid = false;
 					}
 				}
-
-				if (!valid) {
+				if (!valid || !ORDERS.SEND.name().equals(orderType)) {
 					// send order response if not already done
 					ZMsg.newStringMsg(ORDERS.FAIL.name()).send(orders);
 				}
 			}
-
 		} // end while loop
+
+		// flush and close writer
+		try {
+			writer.flush();
+			writer.close();
+		} catch (IOException e) {
+			logger.error("Could not flush and close writer", e);
+		}
 
 		// sub control socket
 		context.destroySocket(poller.getSocket(0));

@@ -8,6 +8,7 @@ import org.apache.logging.log4j.Logger;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -132,6 +133,17 @@ public class ZMQProcessManager {
 		Future<?> process = pool.submit(new ZMQProcess_SimpleClient(address, port, identity, context));
 		zmqProcesses.put(identity, process);
 		logger.info("Started {} with identity {}", ZMQProcess_SimpleClient.class.getSimpleName(), identity);
+	}
+
+	public void runZMQProcess_CSVStorageClient(String address, int port, String identity) throws IOException {
+		if (getIncompleteZMQProcesses().contains(identity)) {
+			logger.error("Cannot start ZMQProcess with identity {}, as one with this identity already exists",
+						 identity);
+			return;
+		}
+		Future<?> process = pool.submit(new ZMQProcess_CSVStorageClient(address, port, identity, context));
+		zmqProcesses.put(identity, process);
+		logger.info("Started {} with identity {}", ZMQProcess_CSVStorageClient.class.getSimpleName(), identity);
 	}
 
 }

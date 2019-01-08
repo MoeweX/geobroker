@@ -1,0 +1,3 @@
+InternalClientMessage{controlPacketType=CONNACK, payload={
+  "reasonCode" : "Success"
+}}
