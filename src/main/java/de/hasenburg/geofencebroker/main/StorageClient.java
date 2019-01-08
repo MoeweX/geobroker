@@ -16,7 +16,7 @@ import org.zeromq.ZMsg;
 import java.io.IOException;
 import java.util.Random;
 
-public class CSVStorageClient {
+public class StorageClient {
 
 	private static final Logger logger = LogManager.getLogger();
 
@@ -25,16 +25,16 @@ public class CSVStorageClient {
 	ZMQ.Socket orderSocket;
 
 
-	public CSVStorageClient(@Nullable String identifier, String address, int port, ZMQProcessManager processManager)
+	public StorageClient(@Nullable String identifier, String address, int port, ZMQProcessManager processManager)
 			throws IOException {
 		if (identifier == null) {
 			Random random = new Random();
-			identifier = "CSVStorageClient-" + System.nanoTime();
+			identifier = "StorageClient-" + System.nanoTime();
 		}
 
 		this.identifier = identifier;
 		this.processManager = processManager;
-		processManager.runZMQProcess_CSVStorageClient(address, port, identifier);
+		processManager.runZMQProcess_StorageClient(address, port, identifier);
 		orderSocket = processManager.getContext().createSocket(SocketType.REQ);
 		orderSocket.setIdentity(identifier.getBytes());
 		orderSocket.connect(Utility.generateClientOrderBackendString(identifier));
@@ -65,19 +65,19 @@ public class CSVStorageClient {
 
 	public static void main (String[] args) throws IOException {
 		ZMQProcessManager processManager = new ZMQProcessManager();
-		CSVStorageClient client = new CSVStorageClient(null, "tcp://localhost", 5559, processManager);
+		StorageClient client = new StorageClient(null, "tcp://localhost", 5559, processManager);
 
 		// connect
 		InternalClientMessage clientMessage = new InternalClientMessage(ControlPacketType.CONNECT, new CONNECTPayload(
 				Location.random()));
 		client.sendInternalClientMessage(clientMessage);
 
-		// wait 2 seconds, we should receive a CONNACK and write it to CSV.
+		// wait 2 seconds, we should receive a CONNACK and write it to file.
 		Utility.sleepNoLog(2000, 0);
 
 		client.tearDownClient();
 		if (processManager.tearDown(3000)) {
-			logger.info("CSVStorageClient shut down properly.");
+			logger.info("StorageClient shut down properly.");
 		} else {
 			logger.fatal("ProcessManager reported that processes are still running: {}", processManager.getIncompleteZMQProcesses());
 		}

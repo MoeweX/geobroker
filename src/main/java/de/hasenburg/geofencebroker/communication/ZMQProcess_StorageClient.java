@@ -15,12 +15,12 @@ import java.io.IOException;
 import java.util.Optional;
 
 /**
- * This client continuously receives messages from the connected broker and writes them into a csv file.
- * The csv file is located at ./<identity>.csv
+ * This client continuously receives messages from the connected broker and writes them into a txt file.
+ * The txt file is located at ./<identity>.txt
  *
  * When the client receives ORDERS.SEND, it sends the attached message to the broker.
  */
-public class ZMQProcess_CSVStorageClient implements Runnable {
+public class ZMQProcess_StorageClient implements Runnable {
 
 	public enum ORDERS {
 		SEND,
@@ -45,14 +45,14 @@ public class ZMQProcess_CSVStorageClient implements Runnable {
 	// Writer
 	private BufferedWriter writer;
 
-	protected ZMQProcess_CSVStorageClient(String address, int port, String identity, ZContext context)
+	protected ZMQProcess_StorageClient(String address, int port, String identity, ZContext context)
 			throws IOException {
 		this.address = address;
 		this.port = port;
 		this.identity = identity;
 
 		CLIENT_ORDER_BACKEND = Utility.generateClientOrderBackendString(identity);
-		writer = new BufferedWriter(new FileWriter(identity + ".csv"));
+		writer = new BufferedWriter(new FileWriter(identity + ".txt"));
 
 		this.context = context;
 	}
@@ -75,7 +75,7 @@ public class ZMQProcess_CSVStorageClient implements Runnable {
 
 		while (!Thread.currentThread().isInterrupted()) {
 
-			logger.trace("ZMQProcess_CSVStorageClient waiting for orders");
+			logger.trace("ZMQProcess_StorageClient waiting for orders");
 			poller.poll(TIMEOUT_SECONDS * 1000);
 
 			if (poller.pollin(zmqControlIndex)) {
@@ -84,17 +84,17 @@ public class ZMQProcess_CSVStorageClient implements Runnable {
 					break;
 				}
 			} else if (poller.pollin(1)) { // check if we received a message
-				logger.trace("Received a message, writing it to CSV.");
+				logger.trace("Received a message, writing it to file.");
 				Optional<InternalClientMessage> brokerMessage =
 						InternalClientMessage.buildMessage(ZMsg.recvMsg(brokerSocket, true));
 				if (brokerMessage.isPresent()) {
 					try {
 						writer.write(brokerMessage.get().toString());
 					} catch (IOException e) {
-						logger.error("Could not write broker message to csv file", e);
+						logger.error("Could not write broker message to file", e);
 					}
 				} else {
-					logger.error("Broker message was malformed or empty, so not written to csv");
+					logger.error("Broker message was malformed or empty, so not written to file");
 				}
 
 			} else if (poller.pollin(2)) { // check if we got the order to send a message
@@ -142,7 +142,7 @@ public class ZMQProcess_CSVStorageClient implements Runnable {
 		// other sockets (might be optional, kill nevertheless)
 		context.destroySocket(orders);
 		context.destroySocket(brokerSocket);
-		logger.info("Shut down ZMQProcess_SimpleClient, orders and broker sockets were destroyed.");
+		logger.info("Shut down ZMQProcess_StorageClient, orders and broker sockets were destroyed.");
 	}
 
 }

@@ -6,6 +6,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
+import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -27,7 +28,7 @@ public class ClientManager {
 		this.configurationName = configurationName;
 	}
 
-	public void start() {
+	public void start() throws IOException {
 		// create configuration
 		Configuration c = Configuration.readConfigurationFromS3(configurationName, managerName);
 		gdh = new GeolifeDatasetHelper();
@@ -85,7 +86,7 @@ public class ClientManager {
 		for (int i = c.getIndex(); i <= c.getCount(); i++) {
 			geolifeClients.get(i).stop();
 		}
-		Utility.sleepNoLog(1000, 0);
+		Utility.sleepNoLog(5000, 0);
 
 		processManager.tearDown(3000);
 
@@ -117,7 +118,7 @@ public class ClientManager {
 	 *
 	 * @param args - the args
 	 */
-	public static void main (String[] args) {
+	public static void main (String[] args) throws IOException {
 		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd_HH:mm");
 		Date startupTime = null;
 		try {
