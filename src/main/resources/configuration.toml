@@ -1,18 +1,19 @@
 [broker]
 granularity = 5
+messageProcessors = 1
 
 # Configuration related to the moving client experiments
 [brokerMachine]
-ip = "192.168.0.1"
+address = "tcp://localhost"
 port = 5559
 
 [clientManager]
-runtime = 10 # runtime of the experiments in min, starts counting at starttime (provided as argv)
+runtime = 1 # runtime of the experiments in min, starts counting at starttime (provided as argv)
 offset = 1 # startup offset between individual clients in sec
 
     [clientManager.Weihnachtsmann]
     index = 1
-    count = 100
+    count = 10
 
     [clientManager.Schokoladenbonbon]
     index = 101

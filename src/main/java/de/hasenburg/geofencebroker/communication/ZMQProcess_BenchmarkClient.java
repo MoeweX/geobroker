@@ -113,7 +113,7 @@ public class ZMQProcess_BenchmarkClient implements Runnable {
 					if (ControlPacketType.PUBLISH.equals(brokerMessage.get().getControlPacketType())) {
 						@SuppressWarnings("OptionalGetWithoutIsPresent") PUBLISHPayload payload =
 								brokerMessage.get().getPayload().getPUBLISHPayload().get();
-						if (payload.getContent().startsWith(identity)) {
+						if (payload.getContent().startsWith(identity+"+")) {
 							// this is our own publish message that was received from the broker
 							timestamps.get(999).add(timestamp);
 						} else {
