@@ -2,6 +2,7 @@ package de.hasenburg.geofencebroker.communication;
 
 import de.hasenburg.geofencebroker.main.Utility;
 import de.hasenburg.geofencebroker.model.InternalClientMessage;
+import de.hasenburg.geofencebroker.model.payload.PUBLISHPayload;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.SocketType;
@@ -51,8 +52,8 @@ public class ZMQProcess_BenchmarkClient implements Runnable {
 	private ZContext context;
 
 	// Benchmarking variables
-	private Map<ControlPacketType, List<Long>> timestamps;
-	private int receivedPublishMessages = 0;
+	private Map<Integer, List<Long>> timestamps;
+	private int receivedForeignPublishMessages = 0;
 
 	protected ZMQProcess_BenchmarkClient(String address, int port, String identity, ZContext context) {
 		this.address = address;
@@ -62,15 +63,16 @@ public class ZMQProcess_BenchmarkClient implements Runnable {
 		CLIENT_ORDER_BACKEND = Utility.generateClientOrderBackendString(identity);
 
 		timestamps = new HashMap<>();
-		timestamps.put(ControlPacketType.CONNECT, new ArrayList<>());
-		timestamps.put(ControlPacketType.CONNACK, new ArrayList<>());
-		timestamps.put(ControlPacketType.DISCONNECT, new ArrayList<>());
-		timestamps.put(ControlPacketType.PINGREQ, new ArrayList<>());
-		timestamps.put(ControlPacketType.PINGRESP, new ArrayList<>());
-		timestamps.put(ControlPacketType.SUBSCRIBE, new ArrayList<>());
-		timestamps.put(ControlPacketType.SUBACK, new ArrayList<>());
-		timestamps.put(ControlPacketType.PUBLISH, new ArrayList<>());
-		timestamps.put(ControlPacketType.PUBACK, new ArrayList<>());
+		timestamps.put(ControlPacketType.CONNECT.ordinal(), new ArrayList<>());
+		timestamps.put(ControlPacketType.CONNACK.ordinal(), new ArrayList<>());
+		timestamps.put(ControlPacketType.DISCONNECT.ordinal(), new ArrayList<>());
+		timestamps.put(ControlPacketType.PINGREQ.ordinal(), new ArrayList<>());
+		timestamps.put(ControlPacketType.PINGRESP.ordinal(), new ArrayList<>());
+		timestamps.put(ControlPacketType.SUBSCRIBE.ordinal(), new ArrayList<>());
+		timestamps.put(ControlPacketType.SUBACK.ordinal(), new ArrayList<>());
+		timestamps.put(ControlPacketType.PUBLISH.ordinal(), new ArrayList<>());
+		timestamps.put(999, new ArrayList<>()); // own received publish messages
+		timestamps.put(ControlPacketType.PUBACK.ordinal(), new ArrayList<>());
 
 		this.context = context;
 	}
@@ -109,9 +111,17 @@ public class ZMQProcess_BenchmarkClient implements Runnable {
 				logger.trace("Received message {}, storing timestamp", brokerMessage);
 				if (brokerMessage.isPresent()) {
 					if (ControlPacketType.PUBLISH.equals(brokerMessage.get().getControlPacketType())) {
-						receivedPublishMessages++;
+						@SuppressWarnings("OptionalGetWithoutIsPresent") PUBLISHPayload payload =
+								brokerMessage.get().getPayload().getPUBLISHPayload().get();
+						if (payload.getContent().startsWith(identity)) {
+							// this is our own publish message that was received from the broker
+							timestamps.get(999).add(timestamp);
+						} else {
+							// this is a foreign publish messages
+							receivedForeignPublishMessages++;
+						}
 					} else {
-						List<Long> longs = timestamps.get(brokerMessage.get().getControlPacketType());
+						List<Long> longs = timestamps.get(brokerMessage.get().getControlPacketType().ordinal());
 						// check whether interesting control packet type -> put into correct list
 						if (longs != null) {
 							longs.add(timestamp);
@@ -138,7 +148,7 @@ public class ZMQProcess_BenchmarkClient implements Runnable {
 					Optional<InternalClientMessage> clientMessageO = InternalClientMessage.buildMessage(order);
 
 					if (clientMessageO.isPresent()) {
-						List<Long> longs = timestamps.get(clientMessageO.get().getControlPacketType());
+						List<Long> longs = timestamps.get(clientMessageO.get().getControlPacketType().ordinal());
 						// check whether interesting control packet type -> put into correct list
 						if (longs != null) {
 							longs.add(timestamp);
@@ -177,9 +187,13 @@ public class ZMQProcess_BenchmarkClient implements Runnable {
 			File f = new File(targetDir);
 			f.mkdirs();
 			BufferedWriter writer = new BufferedWriter(new FileWriter(targetFile));
-			writer.write("numberOfReceivedPublishMessages," + receivedPublishMessages + "\n");
-			for (ControlPacketType controlPacketType : timestamps.keySet()) {
-				writer.write(controlPacketType.name() + ",");
+			writer.write("receivedForeignPublishMessages," + receivedForeignPublishMessages + "\n");
+			for (Integer controlPacketType : timestamps.keySet()) {
+				String name = "OWN-PUBLISH";
+				if (controlPacketType != 999) {
+					name = ControlPacketType.values()[controlPacketType].name();
+				}
+				writer.write(name+ ",");
 				for (Long aLong : timestamps.get(controlPacketType)) {
 					writer.write(aLong + ",");
 				}
