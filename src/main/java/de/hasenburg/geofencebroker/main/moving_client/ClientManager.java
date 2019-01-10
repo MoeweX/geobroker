@@ -28,7 +28,7 @@ public class ClientManager {
 		this.configurationName = configurationName;
 	}
 
-	public void start() throws IOException {
+	public void start() {
 		// create configuration
 		Configuration c = Configuration.readConfigurationFromS3(configurationName, managerName);
 		gdh = new GeolifeDatasetHelper();
@@ -51,8 +51,9 @@ public class ClientManager {
 		long diff = (startupTime.getTime() - now.getTime());
 
 		if (diff < 0) {
-			logger.error("Startup time seems to be {} seconds in the past", diff / -1000);
-			System.exit(1);
+			logger.error("Startup time seems to be {} seconds in the past, starting now", diff / -1000);
+			diff = 0;
+			startupTime = new Date();
 		}
 		try {
 			logger.info("Waiting {} seconds for startup", diff / 1000);
@@ -118,7 +119,7 @@ public class ClientManager {
 	 *
 	 * @param args - the args
 	 */
-	public static void main (String[] args) throws IOException {
+	public static void main (String[] args) {
 		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd_HH:mm");
 		Date startupTime = null;
 		try {

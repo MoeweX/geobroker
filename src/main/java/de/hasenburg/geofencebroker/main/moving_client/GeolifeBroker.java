@@ -21,10 +21,9 @@ public class GeolifeBroker {
 		TopicAndGeofenceMapper topicAndGeofenceMapper = new TopicAndGeofenceMapper(configuration);
 
 		ZMQProcessManager processManager = new ZMQProcessManager();
-		processManager.runZMQProcess_Broker("tcp://localhost", 5559, "broker");
+		processManager.runZMQProcess_Broker("tcp://0.0.0.0", 5559, "broker");
 		for (int i = 1; i <= configuration.getMessageProcessors(); i++) {
 			processManager.runZMQProcess_MessageProcessor("message_processor-" + i, clientDirectory, topicAndGeofenceMapper);
-
 		}
 
 		while (true) {

@@ -3,6 +3,6 @@
 *.iml
 target/
 benchmarking_results/
-benchmark_client_results/
+latest_benchmark_client_results/
 logfile.log
 out/

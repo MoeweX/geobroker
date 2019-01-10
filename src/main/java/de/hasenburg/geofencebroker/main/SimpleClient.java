@@ -1,10 +1,13 @@
 package de.hasenburg.geofencebroker.main;
 
 import de.hasenburg.geofencebroker.communication.ControlPacketType;
+import de.hasenburg.geofencebroker.communication.ReasonCode;
 import de.hasenburg.geofencebroker.communication.ZMQProcessManager;
 import de.hasenburg.geofencebroker.communication.ZMQProcess_SimpleClient;
 import de.hasenburg.geofencebroker.model.InternalClientMessage;
 import de.hasenburg.geofencebroker.model.payload.CONNECTPayload;
+import de.hasenburg.geofencebroker.model.payload.DISCONNECTPayload;
+import de.hasenburg.geofencebroker.model.spatial.Location;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
@@ -77,12 +80,18 @@ public class SimpleClient {
 	    SimpleClient client = new SimpleClient(null, "tcp://localhost", 5559, processManager);
 
 	    // connect
-		InternalClientMessage clientMessage = new InternalClientMessage(ControlPacketType.CONNECT, new CONNECTPayload());
+		InternalClientMessage clientMessage = new InternalClientMessage(ControlPacketType.CONNECT, new CONNECTPayload(
+				Location.random()));
 		client.sendInternalClientMessage(clientMessage);
 
 		// receive one message
 		InternalClientMessage response = client.receiveInternalClientMessage();
 		logger.info("Received broker answer: {}", response);
+
+		// disconnect
+		clientMessage = new InternalClientMessage(ControlPacketType.DISCONNECT, new DISCONNECTPayload(
+				ReasonCode.NormalDisconnection));
+		client.sendInternalClientMessage(clientMessage);
 
 		client.tearDownClient();
 		if (processManager.tearDown(3000)) {

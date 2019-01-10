@@ -253,11 +253,11 @@ class ZMQProcess_MessageProcessor implements Runnable {
 			}
 
 			if (subscriptionIds.isEmpty()) {
+				logger.debug("No subscriber exists.");
 				response = new InternalBrokerMessage(message.getClientIdentifier(),
 													 ControlPacketType.PUBACK,
 													 new PUBACKPayload(ReasonCode.NoMatchingSubscribers));
 			} else {
-				logger.trace("No subscriber exists.");
 				response = new InternalBrokerMessage(message.getClientIdentifier(),
 													 ControlPacketType.PUBACK,
 													 new PUBACKPayload(ReasonCode.Success));

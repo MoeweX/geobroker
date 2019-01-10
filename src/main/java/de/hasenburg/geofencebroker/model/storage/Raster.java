@@ -7,6 +7,8 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -17,6 +19,7 @@ public class Raster {
 	private final ConcurrentHashMap<Location, RasterEntry> rasterEntries = new ConcurrentHashMap<>();
 
 	protected final int granularity;
+	protected final double degreeStep; // = 1 / granularity
 
 	/**
 	 * Creates a new Raster. The index of each raster entry is the location of the entry's south west corner
@@ -36,6 +39,8 @@ public class Raster {
 		}
 
 		this.granularity = granularity;
+		this.degreeStep =  1.0 / granularity;
+		logger.info("Raster created, granularity = {}, degree step = {}", granularity, degreeStep);
 	}
 
 	/*****************************************************************
@@ -146,8 +151,10 @@ public class Raster {
 
 		// get raster entries that have to be checked for intersection
 		List<RasterEntry> rasterEntriesToCheckForIntersection = new ArrayList<>();
-		for (double lat = southWestIndex.getLat(); lat <= northEastIndex.getLat(); lat = lat + 1.0 / granularity) {
-			for (double lon = southWestIndex.getLon(); lon <= northEastIndex.getLon(); lon = lon + 1.0 / granularity) {
+		for (double lat = southWestIndex.getLat(); lat <= northEastIndex.getLat(); lat += degreeStep) {
+			for (double lon = southWestIndex.getLon(); lon <= northEastIndex.getLon(); lon += degreeStep) {
+				lat = Math.round(lat * granularity) / (double) granularity;
+				lon = Math.round(lon *  granularity) / (double) granularity;
 				Location index = new Location(lat, lon);
 				RasterEntry re = rasterEntries.computeIfAbsent(index, k -> new RasterEntry(index, granularity));
 				rasterEntriesToCheckForIntersection.add(re);

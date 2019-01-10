@@ -180,7 +180,7 @@ public class ZMQProcess_BenchmarkClient implements Runnable {
 	}
 
 	private void writeResultsToDisk() {
-		String targetDir = "benchmark_client_results/";
+		String targetDir = "latest_benchmark_client_results/";
 		String targetFile = targetDir + identity + ".txt";
 
 		try {
