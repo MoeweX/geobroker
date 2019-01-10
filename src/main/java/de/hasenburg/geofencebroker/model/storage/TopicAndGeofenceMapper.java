@@ -29,7 +29,6 @@ public class TopicAndGeofenceMapper {
 	public void putSubscriptionId(ImmutablePair<String, Integer> subscriptionId, Topic topic, Geofence geofence) {
 		TopicLevel level = anchor.getOrCreateChildren(topic.getLevelSpecifiers());
 		level.getRaster().putSubscriptionIdIntoRasterEntries(geofence, subscriptionId);
-		System.out.println("Test");
 	}
 
 	public void removeSubscriptionId(ImmutablePair<String, Integer> subscriptionId, Topic topic, Geofence geofence) {

@@ -60,7 +60,7 @@ public class TopicLevel {
 	protected TopicLevel getChildren(String... levelSpecifiers) {
 		TopicLevel currentChild = this;
 		for (String specifier : levelSpecifiers) {
-			currentChild = currentChild.children.get(levelSpecifier);
+			currentChild = currentChild.children.get(specifier);
 			if (currentChild == null) {
 				return null;
 			}

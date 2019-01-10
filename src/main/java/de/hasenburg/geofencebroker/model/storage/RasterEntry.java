@@ -103,7 +103,7 @@ public class RasterEntry {
 	}
 
 	/*****************************************************************
-	 * Getters
+	 * Getters & toString
 	 ****************************************************************/
 
 	protected Integer getNumSubscriptionIds() {
@@ -118,4 +118,8 @@ public class RasterEntry {
 		return rasterEntryBox;
 	}
 
+	@Override
+	public String toString() {
+		return "RasterEntry{" + "index=" + index + '}';
+	}
 }

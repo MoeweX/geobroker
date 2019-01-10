@@ -212,7 +212,7 @@ class ZMQProcess_MessageProcessor implements Runnable {
 			logger.debug("Client {} subscribed to topic {}", message.getClientIdentifier(), payload.getTopic());
 			response = new InternalBrokerMessage(message.getClientIdentifier(),
 												 ControlPacketType.SUBACK,
-												 new SUBACKPayload(ReasonCode.GrantedQoS1));
+												 new SUBACKPayload(ReasonCode.GrantedQoS0));
 		}
 
 		logger.trace("Sending response " + response);

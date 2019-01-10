@@ -146,4 +146,15 @@ public class ZMQProcessManager {
 		logger.info("Started {} with identity {}", ZMQProcess_StorageClient.class.getSimpleName(), identity);
 	}
 
+	public void runZMQProcess_BenchmarkClient(String address, int port, String identity) {
+		if (getIncompleteZMQProcesses().contains(identity)) {
+			logger.error("Cannot start ZMQProcess with identity {}, as one with this identity already exists",
+						 identity);
+			return;
+		}
+		Future<?> process = pool.submit(new ZMQProcess_BenchmarkClient(address, port, identity, context));
+		zmqProcesses.put(identity, process);
+		logger.info("Started {} with identity {}", ZMQProcess_BenchmarkClient.class.getSimpleName(), identity);
+	}
+
 }

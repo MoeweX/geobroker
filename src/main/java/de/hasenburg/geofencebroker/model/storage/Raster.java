@@ -140,15 +140,14 @@ public class Raster {
 	 * @return - a list of {@link RasterEntry}s
 	 */
 	private List<RasterEntry> calculateIndexLocations(Geofence geofence) {
-
 		// get north east and south west indices
 		Location northEastIndex = calculateIndexLocation(geofence.getBoundingBoxNorthEast());
 		Location southWestIndex = calculateIndexLocation(geofence.getBoundingBoxSouthWest());
 
 		// get raster entries that have to be checked for intersection
 		List<RasterEntry> rasterEntriesToCheckForIntersection = new ArrayList<>();
-		for (double lat = southWestIndex.getLat(); lat <= northEastIndex.getLat(); lat = lat + granularity) {
-			for (double lon = southWestIndex.getLon(); lon <= northEastIndex.getLon(); lon = lon + granularity) {
+		for (double lat = southWestIndex.getLat(); lat <= northEastIndex.getLat(); lat = lat + 1.0 / granularity) {
+			for (double lon = southWestIndex.getLon(); lon <= northEastIndex.getLon(); lon = lon + 1.0 / granularity) {
 				Location index = new Location(lat, lon);
 				RasterEntry re = rasterEntries.computeIfAbsent(index, k -> new RasterEntry(index, granularity));
 				rasterEntriesToCheckForIntersection.add(re);

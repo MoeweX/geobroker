@@ -190,6 +190,21 @@ public class RasterTest {
 		assertTrue(containsLocation(result, new Location(1, 0)));
 	}
 
+	@Test
+	public void testCalculateIndexLocationsForGeofenceCircle2() {
+		raster = new Raster(5);
+		Location l = new Location(39.984702, 116.318417);
+		Geofence fence = Geofence.circle(l, 0.1);
+
+		List<RasterEntry> result = invokeCalculateIndexLocations(fence);
+		assertTrue(containsLocation(result, new Location(39.8, 116)));
+		assertTrue(containsLocation(result, new Location(39.8, 116.2)));
+		assertTrue(containsLocation(result, new Location(39.8, 116.4)));
+		assertTrue(containsLocation(result, new Location(40, 116)));
+		assertTrue(containsLocation(result, new Location(40, 116.2)));
+		assertTrue(containsLocation(result, new Location(40, 116.4)));
+	}
+
 	private boolean containsLocation(List<RasterEntry> result, Location l) {
 		for (RasterEntry rasterEntry : result) {
 			if (rasterEntry.getIndex().equals(l)) {
