@@ -40,7 +40,7 @@ public class Raster {
 
 		this.granularity = granularity;
 		this.degreeStep =  1.0 / granularity;
-		logger.info("Raster created, granularity = {}, degree step = {}", granularity, degreeStep);
+		logger.debug("Raster created, granularity = {}, degree step = {}", granularity, degreeStep);
 	}
 
 	/*****************************************************************
@@ -156,7 +156,7 @@ public class Raster {
 				lat = Math.round(lat * granularity) / (double) granularity;
 				lon = Math.round(lon *  granularity) / (double) granularity;
 				Location index = new Location(lat, lon);
-				RasterEntry re = rasterEntries.computeIfAbsent(index, k -> new RasterEntry(index, granularity));
+				RasterEntry re = rasterEntries.computeIfAbsent(index, k -> new RasterEntry(index, degreeStep));
 				rasterEntriesToCheckForIntersection.add(re);
 			}
 		}

@@ -17,16 +17,16 @@ public class RasterEntry {
 			new ConcurrentHashMap<>();
 	private final AtomicInteger numSubscriptionIds = new AtomicInteger(0);
 
-	public RasterEntry(Location index, int granularity) {
+	public RasterEntry(Location index, double degreeStep) {
 		this.index = index;
 		this.rasterEntryBox = Geofence.polygon(Arrays.asList(index,
 															 // south west
-															 new Location(index.getLat() + granularity, index.getLon()),
+															 new Location(index.getLat() + degreeStep, index.getLon()),
 															 // north west
-															 new Location(index.getLat() + granularity,
-																		  index.getLon() + granularity),
+															 new Location(index.getLat() + degreeStep,
+																		  index.getLon() + degreeStep),
 															 // north east
-															 new Location(index.getLat(), index.getLon() + granularity)
+															 new Location(index.getLat(), index.getLon() + degreeStep)
 															 // south east
 		));
 	}

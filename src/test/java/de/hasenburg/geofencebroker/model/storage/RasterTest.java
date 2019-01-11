@@ -197,13 +197,11 @@ public class RasterTest {
 		Geofence fence = Geofence.circle(l, 0.1);
 
 		List<RasterEntry> result = invokeCalculateIndexLocations(fence);
-		assertEquals(6, result.size());
-		assertTrue(containsLocation(result, new Location(39.8, 116)));
 		assertTrue(containsLocation(result, new Location(39.8, 116.2)));
 		assertTrue(containsLocation(result, new Location(39.8, 116.4)));
-		assertTrue(containsLocation(result, new Location(40, 116)));
 		assertTrue(containsLocation(result, new Location(40, 116.2)));
 		assertTrue(containsLocation(result, new Location(40, 116.4)));
+		assertEquals(4, result.size());
 	}
 
 	@Test
@@ -221,7 +219,7 @@ public class RasterTest {
 		assertTrue(containsLocation(result, new Location(40.0, 116.2)));
 		assertTrue(containsLocation(result, new Location(40.0, 116.3)));
 		assertTrue(containsLocation(result, new Location(40.0, 116.4)));
-		// assertEquals(8, result.size()); TODO: issue opened in SPATIAL4J repository
+		assertEquals(8, result.size());
 	}
 
 	private boolean containsLocation(List<RasterEntry> result, Location l) {
