@@ -87,7 +87,7 @@ public class ClientManager {
 		for (int i = c.getIndex(); i <= c.getCount(); i++) {
 			geolifeClients.get(i).stop();
 		}
-		Utility.sleepNoLog(15000, 0); // wait 15 seconds so that clients have send all messages for sure
+		Utility.sleepNoLog(5000, 0);
 
 		processManager.tearDown(3000);
 

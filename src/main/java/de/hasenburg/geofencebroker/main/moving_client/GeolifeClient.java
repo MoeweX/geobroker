@@ -71,7 +71,6 @@ public class GeolifeClient extends BenchmarkClient {
 		InternalClientMessage clientMessage = new InternalClientMessage(ControlPacketType.DISCONNECT,
 																		new DISCONNECTPayload(ReasonCode.NormalDisconnection));
 		sendInternalClientMessage(clientMessage);
-		Utility.sleepNoLog(10000, 0); // send remaining messages
 		tearDownClient();
 	}
 
