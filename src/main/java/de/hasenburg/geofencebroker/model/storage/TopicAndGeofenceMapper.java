@@ -33,6 +33,9 @@ public class TopicAndGeofenceMapper {
 
 	public void removeSubscriptionId(ImmutablePair<String, Integer> subscriptionId, Topic topic, Geofence geofence) {
 		TopicLevel level = anchor.getChildren(topic.getLevelSpecifiers());
+		if (level == null) {
+			return;
+		}
 		level.getRaster().removeSubscriptionIdFromRasterEntries(geofence, subscriptionId);
 	}
 

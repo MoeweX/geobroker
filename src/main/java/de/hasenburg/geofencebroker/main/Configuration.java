@@ -19,6 +19,15 @@ public class Configuration {
 	private final static String S3_BUCKET_NAME = "geobroker";
 	private final static String S3_CONFIGURATIONS_FOLDER = "Configurations/";
 
+	public Configuration() {
+		// default values
+	}
+
+	public Configuration(int granularity, int messageProcessors) {
+		this.granularity = granularity;
+		this.messageProcessors = messageProcessors;
+	}
+
 	public static Configuration readConfigurationFromS3(String configurationName) {
 		Configuration c = new Configuration();
 

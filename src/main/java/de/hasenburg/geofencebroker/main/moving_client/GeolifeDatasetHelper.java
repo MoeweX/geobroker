@@ -50,7 +50,23 @@ public class GeolifeDatasetHelper {
 		}
 	}
 
-	public List<String> getLinesOfRouteFileAtIndex(int index) {
+	public Map<Integer, Route> downloadRequiredFiles(int index, int count) {
+		Map<Integer, Route> routes = new HashMap<>();
+		for (int i = index; i <= count; i++) {
+			logger.trace("Creating route for file at index {}", i);
+			List<String> lines = getLinesOfRouteFileAtIndex(i);
+			routes.put(i, Route.createRoute(lines));
+		}
+		if (routes.size() == 0) {
+			logger.fatal("No routes were created");
+			System.exit(1);
+		}
+
+		logger.info("Successfully created {} routes", routes.size());
+		return routes;
+	}
+
+	private List<String> getLinesOfRouteFileAtIndex(int index) {
 		List<String> lines = new ArrayList<>();
 
 		try {

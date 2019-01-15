@@ -38,7 +38,7 @@ public class ClientManager {
 		processManager = new ZMQProcessManager();
 
 		// download required files from S3
-		Map<Integer, Route> routes = downloadRequiredFiles(c.getIndex(), c.getCount());
+		Map<Integer, Route> routes = gdh.downloadRequiredFiles(c.getIndex(), c.getCount());
 
 		// create necessary clients
 		for (int i = c.getIndex(); i <= c.getCount(); i++) {
@@ -93,22 +93,6 @@ public class ClientManager {
 
 		logger.info("Experiments stopped");
 		System.exit(0);
-	}
-
-	private Map<Integer, Route> downloadRequiredFiles(int index, int count) {
-		Map<Integer, Route> routes = new HashMap<>();
-		for (int i = index; i <= count; i++) {
-			logger.trace("Creating route for file at index {}", i);
-			List<String> lines = gdh.getLinesOfRouteFileAtIndex(i);
-			routes.put(i, Route.createRoute(lines));
-		}
-		if (routes.size() == 0) {
-			logger.fatal("No routes were created");
-			System.exit(1);
-		}
-
-		logger.info("Successfully created {} routes", routes.size());
-		return routes;
 	}
 
 	/**

@@ -1,6 +1,7 @@
 package de.hasenburg.geofencebroker.model.storage;
 
 import de.hasenburg.geofencebroker.main.Utility;
+import de.hasenburg.geofencebroker.model.clients.Subscription;
 import de.hasenburg.geofencebroker.model.spatial.Geofence;
 import de.hasenburg.geofencebroker.model.spatial.Location;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -40,6 +41,28 @@ public class RasterEntryTest {
 	public void tearDown() {
 		executorService.shutdownNow();
 		assertTrue(executorService.isShutdown());
+	}
+
+	/*****************************************************************
+	 * Functionality
+	 ****************************************************************/
+
+	@Test
+	public void testSubscribeUnsubscribe() {
+		RasterEntry rasterEntry = new RasterEntry(Location.random(), 1.0);
+		ImmutablePair<String, Integer> subscriptionId = new ImmutablePair<>("client", 1);
+		rasterEntry.putSubscriptionId(subscriptionId);
+		assertEquals(1, rasterEntry.getNumSubscriptionIds().intValue());
+		assertEquals(1, rasterEntry.getAllSubscriptionIds().size());
+		rasterEntry.removeSubscriptionId(subscriptionId);
+		assertEquals(0, rasterEntry.getNumSubscriptionIds().intValue());
+		assertNull(rasterEntry.getAllSubscriptionIds().get(subscriptionId));
+		assertEquals(1,
+					 rasterEntry
+							 .getAllSubscriptionIds()
+							 .size()); // fine, as the HashSet is empty, even though the key persists
+		assertEquals(0,
+					 rasterEntry.getSubscriptionIdsForClientIdentifier(subscriptionId.left).size()); // see, it is empty
 	}
 
 	/*****************************************************************
