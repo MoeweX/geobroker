@@ -30,6 +30,9 @@ import java.util.*;
  * - PUBLISH -> PUBACK
  *
  * Furthermore, the client counts all PUBLISH messages it receives.
+ *
+ * WARNING: This client waits 5 seconds after it received the kill command so that its sockets have time to transmit
+ * remaining messages. During that interval, it will not parse any incoming messages.
  */
 public class ZMQProcess_BenchmarkClient implements Runnable {
 
@@ -169,6 +172,9 @@ public class ZMQProcess_BenchmarkClient implements Runnable {
 
 		// write results to disk
 		writeResultsToDisk();
+
+		// let's wait 5 seconds so that all messages are send properly
+		Utility.sleepNoLog(5000, 0);
 
 		// sub control socket
 		context.destroySocket(poller.getSocket(0));
