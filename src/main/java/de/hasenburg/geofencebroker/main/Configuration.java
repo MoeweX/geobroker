@@ -14,6 +14,7 @@ public class Configuration {
 	private static final Logger logger = LogManager.getLogger();
 
 	private Integer granularity = 1;
+	private Integer messageProcessors = 1;
 
 	private final static String S3_BUCKET_NAME = "geobroker";
 	private final static String S3_CONFIGURATIONS_FOLDER = "Configurations/";
@@ -49,6 +50,7 @@ public class Configuration {
 	private static Configuration parseToml(Configuration c, Toml toml) {
 		Toml broker = toml.getTable("broker");
 		c.granularity = Math.toIntExact(broker.getLong("granularity", 1L));
+		c.messageProcessors = Math.toIntExact(broker.getLong("messageProcessors", 1L));
 		try {
 			logger.info(c.toString());
 		} catch (NullPointerException e) {
@@ -71,8 +73,12 @@ public class Configuration {
 		return granularity;
 	}
 
+	public Integer getMessageProcessors() {
+		return messageProcessors;
+	}
+
 	@Override
 	public String toString() {
-		return "Configuration{" + "granularity=" + granularity + '}';
+		return "Configuration{" + "granularity=" + granularity + ", messageProcessors=" + messageProcessors + '}';
 	}
 }

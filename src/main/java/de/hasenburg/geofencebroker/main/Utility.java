@@ -173,4 +173,16 @@ public class Utility {
 	public static String generateClientOrderBackendString(String identity) {
 		return "inproc://" + identity;
 	}
+
+	/**
+	 * Generates a string payload with the given size, but the minimum size is length(content) + 8.
+	 */
+	public static String generatePayloadWithSize(int payloadSize, String content) {
+		StringBuilder stringBuilder = new StringBuilder();
+		stringBuilder.append(content).append("++++++++");
+		for (int i = 0; i < payloadSize - 8 - content.length(); i++) {
+			stringBuilder.append("a");
+		}
+		return stringBuilder.toString();
+	}
 }

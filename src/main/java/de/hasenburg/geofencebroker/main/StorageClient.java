@@ -1,12 +1,10 @@
 package de.hasenburg.geofencebroker.main;
 
 import de.hasenburg.geofencebroker.communication.ControlPacketType;
-import de.hasenburg.geofencebroker.communication.ReasonCode;
 import de.hasenburg.geofencebroker.communication.ZMQProcessManager;
 import de.hasenburg.geofencebroker.communication.ZMQProcess_SimpleClient;
 import de.hasenburg.geofencebroker.model.InternalClientMessage;
 import de.hasenburg.geofencebroker.model.payload.CONNECTPayload;
-import de.hasenburg.geofencebroker.model.payload.DISCONNECTPayload;
 import de.hasenburg.geofencebroker.model.spatial.Location;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,10 +13,10 @@ import org.zeromq.SocketType;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
 
-import java.util.Optional;
+import java.io.IOException;
 import java.util.Random;
 
-public class SimpleClient {
+public class StorageClient {
 
 	private static final Logger logger = LogManager.getLogger();
 
@@ -27,15 +25,16 @@ public class SimpleClient {
 	ZMQ.Socket orderSocket;
 
 
-	public SimpleClient(@Nullable String identifier, String address, int port, ZMQProcessManager processManager) {
+	public StorageClient(@Nullable String identifier, String address, int port, ZMQProcessManager processManager)
+			throws IOException {
 		if (identifier == null) {
 			Random random = new Random();
-			identifier = "SimpleClient-" + System.nanoTime();
+			identifier = "StorageClient-" + System.nanoTime();
 		}
 
 		this.identifier = identifier;
 		this.processManager = processManager;
-		processManager.runZMQProcess_SimpleClient(address, port, identifier);
+		processManager.runZMQProcess_StorageClient(address, port, identifier);
 		orderSocket = processManager.getContext().createSocket(SocketType.REQ);
 		orderSocket.setIdentity(identifier.getBytes());
 		orderSocket.connect(Utility.generateClientOrderBackendString(identifier));
@@ -64,44 +63,25 @@ public class SimpleClient {
 		return(ZMsg.recvMsg(orderSocket));
 	}
 
-	public InternalClientMessage receiveInternalClientMessage() {
-		ZMsg orderMessage = ZMsg.newStringMsg(ZMQProcess_SimpleClient.ORDERS.RECEIVE.name());
+	public static void main (String[] args) throws IOException {
+		ZMQProcessManager processManager = new ZMQProcessManager();
+		StorageClient client = new StorageClient(null, "tcp://localhost", 5559, processManager);
 
-		// send order
-		orderMessage.send(orderSocket);
-		final Optional<InternalClientMessage> clientMessageO =
-				InternalClientMessage.buildMessage(ZMsg.recvMsg(orderSocket));
-
-		return clientMessageO.orElse(null);
-	}
-
-	public static void main (String[] args) {
-	    ZMQProcessManager processManager = new ZMQProcessManager();
-	    SimpleClient client = new SimpleClient(null, "tcp://localhost", 5559, processManager);
-
-	    // connect
+		// connect
 		InternalClientMessage clientMessage = new InternalClientMessage(ControlPacketType.CONNECT, new CONNECTPayload(
 				Location.random()));
 		client.sendInternalClientMessage(clientMessage);
 
-		// receive one message
-		InternalClientMessage response = client.receiveInternalClientMessage();
-		logger.info("Received broker answer: {}", response);
-
-		// disconnect
-		clientMessage = new InternalClientMessage(ControlPacketType.DISCONNECT, new DISCONNECTPayload(
-				ReasonCode.NormalDisconnection));
-		client.sendInternalClientMessage(clientMessage);
+		// wait 2 seconds, we should receive a CONNACK and write it to file.
+		Utility.sleepNoLog(2000, 0);
 
 		client.tearDownClient();
 		if (processManager.tearDown(3000)) {
-			logger.info("SimpleClient shut down properly.");
+			logger.info("StorageClient shut down properly.");
 		} else {
 			logger.fatal("ProcessManager reported that processes are still running: {}", processManager.getIncompleteZMQProcesses());
 		}
 		System.exit(0);
 	}
-
-
 
 }

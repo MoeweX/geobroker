@@ -3,3 +3,6 @@
 *.iml
 target/
 benchmarking_results/
+latest_benchmark_client_results/
+logfile.log
+out/

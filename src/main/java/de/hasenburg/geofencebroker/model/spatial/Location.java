@@ -121,4 +121,11 @@ public class Location implements JSONable {
 
 		return Objects.hash(getPoint());
 	}
+
+	public static void main (String[] args) {
+	    Location l = new Location(39.984702,116.318417);
+	    Location l2 = new Location(39.974702,116.318417);
+	    logger.info("Distance is {}km", l.distanceKmTo(l2));
+	}
+
 }
