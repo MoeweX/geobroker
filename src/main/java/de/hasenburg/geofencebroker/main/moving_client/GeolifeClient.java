@@ -52,9 +52,11 @@ public class GeolifeClient extends BenchmarkClient {
 					Geofence fence = Geofence.circle(visitedLocation.left, c.getGeofenceSize());
 					InternalClientMessage pingreq = new InternalClientMessage(ControlPacketType.PINGREQ,
 																			  new PINGREQPayload(visitedLocation.left));
+					Utility.sleep(1000, 0);
 					sendInternalClientMessage(pingreq);
 					InternalClientMessage subscribe = new InternalClientMessage(ControlPacketType.SUBSCRIBE,
 																				new SUBSCRIBEPayload(topic, fence));
+					Utility.sleep(1000, 0);
 					sendInternalClientMessage(subscribe);
 					InternalClientMessage publish = new InternalClientMessage(ControlPacketType.PUBLISH,
 																			  new PUBLISHPayload(topic, fence, data));
