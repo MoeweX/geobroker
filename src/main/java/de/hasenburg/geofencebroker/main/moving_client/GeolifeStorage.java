@@ -43,7 +43,7 @@ public class GeolifeStorage {
 	private static final String[] UPDATE_PUBLISH_OPS = {"1,99", "1,1", "99,1"};
 			// update operations before doing publish operations
 
-	private static final int EXPERIMENT_TIME = 1; // min
+	private static final int EXPERIMENT_TIME = 60; // sec
 
 	/*****************************************************************
 	 * END CONFIGURATION
@@ -79,8 +79,8 @@ public class GeolifeStorage {
 															  GEOFENCE_SIZE)));
 		}
 
-		logger.debug("Sleeping for {} min", EXPERIMENT_TIME);
-		Utility.sleepNoLog((long) (EXPERIMENT_TIME * 60 * 1000), 0);
+		logger.debug("Sleeping for {} sec", EXPERIMENT_TIME);
+		Utility.sleepNoLog((long) (EXPERIMENT_TIME  * 1000), 0);
 
 		logger.debug("Shutting down executor");
 		executorService.shutdownNow();
@@ -143,7 +143,9 @@ public class GeolifeStorage {
 					if (numUpdateOps < updateOps) {
 						numUpdateOps += 1;
 						// update subscription
-						storage.removeSubscriptionId(subscriptionId, topic, lastFence);
+						if (lastFence != null) {
+							storage.removeSubscriptionId(subscriptionId, topic, lastFence);
+						}
 						storage.putSubscriptionId(subscriptionId, topic, fence);
 						lastFence = fence;
 					} else if (numPublishOps < publishOps) {
