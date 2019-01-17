@@ -10,9 +10,14 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 
 /**
  * This class stresses only the storage in a similar fashion and the {@link ClientManager} and {@link GeolifeBroker}
@@ -25,19 +30,20 @@ public class GeolifeStorage {
 	 * CONFIGURATION
 	 ****************************************************************/
 
-	private final int GRANULARITY = 100;
-	private final int MESSAGE_PROCESSORS = 1;
+	private static final int GRANULARITY = 100;
+	private static final Integer[] MESSAGE_PROCESSORS = {1, 2, 4, 8, 16, 32};
 
-	private final int GEOLIFE_START_INDEX = 1;
-	private final int GEOLIFE_STOP_INDEX = 1;
+	private static final int GEOLIFE_START_INDEX = 1;
+	private static final Integer[] GEOLIFE_STOP_INDEX = {1, 10, 100, 1000};
 
-	private final double GEOFENCE_SIZE = 0.01; // in degree
+	private static final double GEOFENCE_SIZE = 0.01; // in degree
 
-	private final int UPDATE_OPS = 1; // update operations before doing publish operations
-	private final int PUBLISH_OPS = 4; // publish operations before resetting counters
+	// update operations before doing publish operations
+	// publish operations before resetting counters
+	private static final String[] UPDATE_PUBLISH_OPS = {"1,99", "1,1", "99,1"};
+			// update operations before doing publish operations
 
-	private final int EXPERIMENT_TIME = 1; // min
-	private final int PRINT_INTERVAL = 10000000;
+	private static final int EXPERIMENT_TIME = 1; // min
 
 	/*****************************************************************
 	 * END CONFIGURATION
@@ -48,33 +54,57 @@ public class GeolifeStorage {
 	private final TopicAndGeofenceMapper storage;
 	private final ExecutorService executorService;
 
-	public GeolifeStorage() {
-		logger.info("Creating Storage");
+	public GeolifeStorage(int GRANULARITY, int MESSAGE_PROCESSORS, int GEOLIFE_START_INDEX, int GEOLIFE_STOP_INDEX,
+						  double GEOFENCE_SIZE, int UPDATE_OPS, int PUBLISH_OPS, int EXPERIMENT_TIME) {
+		logger.debug("Creating Storage");
 		Configuration c = new Configuration(GRANULARITY, MESSAGE_PROCESSORS);
 		this.storage = new TopicAndGeofenceMapper(c);
 
-		logger.info("Creating ExecutorService");
+		logger.debug("Creating ExecutorService");
 		this.executorService = Executors.newFixedThreadPool(GEOLIFE_STOP_INDEX - GEOLIFE_START_INDEX + 1);
 
-		logger.info("Calculating Routes");
+		logger.debug("Calculating Routes");
 		GeolifeDatasetHelper gdh = new GeolifeDatasetHelper();
 		gdh.prepare();
 		Map<Integer, Route> routes = gdh.downloadRequiredFiles(GEOLIFE_START_INDEX, GEOLIFE_STOP_INDEX);
 
-		logger.info("Creating and starting clients");
+		logger.debug("Creating and starting clients");
+		List<Future<Integer>> throughputF = new ArrayList<>();
 		for (Integer index : routes.keySet()) {
 			Route r = routes.get(index);
-			executorService.submit(new Client(r, "client-" + index, UPDATE_OPS, PUBLISH_OPS));
+			throughputF.add(executorService.submit(new Client(r,
+															  "client-" + index,
+															  UPDATE_OPS,
+															  PUBLISH_OPS,
+															  GEOFENCE_SIZE)));
 		}
 
-		logger.info("Sleeping for {} min", EXPERIMENT_TIME);
+		logger.debug("Sleeping for {} min", EXPERIMENT_TIME);
 		Utility.sleepNoLog((long) (EXPERIMENT_TIME * 60 * 1000), 0);
 
-		logger.info("Shutting down executor");
+		logger.debug("Shutting down executor");
 		executorService.shutdownNow();
+		List<Integer> throughputs = new ArrayList<>();
+		for (Future<Integer> future : throughputF) {
+			try {
+				throughputs.add(future.get());
+			} catch (InterruptedException e) {
+				logger.error("Program terminated while waiting on client result", e);
+			} catch (ExecutionException e) {
+				logger.error("Client could not finish due to exception", e);
+
+			}
+		}
+
+		logger.info("GEOLIFE_STOP_INDEX={},MESSAGE_PROCESSORS={},UPDATE_OPS={},PUBLISH_OPS={},Throughput (ops/s)={}",
+					GEOLIFE_STOP_INDEX,
+					MESSAGE_PROCESSORS,
+					UPDATE_OPS,
+					PUBLISH_OPS,
+					throughputs.stream().mapToInt(Integer::intValue).average().getAsDouble());
 	}
 
-	private class Client implements Runnable {
+	private class Client implements Callable<Integer> {
 
 		private final Route route;
 		private final String identity;
@@ -82,18 +112,21 @@ public class GeolifeStorage {
 		private final int updateOps;
 		private final int publishOps;
 
-		public Client(Route route, String identity, int updateOps, int publishOps) {
+		private final double GEOFENCE_SIZE;
+
+		public Client(Route route, String identity, int updateOps, int publishOps, double GEOFENCE_SIZE) {
 			this.route = route;
 			this.identity = identity;
 			this.subscriptionId = new ImmutablePair<>(identity, 1);
 			this.updateOps = updateOps;
 			this.publishOps = publishOps;
+			this.GEOFENCE_SIZE = GEOFENCE_SIZE;
 		}
 
 		@Override
-		public void run() {
+		public Integer call() {
 			Thread.currentThread().setName(identity);
-			logger.info("{} started to run operations against storage", identity);
+			logger.debug("{} started to run operations against storage", identity);
 
 			Topic topic = new Topic("data");
 			int numberOfOperations = 0;
@@ -103,14 +136,6 @@ public class GeolifeStorage {
 			int numPublishOps = 0;
 
 			while (!Thread.currentThread().isInterrupted()) {
-				if (numberOfOperations >= PRINT_INTERVAL) {
-					long timespan = (System.nanoTime() - timestamp) / 1000 / 1000; // milliseconds
-					double timespanSec = timespan / 1000.0;
-					int opsPerSecond = (int) (numberOfOperations / timespanSec);
-					logger.info("Did {} operations in {} seconds ({} ops/second)", numberOfOperations, timespanSec, opsPerSecond);
-					numberOfOperations = 0;
-					timestamp = System.nanoTime();
-				}
 				for (ImmutablePair<Location, Integer> visitedLocation : route.getVisitedLocations()) {
 					numberOfOperations += 1;
 					Geofence fence = Geofence.circle(visitedLocation.left, GEOFENCE_SIZE);
@@ -132,12 +157,47 @@ public class GeolifeStorage {
 
 				}
 			}
+			long timespan = (System.nanoTime() - timestamp) / 1000 / 1000; // milliseconds
+			double timespanSec = timespan / 1000.0;
+			int opsPerSecond = (int) (numberOfOperations / timespanSec);
+			logger.debug("{} finished to run operations against storage, ran {} operations per second",
+						 identity,
+						 opsPerSecond);
+			return opsPerSecond;
+		}
+	}
+
+	public static void main(String[] args) {
+
+		logger.info("Doing the GeolifeStorage Experiment");
+		logger.info("GRANULARITY = {}", GRANULARITY);
+		logger.info("GEOFENCE_SIZE = {}", GEOFENCE_SIZE);
+		logger.info("EXPERIMENT_TIME = {}", EXPERIMENT_TIME);
+		logger.info("GEOLIFE_START_INDEX = {}", GEOLIFE_START_INDEX);
+		logger.info("GEOLIFE_STOP_INDEX = {}", Arrays.asList(GEOLIFE_STOP_INDEX));
+		logger.info("MESSAGE_PROCESSORS = {}", Arrays.asList(MESSAGE_PROCESSORS));
+		logger.info("UPDATE_PUBLISH_OPS = {}", Arrays.asList(UPDATE_PUBLISH_OPS));
+
+		for (Integer geolifeStopIndex : GEOLIFE_STOP_INDEX) {
+			for (Integer messageProcessors : MESSAGE_PROCESSORS) {
+				for (String updatePublishOps : UPDATE_PUBLISH_OPS) {
+					int UPDATE_OPS = Integer.parseInt(updatePublishOps.split(",")[0]);
+					int PUBLISH_OPS = Integer.parseInt(updatePublishOps.split(",")[1]);
+
+					GeolifeStorage gs = new GeolifeStorage(GRANULARITY,
+														   messageProcessors,
+														   GEOLIFE_START_INDEX,
+														   geolifeStopIndex,
+														   GEOFENCE_SIZE,
+														   UPDATE_OPS,
+														   PUBLISH_OPS,
+														   EXPERIMENT_TIME);
+				}
+			}
 		}
 
 	}
 
-	public static void main (String[] args) {
-	    GeolifeStorage gs = new GeolifeStorage();
-	}
+
 
 }

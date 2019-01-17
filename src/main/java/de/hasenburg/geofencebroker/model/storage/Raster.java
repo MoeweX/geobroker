@@ -181,22 +181,22 @@ public class Raster {
 	 * the two private methods above need to be commented out.
 	 ****************************************************************/
 
-//	private final Location index = new Location(0.0, 0.0);
-//
-//	private Location calculateIndexLocation(Location location) {
-//		return index;
-//	}
-//
-//	/**
-//	 * Calculates with which {@link RasterEntry} the given geofence intersects with.
-//	 *
-//	 * @param geofence - the geofence
-//	 * @return - a list of {@link RasterEntry}s
-//	 */
-//	private List<RasterEntry> calculateIndexLocations(Geofence geofence) {
-//		List<RasterEntry> list = new ArrayList<>();
-//		list.add(rasterEntries.computeIfAbsent(index, k -> new RasterEntry(index, degreeStep))); // only one entry
-//		return list;
-//	}
+	//	private final Location index = new Location(0.0, 0.0);
+	//
+	//	private Location calculateIndexLocation(Location location) {
+	//		return index;
+	//	}
+	//
+	//	/**
+	//	 * Calculates with which {@link RasterEntry} the given geofence intersects with.
+	//	 *
+	//	 * @param geofence - the geofence
+	//	 * @return - a list of {@link RasterEntry}s
+	//	 */
+	//	private List<RasterEntry> calculateIndexLocations(Geofence geofence) {
+	//		List<RasterEntry> list = new ArrayList<>();
+	//		list.add(rasterEntries.computeIfAbsent(index, k -> new RasterEntry(index, degreeStep))); // only one entry
+	//		return list;
+	//	}
 
 }

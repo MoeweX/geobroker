@@ -41,7 +41,7 @@ public class GeolifeDatasetHelper {
 			if (indices.size() != 18670) {
 				logger.fatal("Indices file did not contain the correct amount of elements, was " + indices.size());
 			} else {
-				logger.info("Successfully read the 18670 geolife dataset index entries");
+				logger.debug("Successfully read the 18670 geolife dataset index entries");
 			}
 
 		} catch (IOException | NullPointerException e) {
@@ -62,7 +62,7 @@ public class GeolifeDatasetHelper {
 			System.exit(1);
 		}
 
-		logger.info("Successfully created {} routes", routes.size());
+		logger.debug("Successfully created {} routes", routes.size());
 		return routes;
 	}
 
