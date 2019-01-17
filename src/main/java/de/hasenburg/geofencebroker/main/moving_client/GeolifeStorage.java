@@ -10,9 +10,6 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -31,16 +28,15 @@ public class GeolifeStorage {
 	 ****************************************************************/
 
 	private static final int GRANULARITY = 100;
-	private static final Integer[] MESSAGE_PROCESSORS = {1, 2, 4, 8, 16, 32};
 
 	private static final int GEOLIFE_START_INDEX = 1;
-	private static final Integer[] GEOLIFE_STOP_INDEX = {1, 10, 100, 1000};
+	private static final Integer[] GEOLIFE_STOP_INDEX = {1, 10, 100, 250, 500, 750, 1000};
 
 	private static final double GEOFENCE_SIZE = 0.01; // in degree
 
 	// update operations before doing publish operations
 	// publish operations before resetting counters
-	private static final String[] UPDATE_PUBLISH_OPS = {"1,99", "1,1", "99,1"};
+	private static final String[] UPDATE_PUBLISH_OPS = {"99,1", "1,1", "1,10", "1,99"};
 			// update operations before doing publish operations
 
 	private static final int EXPERIMENT_TIME = 60; // sec
@@ -54,10 +50,10 @@ public class GeolifeStorage {
 	private final TopicAndGeofenceMapper storage;
 	private final ExecutorService executorService;
 
-	public GeolifeStorage(int GRANULARITY, int MESSAGE_PROCESSORS, int GEOLIFE_START_INDEX, int GEOLIFE_STOP_INDEX,
+	public GeolifeStorage(int GRANULARITY, int GEOLIFE_START_INDEX, int GEOLIFE_STOP_INDEX,
 						  double GEOFENCE_SIZE, int UPDATE_OPS, int PUBLISH_OPS, int EXPERIMENT_TIME) {
 		logger.debug("Creating Storage");
-		Configuration c = new Configuration(GRANULARITY, MESSAGE_PROCESSORS);
+		Configuration c = new Configuration(GRANULARITY, 1); // message processors does not matter
 		this.storage = new TopicAndGeofenceMapper(c);
 
 		logger.debug("Creating ExecutorService");
@@ -96,9 +92,8 @@ public class GeolifeStorage {
 			}
 		}
 
-		logger.info("GEOLIFE_STOP_INDEX={},MESSAGE_PROCESSORS={},UPDATE_OPS={},PUBLISH_OPS={},Throughput (ops/s)={}",
+		logger.info("GEOLIFE_STOP_INDEX={},UPDATE_OPS={},PUBLISH_OPS={},Throughput (ops/s)={}",
 					GEOLIFE_STOP_INDEX,
-					MESSAGE_PROCESSORS,
 					UPDATE_OPS,
 					PUBLISH_OPS,
 					throughputs.stream().mapToInt(Integer::intValue).average().getAsDouble());
@@ -177,17 +172,14 @@ public class GeolifeStorage {
 		logger.info("EXPERIMENT_TIME = {}", EXPERIMENT_TIME);
 		logger.info("GEOLIFE_START_INDEX = {}", GEOLIFE_START_INDEX);
 		logger.info("GEOLIFE_STOP_INDEX = {}", Arrays.asList(GEOLIFE_STOP_INDEX));
-		logger.info("MESSAGE_PROCESSORS = {}", Arrays.asList(MESSAGE_PROCESSORS));
 		logger.info("UPDATE_PUBLISH_OPS = {}", Arrays.asList(UPDATE_PUBLISH_OPS));
 
 		for (Integer geolifeStopIndex : GEOLIFE_STOP_INDEX) {
-			for (Integer messageProcessors : MESSAGE_PROCESSORS) {
 				for (String updatePublishOps : UPDATE_PUBLISH_OPS) {
 					int UPDATE_OPS = Integer.parseInt(updatePublishOps.split(",")[0]);
 					int PUBLISH_OPS = Integer.parseInt(updatePublishOps.split(",")[1]);
 
 					GeolifeStorage gs = new GeolifeStorage(GRANULARITY,
-														   messageProcessors,
 														   GEOLIFE_START_INDEX,
 														   geolifeStopIndex,
 														   GEOFENCE_SIZE,
@@ -195,7 +187,6 @@ public class GeolifeStorage {
 														   PUBLISH_OPS,
 														   EXPERIMENT_TIME);
 				}
-			}
 		}
 
 	}
