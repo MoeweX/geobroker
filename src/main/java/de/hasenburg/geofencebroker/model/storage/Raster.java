@@ -39,7 +39,7 @@ public class Raster {
 		}
 
 		this.granularity = granularity;
-		this.degreeStep =  1.0 / granularity;
+		this.degreeStep = 1.0 / granularity;
 		logger.debug("Raster created, granularity = {}, degree step = {}", granularity, degreeStep);
 	}
 
@@ -104,7 +104,8 @@ public class Raster {
 	 * @param location - the location that determines which {@link RasterEntry} fits
 	 * @return a Map containing all fitting subscriptionIds; client -> set of subscription ids
 	 */
-	protected Map<String, Set<ImmutablePair<String, Integer>>> getSubscriptionIdsForPublisherLocation(Location location) {
+	protected Map<String, Set<ImmutablePair<String, Integer>>> getSubscriptionIdsForPublisherLocation(
+			Location location) {
 		Location index = calculateIndexLocation(location);
 		RasterEntry re = rasterEntries.get(index);
 		if (re != null) {
@@ -154,7 +155,7 @@ public class Raster {
 		for (double lat = southWestIndex.getLat(); lat <= northEastIndex.getLat(); lat += degreeStep) {
 			for (double lon = southWestIndex.getLon(); lon <= northEastIndex.getLon(); lon += degreeStep) {
 				lat = Math.round(lat * granularity) / (double) granularity;
-				lon = Math.round(lon *  granularity) / (double) granularity;
+				lon = Math.round(lon * granularity) / (double) granularity;
 				Location index = new Location(lat, lon);
 				RasterEntry re = rasterEntries.computeIfAbsent(index, k -> new RasterEntry(index, degreeStep));
 				rasterEntriesToCheckForIntersection.add(re);
@@ -172,5 +173,30 @@ public class Raster {
 		// return
 		return rasterEntriesToCheckForIntersection;
 	}
+
+	/*****************************************************************
+	 * No Geo-Context (used to calculate Overhead)
+	 *
+	 * In order to use the storage without geo-context information,
+	 * the two private methods above need to be commented out.
+	 ****************************************************************/
+
+//	private final Location index = new Location(0.0, 0.0);
+//
+//	private Location calculateIndexLocation(Location location) {
+//		return index;
+//	}
+//
+//	/**
+//	 * Calculates with which {@link RasterEntry} the given geofence intersects with.
+//	 *
+//	 * @param geofence - the geofence
+//	 * @return - a list of {@link RasterEntry}s
+//	 */
+//	private List<RasterEntry> calculateIndexLocations(Geofence geofence) {
+//		List<RasterEntry> list = new ArrayList<>();
+//		list.add(rasterEntries.computeIfAbsent(index, k -> new RasterEntry(index, degreeStep))); // only one entry
+//		return list;
+//	}
 
 }

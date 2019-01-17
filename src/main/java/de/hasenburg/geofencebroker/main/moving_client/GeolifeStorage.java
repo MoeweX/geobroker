@@ -26,10 +26,10 @@ public class GeolifeStorage {
 	 ****************************************************************/
 
 	private final int GRANULARITY = 100;
-	private final int MESSAGE_PROCESSORS = 2;
+	private final int MESSAGE_PROCESSORS = 1;
 
 	private final int GEOLIFE_START_INDEX = 1;
-	private final int GEOLIFE_STOP_INDEX = 5;
+	private final int GEOLIFE_STOP_INDEX = 1;
 
 	private final double GEOFENCE_SIZE = 0.01; // in degree
 
@@ -37,6 +37,7 @@ public class GeolifeStorage {
 	private final int PUBLISH_OPS = 4; // publish operations before resetting counters
 
 	private final int EXPERIMENT_TIME = 1; // min
+	private final int PRINT_INTERVAL = 10000000;
 
 	/*****************************************************************
 	 * END CONFIGURATION
@@ -70,7 +71,7 @@ public class GeolifeStorage {
 		Utility.sleepNoLog((long) (EXPERIMENT_TIME * 60 * 1000), 0);
 
 		logger.info("Shutting down executor");
-		executorService.shutdown();
+		executorService.shutdownNow();
 	}
 
 	private class Client implements Runnable {
@@ -102,7 +103,7 @@ public class GeolifeStorage {
 			int numPublishOps = 0;
 
 			while (!Thread.currentThread().isInterrupted()) {
-				if (numberOfOperations >= 100000) {
+				if (numberOfOperations >= PRINT_INTERVAL) {
 					long timespan = (System.nanoTime() - timestamp) / 1000 / 1000; // milliseconds
 					double timespanSec = timespan / 1000.0;
 					int opsPerSecond = (int) (numberOfOperations / timespanSec);
