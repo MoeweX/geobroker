@@ -25,7 +25,7 @@ public class ZMQProcessManager {
 	private final ZMQ.Socket zmqController;
 
 	public ZMQProcessManager() {
-		context = new ZContext(1);
+		context = new ZContext(2);
 		zmqController = ZMQControlUtility.createZMQControlSocket(context);
 		logger.info("Started ZMQProcessManager");
 	}
