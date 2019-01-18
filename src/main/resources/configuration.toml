@@ -9,7 +9,7 @@ port = 5559
 
 [clientManager]
 runtime = 1 # runtime of the experiments in min, starts counting at starttime (provided as argv)
-offset = 1 # startup offset between individual clients in sec
+offset = 1000 # startup offset between individual clients in milli-sec
 
     [clientManager.Weihnachtsmann]
     index = 1

@@ -88,4 +88,14 @@ public class GeolifeClient extends BenchmarkClient {
 		tearDownClient();
 	}
 
+	public static void main (String[] args) {
+		Configuration con = new Configuration();
+		ZMQProcessManager processManager = new ZMQProcessManager();
+	    for (int i = 0; i < 500; i++) {
+	    	GeolifeClient c = new GeolifeClient(con, i, null, processManager);
+		}
+		Utility.sleepNoLog(2000, 0);
+	    logger.info("Could initiate clients");
+	}
+
 }

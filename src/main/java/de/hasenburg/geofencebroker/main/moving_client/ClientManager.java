@@ -66,7 +66,7 @@ public class ClientManager {
 		logger.info("Starting up!");
 		for (int i = c.getIndex(); i <= c.getCount(); i++) {
 			geolifeClients.get(i).start();
-			Utility.sleepNoLog(c.getOffset() * 1000, 0);
+			Utility.sleepNoLog(c.getOffset(), 0);
 		}
 
 		// calculate how much time to wait for shutdown
