@@ -25,7 +25,6 @@ public class BenchmarkClient {
 	private ZMQProcessManager processManager;
 	private String identifier;
 	ZMQ.Socket orderSocket;
-	private boolean tearedDown = false;
 
 
 	public BenchmarkClient(@Nullable String identifier, String address, int port, ZMQProcessManager processManager) {
@@ -49,7 +48,6 @@ public class BenchmarkClient {
 	}
 
 	public void tearDownClient() {
-		tearedDown = true;
 		orderSocket.setLinger(0);
 		orderSocket.close();
 		processManager.sendKillCommandToZMQProcess(getIdentity());
@@ -62,11 +60,8 @@ public class BenchmarkClient {
 			orderMessage.add(internalClientMessage.pop());
 		}
 
-		if (!tearedDown) {
-			orderMessage.send(orderSocket);
-			return (ZMsg.recvMsg(orderSocket));
-		}
-		return null;
+		orderMessage.send(orderSocket);
+		return (ZMsg.recvMsg(orderSocket));
 	}
 
 	public static void main (String[] args) {
