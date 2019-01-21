@@ -26,7 +26,7 @@ public class ZMQProcessManager {
 
 	public ZMQProcessManager() {
 		context = new ZContext(2);
-		context.getContext().setMaxSockets(100000);
+		//context.getContext().setMaxSockets(100000);
 		zmqController = ZMQControlUtility.createZMQControlSocket(context);
 		logger.info("Started ZMQProcessManager");
 	}
