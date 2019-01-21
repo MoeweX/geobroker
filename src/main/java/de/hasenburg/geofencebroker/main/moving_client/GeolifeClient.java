@@ -52,9 +52,23 @@ public class GeolifeClient extends BenchmarkClient {
 					Geofence fence = Geofence.circle(visitedLocation.left, c.getGeofenceSize());
 					InternalClientMessage pingreq = new InternalClientMessage(ControlPacketType.PINGREQ,
 																			  new PINGREQPayload(visitedLocation.left));
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+						// finished
+						Thread.currentThread().interrupt();
+						break;
+					}
 					sendInternalClientMessage(pingreq);
 					InternalClientMessage subscribe = new InternalClientMessage(ControlPacketType.SUBSCRIBE,
 																				new SUBSCRIBEPayload(topic, fence));
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+						// finished
+						Thread.currentThread().interrupt();
+						break;
+					}
 					sendInternalClientMessage(subscribe);
 					InternalClientMessage publish = new InternalClientMessage(ControlPacketType.PUBLISH,
 																			  new PUBLISHPayload(topic, fence, data));
@@ -72,6 +86,16 @@ public class GeolifeClient extends BenchmarkClient {
 																		new DISCONNECTPayload(ReasonCode.NormalDisconnection));
 		sendInternalClientMessage(clientMessage);
 		tearDownClient();
+	}
+
+	public static void main (String[] args) {
+		Configuration con = new Configuration();
+		ZMQProcessManager processManager = new ZMQProcessManager();
+	    for (int i = 0; i < 500; i++) {
+	    	GeolifeClient c = new GeolifeClient(con, i, null, processManager);
+		}
+		Utility.sleepNoLog(2000, 0);
+	    logger.info("Could initiate clients");
 	}
 
 }

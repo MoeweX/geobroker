@@ -66,6 +66,25 @@
                             <goal>single</goal>
                         </goals>
                     </execution>
+                    <execution>
+                        <id>GeolifeStorage</id>
+                        <configuration>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <archive>
+                                <manifest>
+                                    <mainClass>de.hasenburg.geofencebroker.main.moving_client.GeolifeStorage</mainClass>
+                                </manifest>
+                            </archive>
+                            <descriptorRefs>
+                                <descriptorRef>jar-with-dependencies</descriptorRef>
+                            </descriptorRefs>
+                            <finalName>GeolifeStorage</finalName>
+                        </configuration>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
                 </executions>
             </plugin>
         </plugins>

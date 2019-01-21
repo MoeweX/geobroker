@@ -61,7 +61,7 @@ public class BenchmarkClient {
 		}
 
 		orderMessage.send(orderSocket);
-		return(ZMsg.recvMsg(orderSocket));
+		return (ZMsg.recvMsg(orderSocket));
 	}
 
 	public static void main (String[] args) {

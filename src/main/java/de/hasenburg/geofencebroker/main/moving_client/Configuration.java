@@ -21,7 +21,7 @@ public class Configuration {
 
 	// client manager properties
 	private Integer runtime; // in min
-	private Integer offset; // in sec
+	private Integer offset; // in milli-sec
 	private Integer index;
 	private Integer count;
 

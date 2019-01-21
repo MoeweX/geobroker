@@ -66,7 +66,7 @@ public class ClientManager {
 		logger.info("Starting up!");
 		for (int i = c.getIndex(); i <= c.getCount(); i++) {
 			geolifeClients.get(i).start();
-			Utility.sleepNoLog(c.getOffset() * 1000, 0);
+			Utility.sleepNoLog(c.getOffset(), 0);
 		}
 
 		// calculate how much time to wait for shutdown
@@ -87,7 +87,7 @@ public class ClientManager {
 		for (int i = c.getIndex(); i <= c.getCount(); i++) {
 			geolifeClients.get(i).stop();
 		}
-		Utility.sleepNoLog(5000, 0);
+		Utility.sleepNoLog(10000, 0); // As the used client type needs at least 5.25 seconds to shutdown
 
 		processManager.tearDown(3000);
 
