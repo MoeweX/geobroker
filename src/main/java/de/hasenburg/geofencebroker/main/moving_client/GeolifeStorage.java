@@ -27,7 +27,7 @@ public class GeolifeStorage {
 	 * CONFIGURATION
 	 ****************************************************************/
 
-	private static final int GRANULARITY = 100;
+	private static final Integer[] GRANULARITY = {100, 50, 25, 10, 1};
 
 	private static final int GEOLIFE_START_INDEX = 1;
 	private static final Integer[] GEOLIFE_STOP_INDEX = {1, 10, 100, 250, 500, 750, 1000};
@@ -37,9 +37,9 @@ public class GeolifeStorage {
 	// update operations before doing publish operations
 	// publish operations before resetting counters
 	private static final String[] UPDATE_PUBLISH_OPS = {"99,1", "1,1", "1,10", "1,99"};
-			// update operations before doing publish operations
+	// update operations before doing publish operations
 
-	private static final int EXPERIMENT_TIME = 60; // sec
+	private static final int EXPERIMENT_TIME = 120; // sec
 
 	/*****************************************************************
 	 * END CONFIGURATION
@@ -50,8 +50,8 @@ public class GeolifeStorage {
 	private final TopicAndGeofenceMapper storage;
 	private final ExecutorService executorService;
 
-	public GeolifeStorage(int GRANULARITY, int GEOLIFE_START_INDEX, int GEOLIFE_STOP_INDEX,
-						  double GEOFENCE_SIZE, int UPDATE_OPS, int PUBLISH_OPS, int EXPERIMENT_TIME) {
+	public GeolifeStorage(int GRANULARITY, int GEOLIFE_START_INDEX, int GEOLIFE_STOP_INDEX, double GEOFENCE_SIZE,
+						  int UPDATE_OPS, int PUBLISH_OPS, int EXPERIMENT_TIME) {
 		logger.debug("Creating Storage");
 		Configuration c = new Configuration(GRANULARITY, 1); // message processors does not matter
 		this.storage = new TopicAndGeofenceMapper(c);
@@ -76,7 +76,7 @@ public class GeolifeStorage {
 		}
 
 		logger.debug("Sleeping for {} sec", EXPERIMENT_TIME);
-		Utility.sleepNoLog((long) (EXPERIMENT_TIME  * 1000), 0);
+		Utility.sleepNoLog((long) (EXPERIMENT_TIME * 1000), 0);
 
 		logger.debug("Shutting down executor");
 		executorService.shutdownNow();
@@ -92,10 +92,11 @@ public class GeolifeStorage {
 			}
 		}
 
-		logger.info("GEOLIFE_STOP_INDEX={},UPDATE_OPS={},PUBLISH_OPS={},Throughput (ops/s)={}",
+		logger.info("GEOLIFE_STOP_INDEX={},UPDATE_OPS={},PUBLISH_OPS={},Granularity={},Throughput (ops/s)={}",
 					GEOLIFE_STOP_INDEX,
 					UPDATE_OPS,
 					PUBLISH_OPS,
+					GRANULARITY,
 					throughputs.stream().mapToInt(Integer::intValue).average().getAsDouble());
 	}
 
@@ -167,7 +168,7 @@ public class GeolifeStorage {
 	public static void main(String[] args) {
 
 		logger.info("Doing the GeolifeStorage Experiment");
-		logger.info("GRANULARITY = {}", GRANULARITY);
+		logger.info("GRANULARITY = {}", Arrays.asList(GRANULARITY));
 		logger.info("GEOFENCE_SIZE = {}", GEOFENCE_SIZE);
 		logger.info("EXPERIMENT_TIME = {}", EXPERIMENT_TIME);
 		logger.info("GEOLIFE_START_INDEX = {}", GEOLIFE_START_INDEX);
@@ -175,11 +176,12 @@ public class GeolifeStorage {
 		logger.info("UPDATE_PUBLISH_OPS = {}", Arrays.asList(UPDATE_PUBLISH_OPS));
 
 		for (Integer geolifeStopIndex : GEOLIFE_STOP_INDEX) {
-				for (String updatePublishOps : UPDATE_PUBLISH_OPS) {
-					int UPDATE_OPS = Integer.parseInt(updatePublishOps.split(",")[0]);
-					int PUBLISH_OPS = Integer.parseInt(updatePublishOps.split(",")[1]);
+			for (String updatePublishOps : UPDATE_PUBLISH_OPS) {
+				int UPDATE_OPS = Integer.parseInt(updatePublishOps.split(",")[0]);
+				int PUBLISH_OPS = Integer.parseInt(updatePublishOps.split(",")[1]);
 
-					GeolifeStorage gs = new GeolifeStorage(GRANULARITY,
+				for (Integer gran : GRANULARITY) {
+					GeolifeStorage gs = new GeolifeStorage(gran,
 														   GEOLIFE_START_INDEX,
 														   geolifeStopIndex,
 														   GEOFENCE_SIZE,
@@ -187,10 +189,11 @@ public class GeolifeStorage {
 														   PUBLISH_OPS,
 														   EXPERIMENT_TIME);
 				}
+
+			}
 		}
 
 	}
-
 
 
 }
