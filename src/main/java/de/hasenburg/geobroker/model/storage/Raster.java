@@ -124,66 +124,17 @@ public class Raster {
 	 * Private methods
 	 ****************************************************************/
 
-	/**
-	 * Calculates at what index the corresponding {@link RasterEntry} is stored
-	 *
-	 * @param location - the location
-	 * @return - the index
-	 */
-	private Location calculateIndexLocation(Location location) {
-		double latIndex = Math.floor(location.getLat() * granularity) / granularity;
-		double lonIndex = Math.floor(location.getLon() * granularity) / granularity;
-
-		return new Location(latIndex, lonIndex);
-	}
-
-	/**
-	 * Calculates with which {@link RasterEntry} the given geofence intersects with.
-	 *
-	 * @param geofence - the geofence
-	 * @return - a list of {@link RasterEntry}s
-	 */
-	private List<RasterEntry> calculateIndexLocations(Geofence geofence) {
-		// get north east and south west indices
-		Location northEastIndex = calculateIndexLocation(geofence.getBoundingBoxNorthEast());
-		Location southWestIndex = calculateIndexLocation(geofence.getBoundingBoxSouthWest());
-
-		// get raster entries that have to be checked for intersection
-		List<RasterEntry> rasterEntriesToCheckForIntersection = new ArrayList<>();
-		// due to double precision, we need to check whether > -0.000000001
-		for (double lat = southWestIndex.getLat(); northEastIndex.getLat() - lat > -0.000000001; lat += degreeStep) {
-			for (double lon = southWestIndex.getLon(); northEastIndex.getLon() - lon > -0.000000001; lon += degreeStep) {
-				lat = Math.round(lat * granularity) / (double) granularity;
-				lon = Math.round(lon * granularity) / (double) granularity;
-				Location index = new Location(lat, lon);
-				RasterEntry re = rasterEntries.computeIfAbsent(index, k -> new RasterEntry(index, degreeStep));
-				rasterEntriesToCheckForIntersection.add(re);
-			}
-		}
-
-		// if geofence is a rectangle, we can collect the indices
-		if (geofence.isRectangle()) {
-			return rasterEntriesToCheckForIntersection;
-		}
-
-		// remove raster entries whose box is disjoint with the actual geofence
-		rasterEntriesToCheckForIntersection.removeIf(re -> re.getRasterEntryBox().disjoint(geofence));
-
-		// return
-		return rasterEntriesToCheckForIntersection;
-	}
-
-	/*****************************************************************
-	 * No Geo-Context (used to calculate Overhead)
-	 *
-	 * In order to use the storage without geo-context information,
-	 * the two private methods above need to be commented out.
-	 ****************************************************************/
-
-	//	private final Location index = new Location(0.0, 0.0);
-	//
+	//	/**
+	//	 * Calculates at what index the corresponding {@link RasterEntry} is stored
+	//	 *
+	//	 * @param location - the location
+	//	 * @return - the index
+	//	 */
 	//	private Location calculateIndexLocation(Location location) {
-	//		return index;
+	//		double latIndex = Math.floor(location.getLat() * granularity) / granularity;
+	//		double lonIndex = Math.floor(location.getLon() * granularity) / granularity;
+	//
+	//		return new Location(latIndex, lonIndex);
 	//	}
 	//
 	//	/**
@@ -193,9 +144,57 @@ public class Raster {
 	//	 * @return - a list of {@link RasterEntry}s
 	//	 */
 	//	private List<RasterEntry> calculateIndexLocations(Geofence geofence) {
-	//		List<RasterEntry> list = new ArrayList<>();
-	//		list.add(rasterEntries.computeIfAbsent(index, k -> new RasterEntry(index, degreeStep))); // only one entry
-	//		return list;
+	//		// get north east and south west indices
+	//		Location northEastIndex = calculateIndexLocation(geofence.getBoundingBoxNorthEast());
+	//		Location southWestIndex = calculateIndexLocation(geofence.getBoundingBoxSouthWest());
+	//
+	//		// get raster entries that have to be checked for intersection
+	//		List<RasterEntry> rasterEntriesToCheckForIntersection = new ArrayList<>();
+	//		for (double lat = southWestIndex.getLat(); lat <= northEastIndex.getLat(); lat += degreeStep) {
+	//			for (double lon = southWestIndex.getLon(); lon <= northEastIndex.getLon(); lon += degreeStep) {
+	//				lat = Math.round(lat * granularity) / (double) granularity;
+	//				lon = Math.round(lon * granularity) / (double) granularity;
+	//				Location index = new Location(lat, lon);
+	//				RasterEntry re = rasterEntries.computeIfAbsent(index, k -> new RasterEntry(index, degreeStep));
+	//				rasterEntriesToCheckForIntersection.add(re);
+	//			}
+	//		}
+	//
+	//		// if geofence is a rectangle, we can collect the indices
+	//		if (geofence.isRectangle()) {
+	//			return rasterEntriesToCheckForIntersection;
+	//		}
+	//
+	//		// remove raster entries whose box is disjoint with the actual geofence
+	//		rasterEntriesToCheckForIntersection.removeIf(re -> re.getRasterEntryBox().disjoint(geofence));
+	//
+	//		// return
+	//		return rasterEntriesToCheckForIntersection;
 	//	}
+
+	/*****************************************************************
+	 * No Geo-Context (used to calculate Overhead)
+	 *
+	 * In order to use the storage without geo-context information,
+	 * the two private methods above need to be commented out.
+	 ****************************************************************/
+
+	private final Location index = new Location(0.0, 0.0);
+
+	private Location calculateIndexLocation(Location location) {
+		return index;
+	}
+
+	/**
+	 * Calculates with which {@link RasterEntry} the given geofence intersects with.
+	 *
+	 * @param geofence - the geofence
+	 * @return - a list of {@link RasterEntry}s
+	 */
+	private List<RasterEntry> calculateIndexLocations(Geofence geofence) {
+		List<RasterEntry> list = new ArrayList<>();
+		list.add(rasterEntries.computeIfAbsent(index, k -> new RasterEntry(index, degreeStep))); // only one entry
+		return list;
+	}
 
 }
