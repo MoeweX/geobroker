@@ -39,7 +39,7 @@ public class GeolifeStorage {
 	private static final String[] UPDATE_PUBLISH_OPS = {"99,1", "1,1", "1,10", "1,99"};
 	// update operations before doing publish operations
 
-	private static final int EXPERIMENT_TIME = 120; // sec
+	private static final int EXPERIMENT_TIME = 60 * 15; // sec
 
 	/*****************************************************************
 	 * END CONFIGURATION
