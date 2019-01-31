@@ -240,10 +240,10 @@ class ZMQProcess_MessageProcessor implements Runnable {
 			Set<ImmutablePair<String, Integer>> subscriptionIds =
 					topicAndGeofenceMapper.getSubscriptionIds(payload.getTopic(), publisherLocation);
 
-			// only keep subscription if subscriber location is insider publisher geofence
-			subscriptionIds.removeIf(subId -> !payload
-					.getGeofence()
-					.contains(clientDirectory.getClientLocation(subId.left)));
+			//			// only keep subscription if subscriber location is insider publisher geofence
+			//			subscriptionIds.removeIf(subId -> !payload
+			//					.getGeofence()
+			//					.contains(clientDirectory.getClientLocation(subId.left)));
 
 			// publish message to remaining subscribers
 			for (ImmutablePair<String, Integer> subscriptionId : subscriptionIds) {

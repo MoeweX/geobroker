@@ -34,8 +34,18 @@ public class GeolifeClient extends BenchmarkClient {
 																								   .getVisitedLocations()
 																								   .get(0).left));
 		sendInternalClientMessage(clientMessage);
+		try {
+			Thread.sleep(500);
+		} catch (InterruptedException e) {
+			return;
+		}
+		Topic topic = new Topic("data");
+		Geofence fence = Geofence.circle(new Location(10, 10), c.getGeofenceSize());
+		InternalClientMessage subscribe =
+				new InternalClientMessage(ControlPacketType.SUBSCRIBE, new SUBSCRIBEPayload(topic, fence));
+		sendInternalClientMessage(subscribe);
+
 		t = new Thread(() -> {
-			Topic topic = new Topic("data");
 			String data = Utility.generatePayloadWithSize(c.getPayloadSize(), getIdentity());
 
 			while (!t.isInterrupted()) {
@@ -49,33 +59,24 @@ public class GeolifeClient extends BenchmarkClient {
 						break;
 					}
 					logger.trace("Arrived at location, transmitting data");
-					Geofence fence = Geofence.circle(visitedLocation.left, c.getGeofenceSize());
-					InternalClientMessage pingreq = new InternalClientMessage(ControlPacketType.PINGREQ,
-																			  new PINGREQPayload(visitedLocation.left));
+					//					InternalClientMessage pingreq = new InternalClientMessage(ControlPacketType.PINGREQ,
+					//																			  new PINGREQPayload(visitedLocation.left));
 					try {
-						Thread.sleep(1000);
+						Thread.sleep(2000); // as for the other simulation, we also sleep 2 seconds more
 					} catch (InterruptedException e) {
 						// finished
 						Thread.currentThread().interrupt();
 						break;
 					}
-					sendInternalClientMessage(pingreq);
-					InternalClientMessage subscribe = new InternalClientMessage(ControlPacketType.SUBSCRIBE,
-																				new SUBSCRIBEPayload(topic, fence));
-					try {
-						Thread.sleep(1000);
-					} catch (InterruptedException e) {
-						// finished
-						Thread.currentThread().interrupt();
-						break;
-					}
-					sendInternalClientMessage(subscribe);
+					//					sendInternalClientMessage(pingreq);
+
 					InternalClientMessage publish = new InternalClientMessage(ControlPacketType.PUBLISH,
 																			  new PUBLISHPayload(topic, fence, data));
 					sendInternalClientMessage(publish);
 				}
 			}
-		}); t.setName(getIdentity());
+		});
+		t.setName(getIdentity());
 		t.start();
 	}
 
@@ -88,14 +89,14 @@ public class GeolifeClient extends BenchmarkClient {
 		tearDownClient();
 	}
 
-	public static void main (String[] args) {
+	public static void main(String[] args) {
 		Configuration con = new Configuration();
 		ZMQProcessManager processManager = new ZMQProcessManager();
-	    for (int i = 0; i < 500; i++) {
-	    	GeolifeClient c = new GeolifeClient(con, i, null, processManager);
+		for (int i = 0; i < 500; i++) {
+			GeolifeClient c = new GeolifeClient(con, i, null, processManager);
 		}
 		Utility.sleepNoLog(2000, 0);
-	    logger.info("Could initiate clients");
+		logger.info("Could initiate clients");
 	}
 
 }
