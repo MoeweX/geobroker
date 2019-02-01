@@ -41,11 +41,6 @@ public class GeolifeClient extends BenchmarkClient {
 			while (!t.isInterrupted()) {
 				logger.info("(Re-)starting route");
 				for (ImmutablePair<Location, Integer> visitedLocation : route.getVisitedLocations()) {
-					if (visitedLocation.left.getLon() < 116.32) {
-						logger.info("Skipping {}", visitedLocation);
-						continue;
-					}
-
 					logger.debug("Driving to location {} in {} seconds", visitedLocation.left, visitedLocation.right);
 					try {
 						Thread.sleep(visitedLocation.right * 1000);
