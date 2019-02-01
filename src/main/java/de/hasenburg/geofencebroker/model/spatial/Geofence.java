@@ -23,7 +23,8 @@ public class Geofence implements JSONable  {
 	@JsonIgnore
 	private final Shape shape;
 
-	// we need it most times anyways, so let's buffer it
+	// TODO increase size a little bit so that we do not miss any due to rounding issues
+	// we need it most times anyways, so let's buffer it //
 	@JsonIgnore
 	private final Rectangle boundingBox;
 

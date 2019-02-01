@@ -209,7 +209,10 @@ class ZMQProcess_MessageProcessor implements Runnable {
 												 new SUBACKPayload(ReasonCode.NotConnected));
 		} else {
 			topicAndGeofenceMapper.putSubscriptionId(subscriptionId, payload.getTopic(), payload.getGeofence());
-			logger.debug("Client {} subscribed to topic {}", message.getClientIdentifier(), payload.getTopic());
+			logger.debug("Client {} subscribed to topic {} and geofence {}",
+						 message.getClientIdentifier(),
+						 payload.getTopic(),
+						 payload.getGeofence());
 			response = new InternalBrokerMessage(message.getClientIdentifier(),
 												 ControlPacketType.SUBACK,
 												 new SUBACKPayload(ReasonCode.GrantedQoS0));

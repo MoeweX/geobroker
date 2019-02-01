@@ -2,6 +2,7 @@ package de.hasenburg.geofencebroker.model.storage;
 
 import de.hasenburg.geofencebroker.model.spatial.Geofence;
 import de.hasenburg.geofencebroker.model.spatial.Location;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.After;
@@ -13,6 +14,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -220,6 +223,23 @@ public class RasterTest {
 		assertTrue(containsLocation(result, new Location(40.0, 116.3)));
 		assertTrue(containsLocation(result, new Location(40.0, 116.4)));
 		assertEquals(8, result.size());
+	}
+
+	@Test
+	public void testPutAndThenGet() {
+		raster = new Raster(25);
+		Location l = new Location(40.007499, 116.320013);
+		Geofence fence = Geofence.circle(l, 0.01);
+		ImmutablePair<String, Integer> sid = new ImmutablePair<>("test", 1);
+
+		List<RasterEntry> result = invokeCalculateIndexLocations(fence);
+		Location index = invokeCalculateIndexLocation(l);
+		assertTrue(containsLocation(result, index));
+
+		raster.putSubscriptionIdIntoRasterEntries(fence, sid);
+		Map<String, Set<ImmutablePair<String, Integer>>> ids =
+				raster.getSubscriptionIdsForPublisherLocation(l);
+		logger.info(ids);
 	}
 
 	private boolean containsLocation(List<RasterEntry> result, Location l) {

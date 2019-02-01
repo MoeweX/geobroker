@@ -50,6 +50,17 @@ public class GeofenceTest {
 	}
 
 	@Test
+	public void toAndFromJsonCircle2() {
+		Geofence fence = Geofence.circle(new Location(40.007499, 116.320013), 0.1);
+		String json = JSONable.toJSON(fence);
+		logger.info("JSON 1: {}", json);
+		Geofence fence2 = JSONable.fromJSON(json, Geofence.class).get();
+		logger.info("JSON 2: {}", JSONable.toJSON(fence2));
+		assertEquals(fence, fence2);
+		logger.info("Geofences {} and {} still equal after JSON stuff", fence, fence2);
+	}
+
+	@Test
 	public void testContains() {
 		Location berlin = new Location(52.52, 13.405);
 		Location hamburg = new Location(53.511, 9.9937);

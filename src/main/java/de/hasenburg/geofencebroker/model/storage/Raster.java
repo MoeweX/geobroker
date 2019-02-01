@@ -152,8 +152,9 @@ public class Raster {
 
 		// get raster entries that have to be checked for intersection
 		List<RasterEntry> rasterEntriesToCheckForIntersection = new ArrayList<>();
-		for (double lat = southWestIndex.getLat(); lat <= northEastIndex.getLat(); lat += degreeStep) {
-			for (double lon = southWestIndex.getLon(); lon <= northEastIndex.getLon(); lon += degreeStep) {
+		// due to double precision, we need to check whether > -0.000000001
+		for (double lat = southWestIndex.getLat(); northEastIndex.getLat() - lat > -0.000000001; lat += degreeStep) {
+			for (double lon = southWestIndex.getLon(); northEastIndex.getLon() - lon > -0.000000001; lon += degreeStep) {
 				lat = Math.round(lat * granularity) / (double) granularity;
 				lon = Math.round(lon * granularity) / (double) granularity;
 				Location index = new Location(lat, lon);

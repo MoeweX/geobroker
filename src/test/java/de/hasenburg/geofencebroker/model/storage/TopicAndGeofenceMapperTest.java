@@ -160,6 +160,24 @@ public class TopicAndGeofenceMapperTest {
 		assertEquals(0, returnedIds2.size());
 	}
 
+	@Test
+	public void testPutAndThenGet() {
+		mapper = new TopicAndGeofenceMapper(new Configuration(25, 1));
+
+		// prepare
+		ImmutablePair<String, Integer> testId = new ImmutablePair<>("test-client", 1);
+		Topic t = new Topic("data");
+		Location l = new Location(40.007499, 116.320013);
+		Geofence f = Geofence.circle(l, 0.01);
+
+		// put
+		mapper.putSubscriptionId(testId, t, f);
+
+		// test contained
+		assertTrue(mapper.getSubscriptionIds(t, l).contains(testId));
+	}
+
+
 	private void checkTopicLevels(String[] expected, List<TopicLevel> actual) {
 		List<String> levelSpecifiers = actual.stream().map(tl -> tl.getLevelSpecifier()).collect(Collectors.toList());
 		for (String s : expected) {
