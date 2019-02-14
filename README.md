@@ -20,4 +20,4 @@ one needs to `mvn install` these projects first:
 ```
 
 To start the Broker, run the main method of *de.hasenburg.geobroker.main.Broker.java*. 
-A very simple client can be started by running *de.hasenburg.geobroker.main.Broker.java*.
+A very simple client can be started by running *de.hasenburg.geobroker.main.SimpleClient.java*.
