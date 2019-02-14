@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>de.hasenburg</groupId>
-    <artifactId>geofence-broker</artifactId>
+    <artifactId>GeoBroker</artifactId>
     <version>1.0-${git.branch}</version>
 
     <build>
@@ -34,7 +34,7 @@
                             <appendAssemblyId>false</appendAssemblyId>
                             <archive>
                                 <manifest>
-                                    <mainClass>de.hasenburg.geofencebroker.main.moving_client.GeolifeBroker</mainClass>
+                                    <mainClass>de.hasenburg.geobroker.main.moving_client.GeolifeBroker</mainClass>
                                 </manifest>
                             </archive>
                             <descriptorRefs>
@@ -53,7 +53,7 @@
                             <appendAssemblyId>false</appendAssemblyId>
                             <archive>
                                 <manifest>
-                                    <mainClass>de.hasenburg.geofencebroker.main.moving_client.ClientManager</mainClass>
+                                    <mainClass>de.hasenburg.geobroker.main.moving_client.ClientManager</mainClass>
                                 </manifest>
                             </archive>
                             <descriptorRefs>
@@ -72,7 +72,7 @@
                             <appendAssemblyId>false</appendAssemblyId>
                             <archive>
                                 <manifest>
-                                    <mainClass>de.hasenburg.geofencebroker.main.moving_client.GeolifeStorage</mainClass>
+                                    <mainClass>de.hasenburg.geobroker.main.moving_client.GeolifeStorage</mainClass>
                                 </manifest>
                             </archive>
                             <descriptorRefs>
