@@ -1,0 +1,6 @@
+[submodule "git_submodules/jeromq"]
+	path = git_submodules/jeromq
+	url = https://github.com/MoeweX/jeromq.git
+[submodule "git_submodules/spatial4j"]
+	path = git_submodules/spatial4j
+	url = https://github.com/MoeweX/spatial4j.git

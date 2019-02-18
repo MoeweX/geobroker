@@ -6,7 +6,13 @@
 
     <groupId>de.hasenburg</groupId>
     <artifactId>GeoBroker</artifactId>
-    <version>1.0-${git.branch}</version>
+    <version>1.1-${git.branch}</version>
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>git_submodules/jeromq</module>
+        <module>git_submodules/spatial4j</module>
+    </modules>
 
     <build>
         <plugins>
