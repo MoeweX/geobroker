@@ -9,5 +9,5 @@ git submodule init
 git submodule update
 ```
 
-To start the Broker, run the main method of *de.hasenburg.geobroker.main.Broker.java*. 
+To start the Broker, run the main method of *de.hasenburg.geobroker.server.main.Broker.java*. 
 A very simple client can be started by running *de.hasenburg.geobrorker.main.SimpleClient.java*.

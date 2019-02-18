@@ -6,12 +6,16 @@
 
     <groupId>de.hasenburg</groupId>
     <artifactId>GeoBroker</artifactId>
-    <version>1.1-${git.branch}</version>
+    <version>1.1</version>
     <packaging>pom</packaging>
 
     <modules>
         <module>git_submodules/jeromq</module>
         <module>git_submodules/spatial4j</module>
+        <module>GeoBroker-Commons</module>
+        <module>GeoBroker-Server</module>
+        <module>GeoBroker-Client</module>
+        <module>Geolife</module>
     </modules>
 
     <build>
@@ -24,88 +28,6 @@
                     <source>8</source>
                     <target>8</target>
                 </configuration>
-            </plugin>
-            <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <configuration>
-                    <descriptorRefs>
-                        <descriptorRef>jar-with-dependencies</descriptorRef>
-                    </descriptorRefs>
-                    <outputDirectory>out/</outputDirectory>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>GeolifeBroker</id>
-                        <configuration>
-                            <appendAssemblyId>false</appendAssemblyId>
-                            <archive>
-                                <manifest>
-                                    <mainClass>de.hasenburg.geobroker.main.moving_client.GeolifeBroker</mainClass>
-                                </manifest>
-                            </archive>
-                            <descriptorRefs>
-                                <descriptorRef>jar-with-dependencies</descriptorRef>
-                            </descriptorRefs>
-                            <finalName>GeolifeBroker-${project.version}</finalName>
-                        </configuration>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>GeolifeClientManager</id>
-                        <configuration>
-                            <appendAssemblyId>false</appendAssemblyId>
-                            <archive>
-                                <manifest>
-                                    <mainClass>de.hasenburg.geobroker.main.moving_client.ClientManager</mainClass>
-                                </manifest>
-                            </archive>
-                            <descriptorRefs>
-                                <descriptorRef>jar-with-dependencies</descriptorRef>
-                            </descriptorRefs>
-                            <finalName>GeolifeClientManager-${project.version}</finalName>
-                        </configuration>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>GeolifeStorage</id>
-                        <configuration>
-                            <appendAssemblyId>false</appendAssemblyId>
-                            <archive>
-                                <manifest>
-                                    <mainClass>de.hasenburg.geobroker.main.moving_client.GeolifeStorage</mainClass>
-                                </manifest>
-                            </archive>
-                            <descriptorRefs>
-                                <descriptorRef>jar-with-dependencies</descriptorRef>
-                            </descriptorRefs>
-                            <finalName>GeolifeStorage-${project.version}</finalName>
-                        </configuration>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>pl.project13.maven</groupId>
-                <artifactId>git-commit-id-plugin</artifactId>
-                <version>2.2.6</version>
-                <executions>
-                    <execution>
-                        <id>get-the-git-infos</id>
-                        <goals>
-                            <goal>revision</goal>
-                        </goals>
-                        <phase>initialize</phase>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>
@@ -148,6 +70,12 @@
             <artifactId>Haikunator</artifactId>
             <version>2.0.1</version>
         </dependency>
+        <!-- Statistics -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math3</artifactId>
+            <version>3.2</version>
+        </dependency>
         <!-- Serialization -->
         <dependency>
             <groupId>com.moandjiezana.toml</groupId>
@@ -176,13 +104,7 @@
             <version>RELEASE</version>
             <scope>compile</scope>
         </dependency>
-        <!-- Statistics -->
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-math3</artifactId>
-            <version>3.2</version>
-        </dependency>
-        <!-- Spatial (based on the latest spatial4j snapshot) -->
+        <!-- Spatial -->
         <dependency>
             <groupId>org.locationtech.spatial4j</groupId>
             <artifactId>spatial4j</artifactId>
