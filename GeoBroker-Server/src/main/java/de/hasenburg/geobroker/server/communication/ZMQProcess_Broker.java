@@ -18,9 +18,9 @@ class ZMQProcess_Broker extends ZMQProcess {
 	// Address and port of broker frontend
 	private String address;
 	private int port;
-	private String identity;
 
 	protected ZMQProcess_Broker(String address, int port, String identity) {
+		super(identity);
 		this.address = address;
 		this.port = port;
 		this.identity = identity;

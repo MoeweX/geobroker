@@ -29,12 +29,11 @@ public class ZMQProcess_SimpleClient extends ZMQProcess {
 	// Address and port of the broker the client connects to
 	private String address;
 	private int port;
-	private String identity;
 
 	protected ZMQProcess_SimpleClient(String address, int port, String identity) {
+		super(identity);
 		this.address = address;
 		this.port = port;
-		this.identity = identity;
 
 		CLIENT_ORDER_BACKEND = Utility.generateClientOrderBackendString(identity);
 	}

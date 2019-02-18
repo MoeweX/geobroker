@@ -51,16 +51,15 @@ public class ZMQProcess_BenchmarkClient extends ZMQProcess {
 	// Address and port of the broker the client connects to
 	private String address;
 	private int port;
-	private String identity;
 
 	// Benchmarking variables
 	private Map<Integer, List<Long>> timestamps;
 	private int receivedForeignPublishMessages = 0;
 
 	protected ZMQProcess_BenchmarkClient(String address, int port, String identity) {
+		super(identity);
 		this.address = address;
 		this.port = port;
-		this.identity = identity;
 
 		CLIENT_ORDER_BACKEND = Utility.generateClientOrderBackendString(identity);
 

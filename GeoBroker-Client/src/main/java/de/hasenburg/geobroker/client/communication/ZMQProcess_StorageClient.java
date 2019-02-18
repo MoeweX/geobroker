@@ -37,16 +37,15 @@ public class ZMQProcess_StorageClient extends ZMQProcess {
 	// Address and port of the broker the client connects to
 	private String address;
 	private int port;
-	private String identity;
 
 	// Writer
 	private BufferedWriter writer;
 
 	protected ZMQProcess_StorageClient(String address, int port, String identity)
 			throws IOException {
+		super(identity);
 		this.address = address;
 		this.port = port;
-		this.identity = identity;
 
 		CLIENT_ORDER_BACKEND = Utility.generateClientOrderBackendString(identity);
 		writer = new BufferedWriter(new FileWriter(identity + ".txt"));

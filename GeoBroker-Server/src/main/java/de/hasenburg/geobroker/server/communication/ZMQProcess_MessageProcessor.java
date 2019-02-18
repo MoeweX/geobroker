@@ -27,12 +27,11 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 
 	ClientDirectory clientDirectory;
 	TopicAndGeofenceMapper topicAndGeofenceMapper;
-	String identity;
 	ZMQ.Socket processor;
 
 	protected ZMQProcess_MessageProcessor(String identity, ClientDirectory clientDirectory,
 										  TopicAndGeofenceMapper topicAndGeofenceMapper) {
-		this.identity = identity;
+		super(identity);
 		this.clientDirectory = clientDirectory;
 		this.topicAndGeofenceMapper = topicAndGeofenceMapper;
 	}
