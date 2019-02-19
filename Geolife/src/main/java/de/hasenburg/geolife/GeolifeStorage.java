@@ -17,8 +17,8 @@ import java.util.Map;
 import java.util.concurrent.*;
 
 /**
- * This class stresses only the storage in a similar fashion and the {@link ClientManager} and {@link GeolifeBroker}
- * stress the whole broker.
+ * This class stresses only the storage in a similar fashion and the {@link ClientManager} and {@link GeolifeServer}
+ * stress the whole server.
  */
 @SuppressWarnings("FieldCanBeLocal")
 public class GeolifeStorage {

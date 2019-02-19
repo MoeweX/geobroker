@@ -15,7 +15,7 @@ public class ClientConfiguration {
 
 	private String managerName = "DefaultManager";
 
-	// broker machine properties
+	// server machine properties
 	private String address;
 	private int port;
 
@@ -47,9 +47,9 @@ public class ClientConfiguration {
 		S3Object o = s3.getObject(S3_BUCKET_NAME, S3_CONFIGURATIONS_FOLDER + configurationName);
 		Toml toml = new Toml().read(new InputStreamReader(o.getObjectContent()));
 
-		Toml brokerMachine = toml.getTable("brokerMachine");
-		c.address = brokerMachine.getString("address");
-		c.port = Math.toIntExact(brokerMachine.getLong("port"));
+		Toml serverMachine = toml.getTable("serverMachine");
+		c.address = serverMachine.getString("address");
+		c.port = Math.toIntExact(serverMachine.getLong("port"));
 
 		Toml clientManager = toml.getTable("clientManager");
 		c.runtime = Math.toIntExact(clientManager.getLong("runtime"));

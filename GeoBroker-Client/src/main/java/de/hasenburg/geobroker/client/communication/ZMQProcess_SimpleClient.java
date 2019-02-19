@@ -26,7 +26,7 @@ public class ZMQProcess_SimpleClient extends ZMQProcess {
 	// Client processing backend, accepts REQ and answers with REP
 	private final String CLIENT_ORDER_BACKEND;
 
-	// Address and port of the broker the client connects to
+	// Address and port of the server the client connects to
 	private String address;
 	private int port;
 
@@ -45,9 +45,9 @@ public class ZMQProcess_SimpleClient extends ZMQProcess {
 		ZMQ.Socket orders = context.createSocket(SocketType.REP);
 		orders.bind(CLIENT_ORDER_BACKEND);
 
-		ZMQ.Socket brokerSocket = context.createSocket(SocketType.DEALER);
-		brokerSocket.setIdentity(identity.getBytes());
-		brokerSocket.connect(address + ":" + port);
+		ZMQ.Socket serverSocket = context.createSocket(SocketType.DEALER);
+		serverSocket.setIdentity(identity.getBytes());
+		serverSocket.connect(address + ":" + port);
 
 		ZMQ.Poller poller = context.createPoller(1);
 		int zmqControlIndex = ZMQControlUtility.connectWithPoller(context, poller, identity);
@@ -74,22 +74,22 @@ public class ZMQProcess_SimpleClient extends ZMQProcess {
 				String orderType = order.popString();
 
 				if (valid && ORDERS.RECEIVE.name().equals(orderType)) {
-					logger.trace("Receiving message from broker");
-					Optional<InternalClientMessage> brokerMessage = InternalClientMessage.buildMessage(ZMsg.recvMsg(brokerSocket, true));
-					if (brokerMessage.isPresent()) {
-						brokerMessage.get().getZMsg().send(orders);
+					logger.trace("Receiving message from server");
+					Optional<InternalClientMessage> serverMessage = InternalClientMessage.buildMessage(ZMsg.recvMsg(serverSocket, true));
+					if (serverMessage.isPresent()) {
+						serverMessage.get().getZMsg().send(orders);
 					} else {
-						logger.warn("Broker message malformed or empty");
+						logger.warn("Server message malformed or empty");
 						valid = false;
 					}
 				} else if (valid && ORDERS.SEND.name().equals(orderType)) {
-					logger.trace("Sending message to broker");
+					logger.trace("Sending message to server");
 
 					//the zMsg should consist of an InternalClientMessage only, as other entries are popped
 					Optional<InternalClientMessage> clientMessageO = InternalClientMessage.buildMessage(order);
 
 					if (clientMessageO.isPresent()) {
-						clientMessageO.get().getZMsg().send(brokerSocket);
+						clientMessageO.get().getZMsg().send(serverSocket);
 						ZMsg.newStringMsg(ORDERS.CONFIRM.name()).send(orders);
 					} else {
 						logger.warn("Cannot run send as given message is incompatible");
@@ -110,8 +110,8 @@ public class ZMQProcess_SimpleClient extends ZMQProcess {
 
 		// other sockets
 		context.destroySocket(orders);
-		context.destroySocket(brokerSocket);
-		logger.info("Shut down ZMQProcess_SimpleClient, orders and broker sockets were destroyed.");
+		context.destroySocket(serverSocket);
+		logger.info("Shut down ZMQProcess_SimpleClient, orders and server sockets were destroyed.");
 	}
 
 }

@@ -57,9 +57,9 @@ public class Configuration {
 	}
 
 	private static Configuration parseToml(Configuration c, Toml toml) {
-		Toml broker = toml.getTable("broker");
-		c.granularity = Math.toIntExact(broker.getLong("granularity", 1L));
-		c.messageProcessors = Math.toIntExact(broker.getLong("messageProcessors", 1L));
+		Toml server = toml.getTable("server");
+		c.granularity = Math.toIntExact(server.getLong("granularity", 1L));
+		c.messageProcessors = Math.toIntExact(server.getLong("messageProcessors", 1L));
 		try {
 			logger.info(c.toString());
 		} catch (NullPointerException e) {

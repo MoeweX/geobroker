@@ -9,17 +9,17 @@ import org.zeromq.SocketType;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
 
-class ZMQProcess_Broker extends ZMQProcess {
+class ZMQProcess_Server extends ZMQProcess {
 
 	private static final Logger logger = LogManager.getLogger();
-	public static final String BROKER_PROCESSING_BACKEND = "inproc://backend";
+	public static final String SERVER_INPROC_ADDRESS = "inproc://server";
 	private static final int TIMEOUT_SECONDS = 10; // logs when not received in time, but repeats
 
-	// Address and port of broker frontend
+	// Address and port of server frontend
 	private String address;
 	private int port;
 
-	protected ZMQProcess_Broker(String address, int port, String identity) {
+	protected ZMQProcess_Server(String address, int port, String identity) {
 		super(identity);
 		this.address = address;
 		this.port = port;
@@ -36,7 +36,7 @@ class ZMQProcess_Broker extends ZMQProcess {
 		frontend.setSendTimeOut(1);
 
 		ZMQ.Socket backend = context.createSocket(SocketType.DEALER);
-		backend.bind(BROKER_PROCESSING_BACKEND);
+		backend.bind(SERVER_INPROC_ADDRESS);
 		backend.setSendTimeOut(1);
 
 		ZMQ.Poller poller = context.createPoller(1);
@@ -65,7 +65,7 @@ class ZMQProcess_Broker extends ZMQProcess {
 					logger.warn("Dropping client request as HWM reached.");
 				}
 			}
-			BenchmarkHelper.addEntry("brokerForward", System.nanoTime() - time);
+			BenchmarkHelper.addEntry("serverForward", System.nanoTime() - time);
 		} // end while loop
 
 		// sub control socket
@@ -74,7 +74,7 @@ class ZMQProcess_Broker extends ZMQProcess {
 		// other sockets
 		context.destroySocket(frontend);
 		context.destroySocket(backend);
-		logger.info("Shut down ZMQProcess_Broker, frontend and backend sockets were destroyed.");
+		logger.info("Shut down ZMQProcess_Server, frontend and backend sockets were destroyed.");
 	}
 
 }

@@ -44,7 +44,7 @@ public class ConnectAndDisconnectTest {
 		topicAndGeofenceMapper = new TopicAndGeofenceMapper(new Configuration());
 
 		processManager = new ZMQProcessManager();
-		ZMQProcessStarter.runZMQProcess_Broker(processManager, "tcp://localhost", 5559, "broker");
+		ZMQProcessStarter.runZMQProcess_Server(processManager, "tcp://localhost", 5559, "broker");
 		ZMQProcessStarter.runZMQProcess_MessageProcessor(processManager,"message_processor", clientDirectory, topicAndGeofenceMapper);
 
 		assertEquals(0, clientDirectory.getNumberOfClients());

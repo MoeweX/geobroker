@@ -19,9 +19,9 @@ public class ZMQProcessStarter {
 																		topicAndGeofenceMapper));
 	}
 
-	public static void runZMQProcess_Broker(ZMQProcessManager processManager, String address, int port,
+	public static void runZMQProcess_Server(ZMQProcessManager processManager, String address, int port,
 											String identity) {
-		processManager.submitZMQProcess(identity, new ZMQProcess_Broker(address, port, identity));
+		processManager.submitZMQProcess(identity, new ZMQProcess_Server(address, port, identity));
 	}
 
 }

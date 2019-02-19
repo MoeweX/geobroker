@@ -28,7 +28,7 @@
                             <appendAssemblyId>false</appendAssemblyId>
                             <archive>
                                 <manifest>
-                                    <mainClass>de.hasenburg.geolife.GeolifeBroker</mainClass>
+                                    <mainClass>de.hasenburg.geolife.GeolifeServer</mainClass>
                                 </manifest>
                             </archive>
                             <descriptorRefs>

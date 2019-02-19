@@ -1,4 +1,4 @@
-[broker]
+[server]
 granularity = 5
 messageProcessors = 1
 

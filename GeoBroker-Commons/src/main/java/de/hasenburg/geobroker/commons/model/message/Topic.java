@@ -23,7 +23,7 @@ public class Topic {
 	public String getLevelSpecifier(int levelIndex) {
 		if (levelIndex >= getNumberOfLevels()) {
 			throw new RuntimeException(
-					"Look what you did, you killed the broker by not checking the number of levels beforehand!");
+					"Look what you did, you killed the server by not checking the number of levels beforehand!");
 		}
 		return levelSpecifiers[levelIndex];
 	}

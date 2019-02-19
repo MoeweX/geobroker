@@ -12,7 +12,7 @@ import org.zeromq.ZMsg;
 import java.util.Objects;
 import java.util.Optional;
 
-public class InternalBrokerMessage {
+public class InternalServerMessage {
 
 	private static final Logger logger = LogManager.getLogger();
 
@@ -26,18 +26,18 @@ public class InternalBrokerMessage {
 	 * 	- Payload incompatible to control packet type
 	 * 	- Payload misses fields
 	 */
-	public static Optional<InternalBrokerMessage> buildMessage(ZMsg msg) {
+	public static Optional<InternalServerMessage> buildMessage(ZMsg msg) {
 		if (msg == null) {
 			// happens when queue is empty
 			return Optional.empty();
 		}
 
 		if (msg.size() != 3) {
-			logger.error("Cannot parse message {} to InternalBrokerMessage, has wrong size.", msg.toString());
+			logger.error("Cannot parse message {} to InternalServerMessage, has wrong size.", msg.toString());
 			return Optional.empty();
 		}
 
-		InternalBrokerMessage message = new InternalBrokerMessage();
+		InternalServerMessage message = new InternalServerMessage();
 
 		try {
 			message.clientIdentifier = msg.popString();
@@ -52,11 +52,11 @@ public class InternalBrokerMessage {
 		return Optional.ofNullable(message);
 	}
 
-	private InternalBrokerMessage() {
+	private InternalServerMessage() {
 
 	}
 
-	public InternalBrokerMessage(String clientIdentifier,
+	public InternalServerMessage(String clientIdentifier,
 								 ControlPacketType controlPacketType, AbstractPayload payload) {
 		this.clientIdentifier = clientIdentifier;
 		this.controlPacketType = controlPacketType;
@@ -85,7 +85,7 @@ public class InternalBrokerMessage {
 
 	@Override
 	public String toString() {
-		return "InternalBrokerMessage{" +
+		return "InternalServerMessage{" +
 				"clientIdentifier='" + clientIdentifier + '\'' +
 				", controlPacketType=" + controlPacketType +
 				", payload=" + payload +
@@ -97,10 +97,10 @@ public class InternalBrokerMessage {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof InternalBrokerMessage)) {
+		if (!(o instanceof InternalServerMessage)) {
 			return false;
 		}
-		InternalBrokerMessage that = (InternalBrokerMessage) o;
+		InternalServerMessage that = (InternalServerMessage) o;
 		return Objects.equals(getClientIdentifier(), that.getClientIdentifier()) &&
 				getControlPacketType() == that.getControlPacketType() &&
 				Objects.equals(getPayload(), that.getPayload());

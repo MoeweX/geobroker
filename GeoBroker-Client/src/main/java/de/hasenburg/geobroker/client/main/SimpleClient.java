@@ -88,7 +88,7 @@ public class SimpleClient {
 
 		// receive one message
 		InternalClientMessage response = client.receiveInternalClientMessage();
-		logger.info("Received broker answer: {}", response);
+		logger.info("Received server answer: {}", response);
 
 		// disconnect
 		clientMessage = new InternalClientMessage(ControlPacketType.DISCONNECT, new DISCONNECTPayload(

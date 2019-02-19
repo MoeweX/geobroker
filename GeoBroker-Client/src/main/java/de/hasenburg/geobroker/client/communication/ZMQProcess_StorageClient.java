@@ -15,10 +15,10 @@ import java.io.IOException;
 import java.util.Optional;
 
 /**
- * This client continuously receives messages from the connected broker and writes them into a txt file.
+ * This client continuously receives messages from the connected server and writes them into a txt file.
  * The txt file is located at ./<identity>.txt
  *
- * When the client receives ORDERS.SEND, it sends the attached message to the broker.
+ * When the client receives ORDERS.SEND, it sends the attached message to the server.
  */
 public class ZMQProcess_StorageClient extends ZMQProcess {
 
@@ -34,7 +34,7 @@ public class ZMQProcess_StorageClient extends ZMQProcess {
 	// Client processing backend, accepts REQ and answers with REP
 	private final String CLIENT_ORDER_BACKEND;
 
-	// Address and port of the broker the client connects to
+	// Address and port of the server the client connects to
 	private String address;
 	private int port;
 
@@ -58,13 +58,13 @@ public class ZMQProcess_StorageClient extends ZMQProcess {
 		ZMQ.Socket orders = context.createSocket(SocketType.REP);
 		orders.bind(CLIENT_ORDER_BACKEND);
 
-		ZMQ.Socket brokerSocket = context.createSocket(SocketType.DEALER);
-		brokerSocket.setIdentity(identity.getBytes());
-		brokerSocket.connect(address + ":" + port);
+		ZMQ.Socket serverSocket = context.createSocket(SocketType.DEALER);
+		serverSocket.setIdentity(identity.getBytes());
+		serverSocket.connect(address + ":" + port);
 
 		ZMQ.Poller poller = context.createPoller(3);
 		int zmqControlIndex = ZMQControlUtility.connectWithPoller(context, poller, identity); // 0
-		poller.register(brokerSocket, ZMQ.Poller.POLLIN); // 1
+		poller.register(serverSocket, ZMQ.Poller.POLLIN); // 1
 		poller.register(orders, ZMQ.Poller.POLLIN); // 2
 
 		while (!Thread.currentThread().isInterrupted()) {
@@ -79,16 +79,16 @@ public class ZMQProcess_StorageClient extends ZMQProcess {
 				}
 			} else if (poller.pollin(1)) { // check if we received a message
 				logger.trace("Received a message, writing it to file.");
-				Optional<InternalClientMessage> brokerMessage =
-						InternalClientMessage.buildMessage(ZMsg.recvMsg(brokerSocket, true));
-				if (brokerMessage.isPresent()) {
+				Optional<InternalClientMessage> serverMessage =
+						InternalClientMessage.buildMessage(ZMsg.recvMsg(serverSocket, true));
+				if (serverMessage.isPresent()) {
 					try {
-						writer.write(brokerMessage.get().toString());
+						writer.write(serverMessage.get().toString());
 					} catch (IOException e) {
-						logger.error("Could not write broker message to file", e);
+						logger.error("Could not write server message to file", e);
 					}
 				} else {
-					logger.error("Broker message was malformed or empty, so not written to file");
+					logger.error("Server message was malformed or empty, so not written to file");
 				}
 
 			} else if (poller.pollin(2)) { // check if we got the order to send a message
@@ -102,13 +102,13 @@ public class ZMQProcess_StorageClient extends ZMQProcess {
 				String orderType = order.popString();
 
 				if (valid && ORDERS.SEND.name().equals(orderType)) {
-					logger.trace("Sending message to broker");
+					logger.trace("Sending message to server");
 
 					//the zMsg should consist of an InternalClientMessage only, as other entries are popped
 					Optional<InternalClientMessage> clientMessageO = InternalClientMessage.buildMessage(order);
 
 					if (clientMessageO.isPresent()) {
-						clientMessageO.get().getZMsg().send(brokerSocket);
+						clientMessageO.get().getZMsg().send(serverSocket);
 						ZMsg.newStringMsg(ORDERS.CONFIRM.name()).send(orders);
 					} else {
 						logger.warn("Cannot run send as given message is incompatible");
@@ -135,8 +135,8 @@ public class ZMQProcess_StorageClient extends ZMQProcess {
 
 		// other sockets
 		context.destroySocket(orders);
-		context.destroySocket(brokerSocket);
-		logger.info("Shut down ZMQProcess_StorageClient, orders and broker sockets were destroyed.");
+		context.destroySocket(serverSocket);
+		logger.info("Shut down ZMQProcess_StorageClient, orders and server sockets were destroyed.");
 	}
 
 }

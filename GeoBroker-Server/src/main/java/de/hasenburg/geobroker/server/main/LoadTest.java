@@ -44,7 +44,7 @@ public class LoadTest {
 		TopicAndGeofenceMapper topicAndGeofenceMapper = new TopicAndGeofenceMapper(new Configuration());
 
 		processManager = new ZMQProcessManager();
-		ZMQProcessStarter.runZMQProcess_Broker(processManager,"tcp://localhost", 5559, "broker");
+		ZMQProcessStarter.runZMQProcess_Server(processManager, "tcp://localhost", 5559, "broker");
 		ZMQProcessStarter.runZMQProcess_MessageProcessor(processManager, "message_processor1", clientDirectory, topicAndGeofenceMapper);
 		ZMQProcessStarter.runZMQProcess_MessageProcessor(processManager, "message_processor2", clientDirectory, topicAndGeofenceMapper);
 	}
@@ -110,7 +110,7 @@ public class LoadTest {
 				InternalClientMessage response = simpleClient.receiveInternalClientMessage();
 				logger.trace(response);
 				if (message == null) {
-					throw new RuntimeException("Broker answers with invalid messages!!");
+					throw new RuntimeException("Server answers with invalid messages!!");
 				}
 				Integer amount = numbers.get(message.getControlPacketType());
 				if (amount == null) {

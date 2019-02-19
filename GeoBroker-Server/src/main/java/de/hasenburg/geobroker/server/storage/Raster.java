@@ -22,7 +22,7 @@ public class Raster {
 	/**
 	 * Creates a new Raster. The index of each raster entry is the location of the entry's south west corner
 	 *
-	 * The raster always contains the whole world. Limitations to allowed subscriptions, e.g., the broker should only
+	 * The raster always contains the whole world. Limitations to allowed subscriptions, e.g., the server should only
 	 * accept subscriptions from Europe, have to be made on another level
 	 *
 	 * The granularity is used to calculate the size of each {@link RasterEntry} in degrees. The size equals 1 degree /

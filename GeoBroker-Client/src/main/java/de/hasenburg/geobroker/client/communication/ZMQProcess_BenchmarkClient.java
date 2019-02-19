@@ -8,7 +8,6 @@ import de.hasenburg.geobroker.commons.model.message.payloads.PUBLISHPayload;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.SocketType;
-import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
 
@@ -20,8 +19,8 @@ import java.util.*;
 
 /**
  * This client's purpose is to do benchmarking. For that, it measures the latency between a send message, and the
- * appropriate answer from the broker. When the client receives ORDERS.SEND, it sends the attached message to the
- * broker. For the following message type combinations, latencies are measured:
+ * appropriate answer from the server. When the client receives ORDERS.SEND, it sends the attached message to the
+ * server. For the following message type combinations, latencies are measured:
  *
  * - CONNECT -> CONNACK or DISCONNECT
  *
@@ -48,7 +47,7 @@ public class ZMQProcess_BenchmarkClient extends ZMQProcess {
 	// Client processing backend, accepts REQ and answers with REP
 	private final String CLIENT_ORDER_BACKEND;
 
-	// Address and port of the broker the client connects to
+	// Address and port of the server the client connects to
 	private String address;
 	private int port;
 
@@ -83,13 +82,13 @@ public class ZMQProcess_BenchmarkClient extends ZMQProcess {
 		ZMQ.Socket orders = context.createSocket(SocketType.REP);
 		orders.bind(CLIENT_ORDER_BACKEND);
 
-		ZMQ.Socket brokerSocket = context.createSocket(SocketType.DEALER);
-		brokerSocket.setIdentity(identity.getBytes());
-		brokerSocket.connect(address + ":" + port);
+		ZMQ.Socket serverSocket = context.createSocket(SocketType.DEALER);
+		serverSocket.setIdentity(identity.getBytes());
+		serverSocket.connect(address + ":" + port);
 
 		ZMQ.Poller poller = context.createPoller(3);
 		int zmqControlIndex = ZMQControlUtility.connectWithPoller(context, poller, identity); // 0
-		poller.register(brokerSocket, ZMQ.Poller.POLLIN); // 1
+		poller.register(serverSocket, ZMQ.Poller.POLLIN); // 1
 		poller.register(orders, ZMQ.Poller.POLLIN); // 2
 
 		while (!Thread.currentThread().isInterrupted()) {
@@ -105,29 +104,29 @@ public class ZMQProcess_BenchmarkClient extends ZMQProcess {
 					break;
 				}
 			} else if (poller.pollin(1)) { // check if we received a message
-				Optional<InternalClientMessage> brokerMessage =
-						InternalClientMessage.buildMessage(ZMsg.recvMsg(brokerSocket, true));
-				logger.trace("Received message {}, storing timestamp", brokerMessage);
-				if (brokerMessage.isPresent()) {
-					if (ControlPacketType.PUBLISH.equals(brokerMessage.get().getControlPacketType())) {
+				Optional<InternalClientMessage> serverMessage =
+						InternalClientMessage.buildMessage(ZMsg.recvMsg(serverSocket, true));
+				logger.trace("Received message {}, storing timestamp", serverMessage);
+				if (serverMessage.isPresent()) {
+					if (ControlPacketType.PUBLISH.equals(serverMessage.get().getControlPacketType())) {
 						@SuppressWarnings("OptionalGetWithoutIsPresent") PUBLISHPayload payload =
-								brokerMessage.get().getPayload().getPUBLISHPayload().get();
-						if (payload.getContent().startsWith(identity+"+")) {
-							// this is our own publish message that was received from the broker
+								serverMessage.get().getPayload().getPUBLISHPayload().get();
+						if (payload.getContent().startsWith(identity + "+")) {
+							// this is our own publish message that was received from the server
 							timestamps.get(999).add(timestamp);
 						} else {
 							// this is a foreign publish messages
 							receivedForeignPublishMessages++;
 						}
 					} else {
-						List<Long> longs = timestamps.get(brokerMessage.get().getControlPacketType().ordinal());
+						List<Long> longs = timestamps.get(serverMessage.get().getControlPacketType().ordinal());
 						// check whether interesting control packet type -> put into correct list
 						if (longs != null) {
 							longs.add(timestamp);
 						}
 					}
 				} else {
-					logger.error("Broker message was malformed or empty, so no timestamp was stored");
+					logger.error("Server message was malformed or empty, so no timestamp was stored");
 				}
 
 			} else if (poller.pollin(2)) { // check if we got the order to send a message
@@ -141,7 +140,7 @@ public class ZMQProcess_BenchmarkClient extends ZMQProcess {
 				String orderType = order.popString();
 
 				if (valid && ORDERS.SEND.name().equals(orderType)) {
-					logger.trace("Sending message to broker");
+					logger.trace("Sending message to server");
 
 					//the zMsg should consist of an InternalClientMessage only, as other entries are popped
 					Optional<InternalClientMessage> clientMessageO = InternalClientMessage.buildMessage(order);
@@ -152,7 +151,7 @@ public class ZMQProcess_BenchmarkClient extends ZMQProcess {
 						if (longs != null) {
 							longs.add(timestamp);
 						}
-						clientMessageO.get().getZMsg().send(brokerSocket);
+						clientMessageO.get().getZMsg().send(serverSocket);
 						ZMsg.newStringMsg(ORDERS.CONFIRM.name()).send(orders);
 					} else {
 						logger.warn("Cannot run send as given message is incompatible");
@@ -177,8 +176,8 @@ public class ZMQProcess_BenchmarkClient extends ZMQProcess {
 
 		// other sockets
 		context.destroySocket(orders);
-		context.destroySocket(brokerSocket);
-		logger.info("Shut down ZMQProcess_BenchmarkClient, orders and broker sockets were destroyed.");
+		context.destroySocket(serverSocket);
+		logger.info("Shut down ZMQProcess_BenchmarkClient, orders and server sockets were destroyed.");
 	}
 
 	private void writeResultsToDisk() {
@@ -195,7 +194,7 @@ public class ZMQProcess_BenchmarkClient extends ZMQProcess {
 				if (controlPacketType != 999) {
 					name = ControlPacketType.values()[controlPacketType].name();
 				}
-				writer.write(name+ ",");
+				writer.write(name + ",");
 				for (Long aLong : timestamps.get(controlPacketType)) {
 					writer.write(aLong + ",");
 				}

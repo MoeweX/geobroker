@@ -42,7 +42,7 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 
 		processor = context.createSocket(SocketType.DEALER);
 		processor.setIdentity(identity.getBytes());
-		processor.connect(ZMQProcess_Broker.BROKER_PROCESSING_BACKEND);
+		processor.connect(ZMQProcess_Server.SERVER_INPROC_ADDRESS);
 
 		ZMQ.Poller poller = context.createPoller(1);
 		int zmqControlIndex = ZMQControlUtility.connectWithPoller(context, poller, identity);
@@ -66,12 +66,12 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 			} else if (poller.pollin(1)) {
 				ZMsg zMsg = ZMsg.recvMsg(processor);
 				number++;
-				Optional<InternalBrokerMessage> messageO = InternalBrokerMessage.buildMessage(zMsg);
+				Optional<InternalServerMessage> messageO = InternalServerMessage.buildMessage(zMsg);
 				logger.debug("ZMQProcess_MessageProcessor {} processing message number {}",
 							 new String(processor.getIdentity()),
 							 number);
 				if (messageO.isPresent()) {
-					InternalBrokerMessage message = messageO.get();
+					InternalServerMessage message = messageO.get();
 					long time = System.nanoTime();
 					switch (message.getControlPacketType()) {
 						case CONNECT:
@@ -122,22 +122,22 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 	 ****************************************************************/
 
 	@SuppressWarnings("OptionalGetWithoutIsPresent")
-	private void processCONNECT(InternalBrokerMessage message) {
-		InternalBrokerMessage response;
+	private void processCONNECT(InternalServerMessage message) {
+		InternalServerMessage response;
 		CONNECTPayload payload = message.getPayload().getCONNECTPayload().get();
 
 		boolean success = clientDirectory.addClient(message.getClientIdentifier(), payload.getLocation());
 
 		if (success) {
 			logger.debug("Created client for client {}, acknowledging.", message.getClientIdentifier());
-			response = new InternalBrokerMessage(message.getClientIdentifier(),
+			response = new InternalServerMessage(message.getClientIdentifier(),
 												 ControlPacketType.CONNACK,
 												 new CONNACKPayload(ReasonCode.Success));
 		} else {
 			logger.debug("Client already exists for {}, so protocol error. Disconnecting.",
 						 message.getClientIdentifier());
 			clientDirectory.removeClient(message.getClientIdentifier());
-			response = new InternalBrokerMessage(message.getClientIdentifier(),
+			response = new InternalServerMessage(message.getClientIdentifier(),
 												 ControlPacketType.DISCONNECT,
 												 new DISCONNECTPayload(ReasonCode.ProtocolError));
 		}
@@ -147,7 +147,7 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 	}
 
 	@SuppressWarnings("OptionalGetWithoutIsPresent")
-	private void processDISCONNECT(InternalBrokerMessage message) {
+	private void processDISCONNECT(InternalServerMessage message) {
 		DISCONNECTPayload payload = message.getPayload().getDISCONNECTPayload().get();
 
 		boolean success = clientDirectory.removeClient(message.getClientIdentifier());
@@ -160,20 +160,20 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 	}
 
 	@SuppressWarnings("OptionalGetWithoutIsPresent")
-	private void processPINGREQ(InternalBrokerMessage message) {
-		InternalBrokerMessage response;
+	private void processPINGREQ(InternalServerMessage message) {
+		InternalServerMessage response;
 		PINGREQPayload payload = message.getPayload().getPINGREQPayload().get();
 
 		boolean success = clientDirectory.updateClientLocation(message.getClientIdentifier(), payload.getLocation());
 		if (success) {
 			logger.debug("Updated location of {} to {}", message.getClientIdentifier(), payload.getLocation());
 
-			response = new InternalBrokerMessage(message.getClientIdentifier(),
+			response = new InternalServerMessage(message.getClientIdentifier(),
 												 ControlPacketType.PINGRESP,
 												 new PINGRESPPayload(ReasonCode.LocationUpdated));
 		} else {
 			logger.debug("Client {} is not connected", message.getClientIdentifier());
-			response = new InternalBrokerMessage(message.getClientIdentifier(),
+			response = new InternalServerMessage(message.getClientIdentifier(),
 												 ControlPacketType.PINGRESP,
 												 new PINGRESPPayload(ReasonCode.NotConnected));
 		}
@@ -183,8 +183,8 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 	}
 
 	@SuppressWarnings("OptionalGetWithoutIsPresent")
-	private void processSUBSCRIBEforConnection(InternalBrokerMessage message) {
-		InternalBrokerMessage response;
+	private void processSUBSCRIBEforConnection(InternalServerMessage message) {
+		InternalServerMessage response;
 		SUBSCRIBEPayload payload = message.getPayload().getSUBSCRIBEPayload().get();
 
 		ImmutablePair<ImmutablePair<String, Integer>, Geofence> subscribed =
@@ -203,7 +203,7 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 
 		if (subscriptionId == null) {
 			logger.debug("Client {} is not connected", message.getClientIdentifier());
-			response = new InternalBrokerMessage(message.getClientIdentifier(),
+			response = new InternalServerMessage(message.getClientIdentifier(),
 												 ControlPacketType.SUBACK,
 												 new SUBACKPayload(ReasonCode.NotConnected));
 		} else {
@@ -212,7 +212,7 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 						 message.getClientIdentifier(),
 						 payload.getTopic(),
 						 payload.getGeofence());
-			response = new InternalBrokerMessage(message.getClientIdentifier(),
+			response = new InternalServerMessage(message.getClientIdentifier(),
 												 ControlPacketType.SUBACK,
 												 new SUBACKPayload(ReasonCode.GrantedQoS0));
 		}
@@ -221,14 +221,14 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 		response.getZMsg().send(processor);
 	}
 
-	public void processUNSUBSCRIBEforConnection(InternalBrokerMessage message) {
+	public void processUNSUBSCRIBEforConnection(InternalServerMessage message) {
 		// TODO Implement
 		throw new RuntimeException("Not yet implemented");
 	}
 
 	@SuppressWarnings("OptionalGetWithoutIsPresent")
-	public void processPublish(InternalBrokerMessage message) {
-		InternalBrokerMessage response;
+	public void processPublish(InternalServerMessage message) {
+		InternalServerMessage response;
 		PUBLISHPayload payload = message.getPayload().getPUBLISHPayload().get();
 
 		Location publisherLocation = clientDirectory.getClientLocation(message.getClientIdentifier());
@@ -248,26 +248,26 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 			for (ImmutablePair<String, Integer> subscriptionId : subscriptionIds) {
 				String subscriberClientIdentifier = subscriptionId.left;
 				logger.debug("Client {} is a subscriber", subscriberClientIdentifier);
-				InternalBrokerMessage toPublish =
-						new InternalBrokerMessage(subscriberClientIdentifier, ControlPacketType.PUBLISH, payload);
+				InternalServerMessage toPublish =
+						new InternalServerMessage(subscriberClientIdentifier, ControlPacketType.PUBLISH, payload);
 				logger.trace("Publishing " + toPublish);
 				toPublish.getZMsg().send(processor);
 			}
 
 			if (subscriptionIds.isEmpty()) {
 				logger.debug("No subscriber exists.");
-				response = new InternalBrokerMessage(message.getClientIdentifier(),
+				response = new InternalServerMessage(message.getClientIdentifier(),
 													 ControlPacketType.PUBACK,
 													 new PUBACKPayload(ReasonCode.NoMatchingSubscribers));
 			} else {
-				response = new InternalBrokerMessage(message.getClientIdentifier(),
+				response = new InternalServerMessage(message.getClientIdentifier(),
 													 ControlPacketType.PUBACK,
 													 new PUBACKPayload(ReasonCode.Success));
 			}
 
 		} else {
 			logger.debug("Client {} is not connected", message.getClientIdentifier());
-			response = new InternalBrokerMessage(message.getClientIdentifier(),
+			response = new InternalServerMessage(message.getClientIdentifier(),
 												 ControlPacketType.PUBACK,
 												 new PUBACKPayload(ReasonCode.NotConnected));
 		}
