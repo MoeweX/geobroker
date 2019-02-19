@@ -1,12 +1,11 @@
 package de.hasenburg.geobroker.commons.model.message.payloads;
 
-import de.hasenburg.geobroker.commons.model.JSONable;
-import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
 import de.hasenburg.geobroker.commons.Utility;
 import de.hasenburg.geobroker.commons.exceptions.CommunicatorException;
-import de.hasenburg.geobroker.commons.model.message.payloads.AbstractPayload;
-import de.hasenburg.geobroker.commons.model.message.payloads.CONNECTPayload;
-import de.hasenburg.geobroker.commons.model.message.payloads.PINGREQPayload;
+import de.hasenburg.geobroker.commons.model.JSONable;
+import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
+import de.hasenburg.geobroker.commons.model.message.Topic;
+import de.hasenburg.geobroker.commons.model.spatial.Geofence;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -67,6 +66,25 @@ public class PayloadTest {
 		String messageString = message.pop().getString(ZMQ.CHARSET);
 
 		AbstractPayload payload2 = Utility.buildPayloadFromString(messageString, ControlPacketType.PINGREQ);
+		logger.info("FINISHED TEST");
+	}
+
+	@Test
+	public void testPUBLISHPayload() throws CommunicatorException {
+		logger.info("RUNNING testPUBLISHPayload TEST");
+		PUBLISHPayload payload = new PUBLISHPayload(new Topic("data"),
+													Geofence.circle(Location.random(), 1),
+													Utility.generatePayloadWithSize(20, "test-"));
+		String json = JSONable.toJSON(payload);
+		logger.debug(json);
+
+		ZMsg message = ZMsg.newStringMsg(json);
+		String messageString = message.pop().getString(ZMQ.CHARSET);
+
+		AbstractPayload payload2 = Utility.buildPayloadFromString(messageString, ControlPacketType.PUBLISH);
+		logger.debug(payload2);
+
+		assertEquals(payload, payload2.getPUBLISHPayload().get());
 		logger.info("FINISHED TEST");
 	}
 
