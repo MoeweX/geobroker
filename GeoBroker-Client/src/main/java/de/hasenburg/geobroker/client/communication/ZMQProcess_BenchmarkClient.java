@@ -175,7 +175,7 @@ public class ZMQProcess_BenchmarkClient extends ZMQProcess {
 		// sub control socket
 		context.destroySocket(poller.getSocket(0));
 
-		// other sockets (might be optional, kill nevertheless)
+		// other sockets
 		context.destroySocket(orders);
 		context.destroySocket(brokerSocket);
 		logger.info("Shut down ZMQProcess_BenchmarkClient, orders and broker sockets were destroyed.");

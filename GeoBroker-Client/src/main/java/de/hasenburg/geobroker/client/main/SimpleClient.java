@@ -51,7 +51,7 @@ public class SimpleClient {
 
 	public void tearDownClient() {
 		orderSocket.setLinger(0);
-		orderSocket.close();
+		processManager.getContext().destroySocket(orderSocket);
 		processManager.sendKillCommandToZMQProcess(getIdentity());
 	}
 

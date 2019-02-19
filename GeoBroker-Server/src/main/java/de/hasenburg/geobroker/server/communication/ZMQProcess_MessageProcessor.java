@@ -106,7 +106,7 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 
 		} // end while loop
 
-		// sub control socket (might be optional, kill nevertheless)
+		// sub control socket
 		context.destroySocket(poller.getSocket(0));
 
 		// processor socket

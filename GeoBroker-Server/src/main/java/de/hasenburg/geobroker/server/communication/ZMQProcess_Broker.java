@@ -68,7 +68,7 @@ class ZMQProcess_Broker extends ZMQProcess {
 			BenchmarkHelper.addEntry("brokerForward", System.nanoTime() - time);
 		} // end while loop
 
-		// sub control socket (might be optional, kill nevertheless)
+		// sub control socket
 		context.destroySocket(poller.getSocket(0));
 
 		// other sockets

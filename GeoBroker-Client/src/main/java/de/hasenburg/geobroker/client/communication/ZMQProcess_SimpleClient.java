@@ -108,7 +108,7 @@ public class ZMQProcess_SimpleClient extends ZMQProcess {
 		// sub control socket
 		context.destroySocket(poller.getSocket(0));
 
-		// other sockets (might be optional, kill nevertheless)
+		// other sockets
 		context.destroySocket(orders);
 		context.destroySocket(brokerSocket);
 		logger.info("Shut down ZMQProcess_SimpleClient, orders and broker sockets were destroyed.");
