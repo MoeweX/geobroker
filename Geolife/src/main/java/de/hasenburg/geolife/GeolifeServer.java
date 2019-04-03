@@ -2,6 +2,7 @@ package de.hasenburg.geolife;
 
 import de.hasenburg.geobroker.commons.communication.ZMQProcessManager;
 import de.hasenburg.geobroker.server.communication.ZMQProcessStarter;
+import de.hasenburg.geobroker.server.distribution.BrokerAreaManager;
 import de.hasenburg.geobroker.server.main.Configuration;
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory;
 import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper;
@@ -20,11 +21,17 @@ public class GeolifeServer {
 
 		ClientDirectory clientDirectory = new ClientDirectory();
 		TopicAndGeofenceMapper topicAndGeofenceMapper = new TopicAndGeofenceMapper(configuration);
+		BrokerAreaManager brokerAreaManager = new BrokerAreaManager("broker");
+		brokerAreaManager.setup_DefaultFile();
 
 		ZMQProcessManager processManager = new ZMQProcessManager();
 		ZMQProcessStarter.runZMQProcess_Server(processManager, "tcp://0.0.0.0", 5559, "broker");
 		for (int i = 1; i <= configuration.getMessageProcessors(); i++) {
-			ZMQProcessStarter.runZMQProcess_MessageProcessor(processManager,"message_processor-" + i, clientDirectory, topicAndGeofenceMapper);
+			ZMQProcessStarter.runZMQProcess_MessageProcessor(processManager,
+															 "message_processor-" + i,
+															 clientDirectory,
+															 topicAndGeofenceMapper,
+															 brokerAreaManager);
 		}
 
 		while (true) {

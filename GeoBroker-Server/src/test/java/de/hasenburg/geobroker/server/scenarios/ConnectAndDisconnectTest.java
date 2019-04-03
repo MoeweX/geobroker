@@ -4,6 +4,7 @@ import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
 import de.hasenburg.geobroker.commons.model.message.ReasonCode;
 import de.hasenburg.geobroker.commons.communication.ZMQProcessManager;
 import de.hasenburg.geobroker.server.communication.ZMQProcessStarter;
+import de.hasenburg.geobroker.server.distribution.BrokerAreaManager;
 import de.hasenburg.geobroker.server.main.Configuration;
 import de.hasenburg.geobroker.client.main.SimpleClient;
 import de.hasenburg.geobroker.commons.Utility;
@@ -42,10 +43,16 @@ public class ConnectAndDisconnectTest {
 
 		clientDirectory = new ClientDirectory();
 		topicAndGeofenceMapper = new TopicAndGeofenceMapper(new Configuration());
+		BrokerAreaManager brokerAreaManager = new BrokerAreaManager("broker");
+		brokerAreaManager.setup_DefaultFile();
 
 		processManager = new ZMQProcessManager();
 		ZMQProcessStarter.runZMQProcess_Server(processManager, "tcp://localhost", 5559, "broker");
-		ZMQProcessStarter.runZMQProcess_MessageProcessor(processManager,"message_processor", clientDirectory, topicAndGeofenceMapper);
+		ZMQProcessStarter.runZMQProcess_MessageProcessor(processManager,
+														 "message_processor",
+														 clientDirectory,
+														 topicAndGeofenceMapper,
+														 brokerAreaManager);
 
 		assertEquals(0, clientDirectory.getNumberOfClients());
 	}

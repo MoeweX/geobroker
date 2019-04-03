@@ -8,6 +8,7 @@ import de.hasenburg.geobroker.commons.model.message.ReasonCode;
 import de.hasenburg.geobroker.commons.model.message.payloads.*;
 import de.hasenburg.geobroker.commons.model.spatial.Geofence;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
+import de.hasenburg.geobroker.server.distribution.BrokerAreaManager;
 import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper;
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -25,15 +26,19 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 	private static final Logger logger = LogManager.getLogger();
 	private static final int TIMEOUT_SECONDS = 10; // logs when not received in time, but repeats
 
-	ClientDirectory clientDirectory;
-	TopicAndGeofenceMapper topicAndGeofenceMapper;
-	ZMQ.Socket processor;
+	private final ClientDirectory clientDirectory;
+	private final TopicAndGeofenceMapper topicAndGeofenceMapper;
+	private final BrokerAreaManager brokerAreaManager;
 
-	protected ZMQProcess_MessageProcessor(String identity, ClientDirectory clientDirectory,
-										  TopicAndGeofenceMapper topicAndGeofenceMapper) {
+	private ZMQ.Socket processor;
+
+	ZMQProcess_MessageProcessor(String identity, ClientDirectory clientDirectory,
+										  TopicAndGeofenceMapper topicAndGeofenceMapper,
+										  BrokerAreaManager brokerAreaManager) {
 		super(identity);
 		this.clientDirectory = clientDirectory;
 		this.topicAndGeofenceMapper = topicAndGeofenceMapper;
+		this.brokerAreaManager = brokerAreaManager;
 	}
 
 	@Override
@@ -126,6 +131,10 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 		InternalServerMessage response;
 		CONNECTPayload payload = message.getPayload().getCONNECTPayload().get();
 
+		if (!brokerAreaManager.checkIfResponsibleForClientLocation(payload.getLocation())) {
+			// TODO !: notify client that not responsible and return
+		}
+
 		boolean success = clientDirectory.addClient(message.getClientIdentifier(), payload.getLocation());
 
 		if (success) {
@@ -161,6 +170,8 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 
 	@SuppressWarnings("OptionalGetWithoutIsPresent")
 	private void processPINGREQ(InternalServerMessage message) {
+		// TODO F: if client has left broker area -> migrate client
+
 		InternalServerMessage response;
 		PINGREQPayload payload = message.getPayload().getPINGREQPayload().get();
 
