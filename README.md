@@ -1,5 +1,7 @@
 # GeoBroker
 
+[![CodeFactor](https://www.codefactor.io/repository/github/moewex/geobroker/badge)](https://www.codefactor.io/repository/github/moewex/geobroker)
+
 GeoBroker is a pub/sub system research prototype that not only uses content information, i.e., the topic of a message, 
 but also the geo-context of publishers and subscribers for the matching of messages.
 
