@@ -19,7 +19,7 @@ public class Server {
 		TopicAndGeofenceMapper topicAndGeofenceMapper = new TopicAndGeofenceMapper(configuration);
 
 		ZMQProcessManager processManager = new ZMQProcessManager();
-		ZMQProcessStarter.runZMQProcess_Server(processManager, "tcp://localhost", 5559, "broker");
+		ZMQProcessStarter.runZMQProcess_Server(processManager, "tcp://localhost", configuration.getPort(), "broker");
 		for (int i = 1; i <= configuration.getMessageProcessors(); i++) {
 			ZMQProcessStarter.runZMQProcess_MessageProcessor(processManager,
 															 "message_processor-" + i,

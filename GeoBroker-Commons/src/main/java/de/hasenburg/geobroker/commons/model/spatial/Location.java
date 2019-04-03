@@ -20,7 +20,6 @@ public class Location implements JSONable {
 
 	private static final Logger logger = LogManager.getLogger();
 
-	@JsonIgnore
 	private final Point point;
 
 	private Location(Point point) {
@@ -75,6 +74,7 @@ public class Location implements JSONable {
 	 * Getters and String
 	 ****************************************************************/
 
+	@JsonIgnore
 	public Point getPoint() {
 		return point;
 	}

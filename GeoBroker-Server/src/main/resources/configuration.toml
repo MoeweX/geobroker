@@ -1,4 +1,7 @@
 [server]
+brokerId = "broker"
+address = "tcp://localhost"
+port = 5559
 granularity = 5
 messageProcessors = 1
 

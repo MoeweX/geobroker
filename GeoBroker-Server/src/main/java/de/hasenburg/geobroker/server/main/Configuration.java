@@ -13,6 +13,8 @@ public class Configuration {
 
 	private static final Logger logger = LogManager.getLogger();
 
+	private String brokerId = "broker";
+	private Integer port = 5559;
 	private Integer granularity = 1;
 	private Integer messageProcessors = 1;
 
@@ -58,8 +60,11 @@ public class Configuration {
 
 	private static Configuration parseToml(Configuration c, Toml toml) {
 		Toml server = toml.getTable("server");
-		c.granularity = Math.toIntExact(server.getLong("granularity", 1L));
-		c.messageProcessors = Math.toIntExact(server.getLong("messageProcessors", 1L));
+		c.brokerId = server.getString("brokerId", c.brokerId);
+		c.port = Math.toIntExact(server.getLong("brokerId", c.port.longValue()));
+
+		c.granularity = Math.toIntExact(server.getLong("granularity", c.granularity.longValue()));
+		c.messageProcessors = Math.toIntExact(server.getLong("messageProcessors", c.messageProcessors.longValue()));
 		try {
 			logger.info(c.toString());
 		} catch (NullPointerException e) {
@@ -84,6 +89,14 @@ public class Configuration {
 
 	public Integer getMessageProcessors() {
 		return messageProcessors;
+	}
+
+	public String getBrokerId() {
+		return brokerId;
+	}
+
+	public Integer getPort() {
+		return port;
 	}
 
 	@Override

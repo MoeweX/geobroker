@@ -66,6 +66,11 @@ public class Geofence implements JSONable  {
 		return new Geofence(c);
 	}
 
+	public static Geofence world() {
+		Shape worldShape = GEO.getWorldBounds();
+		return new Geofence(worldShape);
+	}
+
 	@JsonIgnore
 	public boolean isRectangle() {
 		return GEO.getShapeFactory().getGeometryFrom(shape).isRectangle();
