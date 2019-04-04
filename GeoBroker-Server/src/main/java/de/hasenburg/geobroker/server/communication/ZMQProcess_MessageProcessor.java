@@ -169,10 +169,15 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 
 	@SuppressWarnings("OptionalGetWithoutIsPresent")
 	private void processPINGREQ(InternalServerMessage message) {
-		// TODO F: if client has left our broker area -> notify client and migrate data
-
 		InternalServerMessage response;
 		PINGREQPayload payload = message.getPayload().getPINGREQPayload().get();
+
+		// check whether client has moved to another broker area
+		if (!handleResponsibility(message.getClientIdentifier(), payload.getLocation())) {
+			// TODO F: migrate client data to other broker, right now he has to update the information himself
+			clientDirectory.removeClient(message.getClientIdentifier());
+			return; // we are not responsible, client has been notified
+		}
 
 		boolean success = clientDirectory.updateClientLocation(message.getClientIdentifier(), payload.getLocation());
 		if (success) {
