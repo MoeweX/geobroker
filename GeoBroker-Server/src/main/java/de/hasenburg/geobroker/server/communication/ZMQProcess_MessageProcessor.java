@@ -3,6 +3,7 @@ package de.hasenburg.geobroker.server.communication;
 import de.hasenburg.geobroker.commons.BenchmarkHelper;
 import de.hasenburg.geobroker.commons.communication.ZMQControlUtility;
 import de.hasenburg.geobroker.commons.communication.ZMQProcess;
+import de.hasenburg.geobroker.commons.model.BrokerInfo;
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
 import de.hasenburg.geobroker.commons.model.message.ReasonCode;
 import de.hasenburg.geobroker.commons.model.message.payloads.*;
@@ -33,8 +34,7 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 	private ZMQ.Socket processor;
 
 	ZMQProcess_MessageProcessor(String identity, ClientDirectory clientDirectory,
-										  TopicAndGeofenceMapper topicAndGeofenceMapper,
-										  BrokerAreaManager brokerAreaManager) {
+								TopicAndGeofenceMapper topicAndGeofenceMapper, BrokerAreaManager brokerAreaManager) {
 		super(identity);
 		this.clientDirectory = clientDirectory;
 		this.topicAndGeofenceMapper = topicAndGeofenceMapper;
@@ -103,7 +103,7 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 							logger.warn("Cannot process message {}", message.toString());
 					}
 				} else {
-					logger.warn("Received an incompatible message", zMsg);
+					logger.warn("Received an incompatible message: {}", zMsg);
 				}
 			} else {
 				logger.debug("Did not receive a message for {}s", TIMEOUT_SECONDS);
@@ -131,20 +131,19 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 		InternalServerMessage response;
 		CONNECTPayload payload = message.getPayload().getCONNECTPayload().get();
 
-		if (!brokerAreaManager.checkIfResponsibleForClientLocation(payload.getLocation())) {
-			// TODO !: notify client that not responsible and return
+		if (!handleResponsibility(message.getClientIdentifier(), payload.getLocation())) {
+			return; // we are not responsible, client has been notified
 		}
 
 		boolean success = clientDirectory.addClient(message.getClientIdentifier(), payload.getLocation());
 
 		if (success) {
-			logger.debug("Created client for client {}, acknowledging.", message.getClientIdentifier());
+			logger.debug("Created client {}, acknowledging.", message.getClientIdentifier());
 			response = new InternalServerMessage(message.getClientIdentifier(),
 												 ControlPacketType.CONNACK,
 												 new CONNACKPayload(ReasonCode.Success));
 		} else {
-			logger.debug("Client already exists for {}, so protocol error. Disconnecting.",
-						 message.getClientIdentifier());
+			logger.debug("Client {} already exists, so protocol error. Disconnecting.", message.getClientIdentifier());
 			clientDirectory.removeClient(message.getClientIdentifier());
 			response = new InternalServerMessage(message.getClientIdentifier(),
 												 ControlPacketType.DISCONNECT,
@@ -170,7 +169,7 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 
 	@SuppressWarnings("OptionalGetWithoutIsPresent")
 	private void processPINGREQ(InternalServerMessage message) {
-		// TODO F: if client has left broker area -> migrate client
+		// TODO F: if client has left our broker area -> notify client and migrate data
 
 		InternalServerMessage response;
 		PINGREQPayload payload = message.getPayload().getPINGREQPayload().get();
@@ -238,7 +237,7 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 	}
 
 	@SuppressWarnings("OptionalGetWithoutIsPresent")
-	public void processPublish(InternalServerMessage message) {
+	private void processPublish(InternalServerMessage message) {
 		InternalServerMessage response;
 		PUBLISHPayload payload = message.getPayload().getPUBLISHPayload().get();
 
@@ -286,6 +285,33 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 		// send response to publisher
 		logger.trace("Sending response " + response);
 		response.getZMsg().send(processor);
+	}
+
+	/*****************************************************************
+	 * Message Processing Helper
+	 ****************************************************************/
+
+	/**
+	 * Checks whether this particular broker is responsible for the client with the given location.
+	 * If not, sends a disconnect message with the responsible broker, if any exists.
+	 * Otherwise, does nothing
+	 *
+	 * @return true, if this broker is responsible, otherwise false
+	 */
+	private boolean handleResponsibility(String clientIdentifier, Location clientLocation) {
+		if (!brokerAreaManager.checkIfResponsibleForClientLocation(clientLocation)) {
+			// get responsible broker
+			BrokerInfo repBroker = brokerAreaManager.getOtherBrokerForClientLocation(clientLocation);
+
+			InternalServerMessage response = new InternalServerMessage(clientIdentifier,
+												 ControlPacketType.DISCONNECT,
+												 new DISCONNECTPayload(ReasonCode.WrongBroker, repBroker));
+			logger.debug("Not responsible for client {}, responsible broker is {}", clientIdentifier, repBroker);
+
+			response.getZMsg().send(processor);
+			return false;
+		}
+		return true;
 	}
 
 }

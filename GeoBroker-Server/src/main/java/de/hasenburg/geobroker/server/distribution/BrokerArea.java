@@ -2,13 +2,14 @@ package de.hasenburg.geobroker.server.distribution;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import de.hasenburg.geobroker.commons.model.BrokerInfo;
 import de.hasenburg.geobroker.commons.model.JSONable;
 import de.hasenburg.geobroker.commons.model.spatial.Geofence;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
 
 import java.util.Objects;
 
-class BrokerArea implements JSONable {
+public class BrokerArea implements JSONable {
 
 	@JsonProperty
 	private final BrokerInfo responsibleBroker;
@@ -16,7 +17,7 @@ class BrokerArea implements JSONable {
 	private final Geofence coveredArea;
 
 	@JsonCreator
-	BrokerArea(@JsonProperty("responsibleBroker") BrokerInfo responsibleBroker, @JsonProperty("coveredArea") Geofence coveredArea) {
+	public BrokerArea(@JsonProperty("responsibleBroker") BrokerInfo responsibleBroker, @JsonProperty("coveredArea") Geofence coveredArea) {
 		this.responsibleBroker = responsibleBroker;
 		this.coveredArea = coveredArea;
 	}

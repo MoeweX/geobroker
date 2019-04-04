@@ -11,5 +11,6 @@ public enum ReasonCode {
 	NoMatchingSubscribers,
 
 	// New Reason Codes
-	LocationUpdated
+	LocationUpdated,
+	WrongBroker
 }

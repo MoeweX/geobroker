@@ -1,5 +1,6 @@
 package de.hasenburg.geobroker.server.distribution;
 
+import de.hasenburg.geobroker.commons.model.BrokerInfo;
 import de.hasenburg.geobroker.commons.model.JSONable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

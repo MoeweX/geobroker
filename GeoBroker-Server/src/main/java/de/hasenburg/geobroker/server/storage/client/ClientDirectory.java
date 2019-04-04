@@ -38,7 +38,8 @@ public class ClientDirectory {
 	}
 
 	/**
-	 * Removes a client from the directory.
+	 * Removes a client from the directory. <br>
+	 * TODO B: the client's subscriptions should be removed from the TopicAndGeofenceMapper as well
 	 *
 	 * @param clientIdentifier of the to be removed client
 	 * @return true, if client existed before

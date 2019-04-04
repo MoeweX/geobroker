@@ -1,11 +1,13 @@
-package de.hasenburg.geobroker.server.distribution;
+package de.hasenburg.geobroker.commons.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import de.hasenburg.geobroker.commons.model.JSONable;
 
 import java.util.Objects;
 
+/**
+ * Stores information of a given broker: brokerId, publicly reachable server address and server port.
+ */
 public class BrokerInfo implements JSONable {
 
 	private final String brokerId;
@@ -14,7 +16,7 @@ public class BrokerInfo implements JSONable {
 	private final int port;
 
 	@JsonCreator
-	BrokerInfo(@JsonProperty("brokerId") String brokerId, @JsonProperty("address") String address,
+	public BrokerInfo(@JsonProperty("brokerId") String brokerId, @JsonProperty("address") String address,
 			   @JsonProperty("port") int port) {
 		this.brokerId = brokerId;
 		this.address = address;

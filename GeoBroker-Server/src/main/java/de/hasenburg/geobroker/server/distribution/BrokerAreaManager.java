@@ -1,5 +1,6 @@
 package de.hasenburg.geobroker.server.distribution;
 
+import de.hasenburg.geobroker.commons.model.BrokerInfo;
 import de.hasenburg.geobroker.commons.model.JSONable;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
 import org.apache.logging.log4j.LogManager;
@@ -42,6 +43,10 @@ public class BrokerAreaManager {
 		createFromJson(json);
 	}
 
+	public void updateOwnBrokerArea(BrokerArea ownArea) {
+		this.ownArea = ownArea;
+	}
+
 	public boolean checkIfResponsibleForClientLocation(Location clientLocation) {
 		return ownArea.ContainsLocation(clientLocation);
 	}
@@ -53,6 +58,14 @@ public class BrokerAreaManager {
 			}
 		}
 		return null;
+	}
+
+	public String getOwnBrokerId() {
+		return this.ownBrokerId;
+	}
+
+	public BrokerInfo getOwnBrokerInfo() {
+		return ownArea.getResponsibleBroker();
 	}
 
 	/*****************************************************************
