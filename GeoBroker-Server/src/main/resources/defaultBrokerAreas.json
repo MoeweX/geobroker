@@ -1,0 +1,22 @@
+[
+	{
+		"responsibleBroker" : {
+			"brokerId" : "broker",
+			"address" : "not important as we do everything",
+			"port" : 5559
+		},
+		"coveredArea" : {
+			"WKT" : "ENVELOPE (-180, 180, 90, -90)"
+		}
+	},
+	{
+		"responsibleBroker" : {
+			"brokerId" : "notUsedBroker",
+			"address" : "not important as overlaps responsible broker area",
+			"port" : 5559
+		},
+		"coveredArea" : {
+			"WKT" : "ENVELOPE (-1, 1, 1, -1)"
+		}
+	}
+]

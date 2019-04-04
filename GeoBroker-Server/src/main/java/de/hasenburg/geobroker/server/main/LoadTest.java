@@ -8,6 +8,7 @@ import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
 import de.hasenburg.geobroker.server.communication.ZMQProcessStarter;
 import de.hasenburg.geobroker.client.communication.InternalClientMessage;
 import de.hasenburg.geobroker.commons.model.message.Topic;
+import de.hasenburg.geobroker.server.distribution.BrokerAreaManager;
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory;
 import de.hasenburg.geobroker.commons.model.message.payloads.CONNECTPayload;
 import de.hasenburg.geobroker.commons.model.message.payloads.PINGREQPayload;
@@ -30,11 +31,11 @@ public class LoadTest {
 	ZMQProcessManager processManager;
 	ClientDirectory clientDirectory;
 
-	public static void main (String[] args) throws Exception {
-	    LoadTest loadTest = new LoadTest();
-	    loadTest.setUp();
-	    loadTest.loadTestOwnTopic();
-	    loadTest.tearDown();
+	public static void main(String[] args) throws Exception {
+		LoadTest loadTest = new LoadTest();
+		loadTest.setUp();
+		loadTest.loadTestOwnTopic();
+		loadTest.tearDown();
 	}
 
 	public void setUp() {
@@ -42,11 +43,21 @@ public class LoadTest {
 		BenchmarkHelper.startBenchmarking();
 		ClientDirectory clientDirectory = new ClientDirectory();
 		TopicAndGeofenceMapper topicAndGeofenceMapper = new TopicAndGeofenceMapper(new Configuration());
+		BrokerAreaManager brokerAreaManager = new BrokerAreaManager("broker");
+		brokerAreaManager.setup_DefaultFile();
 
 		processManager = new ZMQProcessManager();
 		ZMQProcessStarter.runZMQProcess_Server(processManager, "tcp://localhost", 5559, "broker");
-		ZMQProcessStarter.runZMQProcess_MessageProcessor(processManager, "message_processor1", clientDirectory, topicAndGeofenceMapper);
-		ZMQProcessStarter.runZMQProcess_MessageProcessor(processManager, "message_processor2", clientDirectory, topicAndGeofenceMapper);
+		ZMQProcessStarter.runZMQProcess_MessageProcessor(processManager,
+														 "message_processor1",
+														 clientDirectory,
+														 topicAndGeofenceMapper,
+														 brokerAreaManager);
+		ZMQProcessStarter.runZMQProcess_MessageProcessor(processManager,
+														 "message_processor2",
+														 clientDirectory,
+														 topicAndGeofenceMapper,
+														 brokerAreaManager);
 	}
 
 	public void tearDown() {
@@ -97,10 +108,15 @@ public class LoadTest {
 			this.simpleClient = new SimpleClient(null, address, port, processManager);
 			this.plannedMessageRounds = messagesToSend;
 
-			simpleClient.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.CONNECT, new CONNECTPayload(location)));
+			simpleClient.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.CONNECT,
+																			 new CONNECTPayload(location)));
 			logger.info(simpleClient.receiveInternalClientMessage());
 			simpleClient.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.SUBSCRIBE,
-					new SUBSCRIBEPayload(new Topic(simpleClient.getIdentity()), Geofence.circle(location, 0.0))));
+																			 new SUBSCRIBEPayload(new Topic(simpleClient
+																													.getIdentity()),
+																								  Geofence.circle(
+																										  location,
+																										  0.0))));
 			logger.info(simpleClient.receiveInternalClientMessage());
 		}
 
@@ -127,28 +143,31 @@ public class LoadTest {
 
 			while (actualMessageRounds <= plannedMessageRounds) {
 
-				double percentComplete = (double) actualMessageRounds/ plannedMessageRounds * 100;
+				double percentComplete = (double) actualMessageRounds / plannedMessageRounds * 100;
 				if (percentComplete % 5 == 0) {
 					logger.info("Finished {}% of all planned message rounds", percentComplete);
 				}
 
 				long time = System.nanoTime();
-				sendMessageAndProcessResponses(new InternalClientMessage(ControlPacketType.PINGREQ, new PINGREQPayload(location)), 1);
+				sendMessageAndProcessResponses(new InternalClientMessage(ControlPacketType.PINGREQ,
+																		 new PINGREQPayload(location)), 1);
 				BenchmarkHelper.addEntry("clientPINGREQ", System.nanoTime() - time);
 				time = System.nanoTime();
 				sendMessageAndProcessResponses(new InternalClientMessage(ControlPacketType.PUBLISH,
-						new PUBLISHPayload(
-								new Topic(simpleClient.getIdentity()),
-								Geofence.circle(location, 0.0),
-								"Some Test content that is being published.")),
-						2);
+																		 new PUBLISHPayload(new Topic(simpleClient.getIdentity()),
+																							Geofence.circle(location,
+																											0.0),
+																							"Some Test content that is being published.")),
+											   2);
 				BenchmarkHelper.addEntry("clientPUBLISH", System.nanoTime() - time);
 
 				actualMessageRounds++;
 			}
 
 			logger.info("Client {} finished {} message rounds in {} milliseconds",
-					simpleClient.getIdentity(), plannedMessageRounds, System.currentTimeMillis() - start);
+						simpleClient.getIdentity(),
+						plannedMessageRounds,
+						System.currentTimeMillis() - start);
 
 			logger.info("Results {}: {}", simpleClient.getIdentity(), numbers);
 			simpleClient.tearDownClient();

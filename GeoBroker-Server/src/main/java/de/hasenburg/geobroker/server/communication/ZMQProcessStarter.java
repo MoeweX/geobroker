@@ -1,6 +1,7 @@
 package de.hasenburg.geobroker.server.communication;
 
 import de.hasenburg.geobroker.commons.communication.ZMQProcessManager;
+import de.hasenburg.geobroker.server.distribution.BrokerAreaManager;
 import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper;
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory;
 import org.apache.logging.log4j.LogManager;
@@ -12,11 +13,13 @@ public class ZMQProcessStarter {
 
 	public static void runZMQProcess_MessageProcessor(ZMQProcessManager processManager, String identity,
 													  ClientDirectory clientDirectory,
-													  TopicAndGeofenceMapper topicAndGeofenceMapper) {
+													  TopicAndGeofenceMapper topicAndGeofenceMapper,
+													  BrokerAreaManager brokerAreaManager) {
 		processManager.submitZMQProcess(identity,
 										new ZMQProcess_MessageProcessor(identity,
 																		clientDirectory,
-																		topicAndGeofenceMapper));
+																		topicAndGeofenceMapper,
+																		brokerAreaManager));
 	}
 
 	public static void runZMQProcess_Server(ZMQProcessManager processManager, String address, int port,
