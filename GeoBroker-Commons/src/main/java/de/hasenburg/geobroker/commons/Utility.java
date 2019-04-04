@@ -4,6 +4,7 @@ import de.hasenburg.geobroker.commons.model.JSONable;
 import de.hasenburg.geobroker.commons.model.message.*;
 import de.hasenburg.geobroker.commons.exceptions.CommunicatorException;
 import de.hasenburg.geobroker.commons.model.message.payloads.*;
+import de.hasenburg.geobroker.commons.model.message.payloads.BrokerForwardPublishPayload;
 import me.atrox.haikunator.Haikunator;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -19,6 +20,7 @@ public class Utility {
 	private static final Logger logger = LogManager.getLogger();
 	private static Random r = new Random();
 	private static Haikunator haikunator;
+
 	static {
 		haikunator = new Haikunator().setRandom(r);
 	}
@@ -58,7 +60,6 @@ public class Utility {
 	}
 
 	/**
-	 *
 	 * @param bound - int, must be > 0
 	 * @return a random int between 0 (inclusive) and bound (exclusive)
 	 */
@@ -91,8 +92,8 @@ public class Utility {
 	}
 
 	/**
-	 * Returns payload corresponding to the control packet type in the form of an abstract payload.
-	 * Checks whether all fields are not null.
+	 * Returns payload corresponding to the control packet type in the form of an abstract payload. Checks whether all
+	 * fields are not null.
 	 *
 	 * @throws CommunicatorException if control packet type is not supported or a field is null.
 	 */
@@ -136,8 +137,7 @@ public class Utility {
 				}
 				break;
 			case PUBACK:
-				PUBACKPayload pubackPayload =
-						JSONable.fromJSON(s, PUBACKPayload.class).orElseGet(PUBACKPayload::new);
+				PUBACKPayload pubackPayload = JSONable.fromJSON(s, PUBACKPayload.class).orElseGet(PUBACKPayload::new);
 				if (!pubackPayload.nullField()) {
 					return pubackPayload;
 				}
@@ -150,8 +150,7 @@ public class Utility {
 				}
 				break;
 			case SUBACK:
-				SUBACKPayload subackPayload =
-						JSONable.fromJSON(s, SUBACKPayload.class).orElseGet(SUBACKPayload::new);
+				SUBACKPayload subackPayload = JSONable.fromJSON(s, SUBACKPayload.class).orElseGet(SUBACKPayload::new);
 				if (!subackPayload.nullField()) {
 					return subackPayload;
 				}
@@ -163,11 +162,18 @@ public class Utility {
 					return subscribePayload;
 				}
 				break;
+			case BrokerForwardPublish:
+				BrokerForwardPublishPayload brokerForwardPublishPayload = JSONable
+						.fromJSON(s, BrokerForwardPublishPayload.class).orElseGet(BrokerForwardPublishPayload::new);
+				if (!brokerForwardPublishPayload.nullField()) {
+					return brokerForwardPublishPayload;
+				}
+				break;
 			default:
 				throw new CommunicatorException("ControlPacketType " + controlPacketType.name() + " is not supported");
 		}
 
-		throw new CommunicatorException("Some of the payloads fields are null.");
+		throw new CommunicatorException("Some of the payloads fields that may not be null are null");
 	}
 
 	public static String generateClientOrderBackendString(String identity) {
