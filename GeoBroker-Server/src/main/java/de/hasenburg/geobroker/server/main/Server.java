@@ -22,7 +22,7 @@ public class Server {
 		brokerAreaManager.setup_DefaultFile();
 
 		ZMQProcessManager processManager = new ZMQProcessManager();
-		ZMQProcessStarter.runZMQProcess_Server(processManager, "tcp://localhost", configuration.getPort(), "broker");
+		ZMQProcessStarter.runZMQProcess_Server(processManager, "tcp://localhost", configuration.getPort(), configuration.getBrokerId() + "-server");
 		for (int i = 1; i <= configuration.getMessageProcessors(); i++) {
 			ZMQProcessStarter.runZMQProcess_MessageProcessor(processManager,
 															 "message_processor-" + i,

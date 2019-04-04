@@ -134,7 +134,7 @@ public class ZMQProcess_BenchmarkClient extends ZMQProcess {
 
 				boolean valid = true;
 				if (order.size() < 1) {
-					logger.warn("Order has the wrong length {}" + order);
+					logger.warn("Order has the wrong length {}", order);
 					valid = false;
 				}
 				String orderType = order.popString();

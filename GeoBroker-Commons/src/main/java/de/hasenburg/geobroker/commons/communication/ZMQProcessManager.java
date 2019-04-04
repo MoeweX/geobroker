@@ -72,6 +72,11 @@ public class ZMQProcessManager {
 		return true;
 	}
 
+	/**
+	 * TODO F: commands are only received by processes that are polling the socket created with
+	 * ZMQControlUtility.connectWithPoller(context, poller, identity); -> would be good to have a base class that
+	 * enforces such a behavior
+	 */
 	public void sendKillCommandToZMQProcess(String identity) {
 		logger.debug("Sending kill command to {}", identity);
 		ZMQControlUtility.sendZMQControlCommand(zmqController, identity, ZMQControlUtility.ZMQControlCommand.KILL);
