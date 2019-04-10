@@ -1,80 +1,82 @@
 package de.hasenburg.geobroker.server.communication;
 
-import de.hasenburg.geobroker.commons.BenchmarkHelper;
 import de.hasenburg.geobroker.commons.communication.ZMQControlUtility;
 import de.hasenburg.geobroker.commons.communication.ZMQProcess;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.SocketType;
-import org.zeromq.ZMQ;
+import org.zeromq.ZContext;
+import org.zeromq.ZMQ.Socket;
 import org.zeromq.ZMsg;
+
+import java.util.Arrays;
+import java.util.List;
 
 class ZMQProcess_Server extends ZMQProcess {
 
 	private static final Logger logger = LogManager.getLogger();
-	public static final String SERVER_INPROC_ADDRESS = "inproc://server";
-	private static final int TIMEOUT_SECONDS = 10; // logs when not received in time, but repeats
 
 	// Address and port of server frontend
 	private String address;
 	private int port;
 
-	protected ZMQProcess_Server(String address, int port, String identity) {
+	// Address of server backend
+	static final String SERVER_INPROC_ADDRESS = "inproc://server";
+
+	// socket indices
+	private final int FRONTEND_INDEX = 0;
+	private final int BACKEND_INDEX = 1;
+
+	ZMQProcess_Server(String address, int port, String identity) {
 		super(identity);
 		this.address = address;
 		this.port = port;
-		this.identity = identity;
 	}
 
 	@Override
-	public void run() {
-		Thread.currentThread().setName(identity);
+	protected List<Socket> bindAndConnectSockets(ZContext context) {
+		Socket[] socketArray = new Socket[2];
 
-		ZMQ.Socket frontend = context.createSocket(SocketType.ROUTER);
+		Socket frontend = context.createSocket(SocketType.ROUTER);
 		frontend.bind(address + ":" + port);
 		frontend.setIdentity(identity.getBytes());
 		frontend.setSendTimeOut(1);
+		socketArray[FRONTEND_INDEX] = frontend;
 
-		ZMQ.Socket backend = context.createSocket(SocketType.DEALER);
+		Socket backend = context.createSocket(SocketType.DEALER);
 		backend.bind(SERVER_INPROC_ADDRESS);
 		backend.setSendTimeOut(1);
+		socketArray[BACKEND_INDEX] = backend;
 
-		ZMQ.Poller poller = context.createPoller(1);
-		int zmqControlIndex = ZMQControlUtility.connectWithPoller(context, poller, identity);
-		poller.register(frontend, ZMQ.Poller.POLLIN);
-		poller.register(backend, ZMQ.Poller.POLLIN);
+		return Arrays.asList(socketArray);
+	}
 
-		while (!Thread.currentThread().isInterrupted()) {
-			long time = System.nanoTime();
-			logger.trace("Waiting {}s for a message", TIMEOUT_SECONDS);
-			poller.poll(TIMEOUT_SECONDS * 1000);
+	@Override
+	protected void processZMQControlCommandOtherThanKill(ZMQControlUtility.ZMQControlCommand zmqControlCommand) {
+		// no other commands are of interest
+	}
 
-			if (poller.pollin(zmqControlIndex)) {
-				if (ZMQControlUtility.getCommand(poller, zmqControlIndex)
-						.equals(ZMQControlUtility.ZMQControlCommand.KILL)) {
-					break;
-				}
-			} else if (poller.pollin(2)) { // first check outgoing messages to clients
-				ZMsg msg = ZMsg.recvMsg(backend);
-				if (!msg.send(frontend)) {
+	@Override
+	protected void processZMsg(int socketIndex, ZMsg msg) {
+		switch (socketIndex) {
+			case BACKEND_INDEX:
+				if (!msg.send(sockets.get(FRONTEND_INDEX))) {
 					logger.warn("Dropping response to client as HWM reached.");
 				}
-			} else if (poller.pollin(1)) { // only accept new, if no outgoing messages pending
-				ZMsg msg = ZMsg.recvMsg(frontend);
-				if (!msg.send(backend)) {
+				break;
+			case FRONTEND_INDEX:
+				if (!msg.send(sockets.get(BACKEND_INDEX))) {
 					logger.warn("Dropping client request as HWM reached.");
 				}
-			}
-			BenchmarkHelper.addEntry("serverForward", System.nanoTime() - time);
-		} // end while loop
+				break;
+			default:
+				logger.error("Cannot process message for socket at index {}, as this index is not known.", socketIndex);
+		}
+	}
 
-		// sub control socket
-		context.destroySocket(poller.getSocket(0));
-
-		// other sockets
-		context.destroySocket(frontend);
-		context.destroySocket(backend);
-		logger.info("Shut down ZMQProcess_Server, frontend and backend sockets were destroyed.");
+	@Override
+	protected void shutdownCompleted() {
+		logger.info("Shut down ZMQProcess_Server {}", identity);
 	}
 
 }

@@ -6,26 +6,26 @@ import de.hasenburg.geobroker.commons.communication.ZMQProcess;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.SocketType;
+import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
+import org.zeromq.ZMQ.Socket;
 import org.zeromq.ZMsg;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 /**
- * This client continuously receives messages from the connected server and writes them into a txt file.
- * The txt file is located at ./<identity>.txt
- *
- * When the client receives ORDERS.SEND, it sends the attached message to the server.
+ * This client continuously receives messages from the connected server and writes them into a txt file. The txt file is
+ * located at ./<identity>.txt
  */
 public class ZMQProcess_StorageClient extends ZMQProcess {
 
 	public enum ORDERS {
-		SEND,
-		CONFIRM,
-		FAIL
+		SEND, CONFIRM, FAIL
 	}
 
 	private static final Logger logger = LogManager.getLogger();
@@ -41,8 +41,11 @@ public class ZMQProcess_StorageClient extends ZMQProcess {
 	// Writer
 	private BufferedWriter writer;
 
-	protected ZMQProcess_StorageClient(String address, int port, String identity)
-			throws IOException {
+	// socket indices
+	private final int ORDER_INDEX = 0;
+	private final int SERVER_INDEX = 1;
+
+	ZMQProcess_StorageClient(String address, int port, String identity) throws IOException {
 		super(identity);
 		this.address = address;
 		this.port = port;
@@ -52,35 +55,33 @@ public class ZMQProcess_StorageClient extends ZMQProcess {
 	}
 
 	@Override
-	public void run() {
-		Thread.currentThread().setName(identity);
+	protected List<Socket> bindAndConnectSockets(ZContext context) {
+		Socket[] socketArray = new ZMQ.Socket[2];
 
-		ZMQ.Socket orders = context.createSocket(SocketType.REP);
+		Socket orders = context.createSocket(SocketType.REP);
 		orders.bind(CLIENT_ORDER_BACKEND);
+		socketArray[ORDER_INDEX] = orders;
 
-		ZMQ.Socket serverSocket = context.createSocket(SocketType.DEALER);
+		Socket serverSocket = context.createSocket(SocketType.DEALER);
 		serverSocket.setIdentity(identity.getBytes());
 		serverSocket.connect(address + ":" + port);
+		socketArray[SERVER_INDEX] = serverSocket;
 
-		ZMQ.Poller poller = context.createPoller(3);
-		int zmqControlIndex = ZMQControlUtility.connectWithPoller(context, poller, identity); // 0
-		poller.register(serverSocket, ZMQ.Poller.POLLIN); // 1
-		poller.register(orders, ZMQ.Poller.POLLIN); // 2
+		return Arrays.asList(socketArray);
+	}
 
-		while (!Thread.currentThread().isInterrupted()) {
+	@Override
+	protected void processZMQControlCommandOtherThanKill(ZMQControlUtility.ZMQControlCommand zmqControlCommand) {
+		// no other commands are of interest
+	}
 
-			logger.trace("ZMQProcess_StorageClient waiting for orders");
-			poller.poll(TIMEOUT_SECONDS * 1000);
+	@Override
+	protected void processZMsg(int socketIndex, ZMsg msg) {
+		switch (socketIndex) {
+			case SERVER_INDEX: // got a reply from the server
 
-			if (poller.pollin(zmqControlIndex)) {
-				if (ZMQControlUtility.getCommand(poller, zmqControlIndex)
-						.equals(ZMQControlUtility.ZMQControlCommand.KILL)) {
-					break;
-				}
-			} else if (poller.pollin(1)) { // check if we received a message
 				logger.trace("Received a message, writing it to file.");
-				Optional<InternalClientMessage> serverMessage =
-						InternalClientMessage.buildMessage(ZMsg.recvMsg(serverSocket, true));
+				Optional<InternalClientMessage> serverMessage = InternalClientMessage.buildMessage(msg);
 				if (serverMessage.isPresent()) {
 					try {
 						writer.write(serverMessage.get().toString());
@@ -91,25 +92,25 @@ public class ZMQProcess_StorageClient extends ZMQProcess {
 					logger.error("Server message was malformed or empty, so not written to file");
 				}
 
-			} else if (poller.pollin(2)) { // check if we got the order to send a message
-				ZMsg order = ZMsg.recvMsg(orders);
+				break;
+			case ORDER_INDEX: // got the order to do something
 
 				boolean valid = true;
-				if (order.size() < 1) {
-					logger.warn("Order has the wrong length {}", order);
+				if (msg.size() < 1) {
+					logger.warn("Order has the wrong length {}", msg);
 					valid = false;
 				}
-				String orderType = order.popString();
+				String orderType = msg.popString();
 
 				if (valid && ORDERS.SEND.name().equals(orderType)) {
 					logger.trace("Sending message to server");
 
 					//the zMsg should consist of an InternalClientMessage only, as other entries are popped
-					Optional<InternalClientMessage> clientMessageO = InternalClientMessage.buildMessage(order);
+					Optional<InternalClientMessage> clientMessageO = InternalClientMessage.buildMessage(msg);
 
 					if (clientMessageO.isPresent()) {
-						clientMessageO.get().getZMsg().send(serverSocket);
-						ZMsg.newStringMsg(ORDERS.CONFIRM.name()).send(orders);
+						clientMessageO.get().getZMsg().send(sockets.get(SERVER_INDEX));
+						ZMsg.newStringMsg(ORDERS.CONFIRM.name()).send(sockets.get(ORDER_INDEX));
 					} else {
 						logger.warn("Cannot run send as given message is incompatible");
 						valid = false;
@@ -117,11 +118,17 @@ public class ZMQProcess_StorageClient extends ZMQProcess {
 				}
 				if (!valid || !ORDERS.SEND.name().equals(orderType)) {
 					// send order response if not already done
-					ZMsg.newStringMsg(ORDERS.FAIL.name()).send(orders);
+					ZMsg.newStringMsg(ORDERS.FAIL.name()).send(sockets.get(ORDER_INDEX));
 				}
-			}
-		} // end while loop
 
+				break;
+			default:
+				logger.error("Cannot process message for socket at index {}, as this index is not known.", socketIndex);
+		}
+	}
+
+	@Override
+	protected void shutdownCompleted() {
 		// flush and close writer
 		try {
 			writer.flush();
@@ -130,13 +137,7 @@ public class ZMQProcess_StorageClient extends ZMQProcess {
 			logger.error("Could not flush and close writer", e);
 		}
 
-		// sub control socket
-		context.destroySocket(poller.getSocket(0));
-
-		// other sockets
-		context.destroySocket(orders);
-		context.destroySocket(serverSocket);
-		logger.info("Shut down ZMQProcess_StorageClient, orders and server sockets were destroyed.");
+		logger.info("Shut down ZMQProcess_StorageClient {}", identity);
 	}
 
 }

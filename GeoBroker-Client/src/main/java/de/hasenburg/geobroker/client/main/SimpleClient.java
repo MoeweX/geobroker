@@ -90,6 +90,9 @@ public class SimpleClient {
 		InternalClientMessage response = client.receiveInternalClientMessage();
 		logger.info("Received server answer: {}", response);
 
+		// wait 5 seconds
+		Utility.sleepNoLog(5000, 0);
+
 		// disconnect
 		clientMessage = new InternalClientMessage(ControlPacketType.DISCONNECT, new DISCONNECTPayload(
 				ReasonCode.NormalDisconnection));

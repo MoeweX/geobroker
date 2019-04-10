@@ -18,7 +18,7 @@ public class ZMQControlUtility {
 
 	public enum ZMQControlCommand {
 		NONE,
-		KILL
+		KILL,
 	}
 
 	/**
@@ -53,6 +53,8 @@ public class ZMQControlUtility {
 	}
 
 	/**
+	 * Polls the poller, gets a command and drops the rest of the ZMsg.
+	 *
 	 * @return the command or NONE if none exists or could not be parsed
 	 */
 	public static ZMQControlCommand getCommand(ZMQ.Poller poller, int index) {

@@ -1,6 +1,5 @@
 package de.hasenburg.geobroker.server.communication;
 
-import de.hasenburg.geobroker.commons.BenchmarkHelper;
 import de.hasenburg.geobroker.commons.communication.ZMQControlUtility;
 import de.hasenburg.geobroker.commons.communication.ZMQProcess;
 import de.hasenburg.geobroker.commons.model.BrokerInfo;
@@ -16,22 +15,27 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.SocketType;
-import org.zeromq.ZMQ;
+import org.zeromq.ZContext;
+import org.zeromq.ZMQ.Socket;
 import org.zeromq.ZMsg;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 class ZMQProcess_MessageProcessor extends ZMQProcess {
 
 	private static final Logger logger = LogManager.getLogger();
-	private static final int TIMEOUT_SECONDS = 10; // logs when not received in time, but repeats
 
 	private final ClientDirectory clientDirectory;
 	private final TopicAndGeofenceMapper topicAndGeofenceMapper;
 	private final BrokerAreaManager brokerAreaManager;
 
-	private ZMQ.Socket processor;
+	private int numberOfProcessedMessages = 0;
+
+	// socket index
+	private final int PROCESSOR_INDEX = 0;
 
 	ZMQProcess_MessageProcessor(String identity, ClientDirectory clientDirectory,
 								TopicAndGeofenceMapper topicAndGeofenceMapper, BrokerAreaManager brokerAreaManager) {
@@ -42,81 +46,65 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 	}
 
 	@Override
-	public void run() {
-		Thread.currentThread().setName(identity);
+	protected List<Socket> bindAndConnectSockets(ZContext context) {
+		Socket[] socketArray = new Socket[1];
 
-		processor = context.createSocket(SocketType.DEALER);
+		Socket processor = context.createSocket(SocketType.DEALER);
 		processor.setIdentity(identity.getBytes());
 		processor.connect(ZMQProcess_Server.SERVER_INPROC_ADDRESS);
+		socketArray[PROCESSOR_INDEX] = processor;
 
-		ZMQ.Poller poller = context.createPoller(1);
-		int zmqControlIndex = ZMQControlUtility.connectWithPoller(context, poller, identity);
-		poller.register(processor, ZMQ.Poller.POLLIN);
+		return Arrays.asList(socketArray);
+	}
 
-		int number = 1;
+	@Override
+	protected void processZMQControlCommandOtherThanKill(ZMQControlUtility.ZMQControlCommand zmqControlCommand) {
+		// no other commands are of interest
+	}
 
-		while (!Thread.currentThread().isInterrupted()) {
+	@Override
+	protected void processZMsg(int socketIndex, ZMsg msg) {
 
-			logger.trace("ZMQProcess_MessageProcessor {} waiting {}s for a message",
-						 new String(processor.getIdentity()),
-						 TIMEOUT_SECONDS);
-			poller.poll(TIMEOUT_SECONDS * 1000);
+		if (socketIndex != PROCESSOR_INDEX) {
+			logger.error("Cannot process message for socket at index {}, as this index is not known.", socketIndex);
+		}
 
-			if (poller.pollin(zmqControlIndex)) {
-				if (ZMQControlUtility
-						.getCommand(poller, zmqControlIndex)
-						.equals(ZMQControlUtility.ZMQControlCommand.KILL)) {
+		// start processing the message
+		numberOfProcessedMessages++;
+
+		Optional<InternalServerMessage> messageO = InternalServerMessage.buildMessage(msg);
+		logger.trace("ZMQProcess_MessageProcessor {} processing message number {}", identity, numberOfProcessedMessages);
+
+		if (messageO.isPresent()) {
+			InternalServerMessage message = messageO.get();
+			switch (message.getControlPacketType()) {
+				case CONNECT:
+					processCONNECT(message);
 					break;
-				}
-			} else if (poller.pollin(1)) {
-				ZMsg zMsg = ZMsg.recvMsg(processor);
-				number++;
-				Optional<InternalServerMessage> messageO = InternalServerMessage.buildMessage(zMsg);
-				logger.debug("ZMQProcess_MessageProcessor {} processing message number {}",
-							 new String(processor.getIdentity()),
-							 number);
-				if (messageO.isPresent()) {
-					InternalServerMessage message = messageO.get();
-					long time = System.nanoTime();
-					switch (message.getControlPacketType()) {
-						case CONNECT:
-							processCONNECT(message);
-							BenchmarkHelper.addEntry("processCONNECT", System.nanoTime() - time);
-							break;
-						case DISCONNECT:
-							processDISCONNECT(message);
-							BenchmarkHelper.addEntry("processDISCONNECT", System.nanoTime() - time);
-							break;
-						case PINGREQ:
-							processPINGREQ(message);
-							BenchmarkHelper.addEntry("processPINGREQ", System.nanoTime() - time);
-							break;
-						case SUBSCRIBE:
-							processSUBSCRIBEforConnection(message);
-							BenchmarkHelper.addEntry("processSUBSCRIBEforConnection", System.nanoTime() - time);
-							break;
-						case PUBLISH:
-							processPublish(message);
-							BenchmarkHelper.addEntry("processPublish", System.nanoTime() - time);
-							break;
-						default:
-							logger.warn("Cannot process message {}", message.toString());
-					}
-				} else {
-					logger.warn("Received an incompatible message: {}", zMsg);
-				}
-			} else {
-				logger.debug("Did not receive a message for {}s", TIMEOUT_SECONDS);
+				case DISCONNECT:
+					processDISCONNECT(message);
+					break;
+				case PINGREQ:
+					processPINGREQ(message);
+					break;
+				case SUBSCRIBE:
+					processSUBSCRIBEforConnection(message);
+					break;
+				case PUBLISH:
+					processPublish(message);
+					break;
+				default:
+					logger.warn("Cannot process message {}", message.toString());
 			}
+		} else {
+			logger.warn("Received an incompatible message: {}", msg);
+		}
 
-		} // end while loop
+	}
 
-		// sub control socket
-		context.destroySocket(poller.getSocket(0));
-
-		// processor socket
-		context.destroySocket(processor);
-		logger.info("Shut down ZMQProcess_MessageProcessor, socket were destroyed.");
+	@Override
+	protected void shutdownCompleted() {
+		logger.info("Shut down ZMQProcess_MessageProcessor {}", identity);
 	}
 
 	/*****************************************************************
@@ -151,7 +139,7 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 		}
 
 		logger.trace("Sending response " + response);
-		response.getZMsg().send(processor);
+		response.getZMsg().send(sockets.get(PROCESSOR_INDEX));
 	}
 
 	@SuppressWarnings("OptionalGetWithoutIsPresent")
@@ -194,7 +182,7 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 		}
 
 		logger.trace("Sending response " + response);
-		response.getZMsg().send(processor);
+		response.getZMsg().send(sockets.get(PROCESSOR_INDEX));
 	}
 
 	@SuppressWarnings("OptionalGetWithoutIsPresent")
@@ -233,7 +221,7 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 		}
 
 		logger.trace("Sending response " + response);
-		response.getZMsg().send(processor);
+		response.getZMsg().send(sockets.get(PROCESSOR_INDEX));
 	}
 
 	public void processUNSUBSCRIBEforConnection(InternalServerMessage message) {
@@ -266,7 +254,7 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 				InternalServerMessage toPublish =
 						new InternalServerMessage(subscriberClientIdentifier, ControlPacketType.PUBLISH, payload);
 				logger.trace("Publishing " + toPublish);
-				toPublish.getZMsg().send(processor);
+				toPublish.getZMsg().send(sockets.get(PROCESSOR_INDEX));
 			}
 
 			if (subscriptionIds.isEmpty()) {
@@ -289,7 +277,7 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 
 		// send response to publisher
 		logger.trace("Sending response " + response);
-		response.getZMsg().send(processor);
+		response.getZMsg().send(sockets.get(PROCESSOR_INDEX));
 	}
 
 	/*****************************************************************
@@ -313,7 +301,7 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 												 new DISCONNECTPayload(ReasonCode.WrongBroker, repBroker));
 			logger.debug("Not responsible for client {}, responsible broker is {}", clientIdentifier, repBroker);
 
-			response.getZMsg().send(processor);
+			response.getZMsg().send(sockets.get(PROCESSOR_INDEX));
 			return false;
 		}
 		return true;
