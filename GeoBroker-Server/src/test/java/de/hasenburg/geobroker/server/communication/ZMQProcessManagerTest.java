@@ -1,5 +1,6 @@
 package de.hasenburg.geobroker.server.communication;
 
+import de.hasenburg.geobroker.commons.communication.ZMQControlUtility;
 import de.hasenburg.geobroker.commons.communication.ZMQProcessManager;
 import de.hasenburg.geobroker.server.distribution.BrokerAreaManager;
 import de.hasenburg.geobroker.server.main.Configuration;
@@ -47,7 +48,8 @@ public class ZMQProcessManagerTest {
 		logger.info("Started two message processor processes");
 
 		// kill 1
-		pm.sendKillCommandToZMQProcess("Process 1");
+		pm.sendCommandToZMQProcess("Process 1", ZMQControlUtility.ZMQControlCommand.KILL);
+
 		Utility.sleepNoLog(100, 0);
 		assertFalse(pm.getIncompleteZMQProcesses().contains("Process 1"));
 		assertTrue(pm.getIncompleteZMQProcesses().contains("Process 2"));

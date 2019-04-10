@@ -3,8 +3,6 @@ package de.hasenburg.geobroker.client.communication;
 import de.hasenburg.geobroker.commons.Utility;
 import de.hasenburg.geobroker.commons.communication.ZMQControlUtility;
 import de.hasenburg.geobroker.commons.communication.ZMQProcess;
-import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
-import de.hasenburg.geobroker.commons.model.message.payloads.PUBLISHPayload;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.SocketType;
@@ -65,7 +63,7 @@ public class ZMQProcess_SimpleClient extends ZMQProcess {
 	}
 
 	@Override
-	protected void processZMQControlCommandOtherThanKill(ZMQControlUtility.ZMQControlCommand zmqControlCommand) {
+	protected void processZMQControlCommandOtherThanKill(ZMQControlUtility.ZMQControlCommand zmqControlCommand, ZMsg msg) {
 		// no other commands are of interest
 	}
 

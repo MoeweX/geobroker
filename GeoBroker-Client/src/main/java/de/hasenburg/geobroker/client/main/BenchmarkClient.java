@@ -1,6 +1,7 @@
 package de.hasenburg.geobroker.client.main;
 
 import de.hasenburg.geobroker.commons.Utility;
+import de.hasenburg.geobroker.commons.communication.ZMQControlUtility;
 import de.hasenburg.geobroker.commons.communication.ZMQProcessManager;
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
 import de.hasenburg.geobroker.client.communication.ZMQProcessStarter;
@@ -49,7 +50,7 @@ public class BenchmarkClient {
 	public void tearDownClient() {
 		orderSocket.setLinger(0);
 		orderSocket.close();
-		processManager.sendKillCommandToZMQProcess(getIdentity());
+		processManager.sendCommandToZMQProcess(getIdentity(), ZMQControlUtility.ZMQControlCommand.KILL);
 	}
 
 	public ZMsg sendInternalClientMessage(InternalClientMessage message) {

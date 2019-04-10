@@ -94,7 +94,7 @@ public class ZMQProcess_BenchmarkClient extends ZMQProcess {
 	}
 
 	@Override
-	protected void processZMQControlCommandOtherThanKill(ZMQControlUtility.ZMQControlCommand zmqControlCommand) {
+	protected void processZMQControlCommandOtherThanKill(ZMQControlUtility.ZMQControlCommand zmqControlCommand, ZMsg msg) {
 
 	}
 

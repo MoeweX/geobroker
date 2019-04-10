@@ -58,7 +58,7 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 	}
 
 	@Override
-	protected void processZMQControlCommandOtherThanKill(ZMQControlUtility.ZMQControlCommand zmqControlCommand) {
+	protected void processZMQControlCommandOtherThanKill(ZMQControlUtility.ZMQControlCommand zmqControlCommand, ZMsg msg) {
 		// no other commands are of interest
 	}
 

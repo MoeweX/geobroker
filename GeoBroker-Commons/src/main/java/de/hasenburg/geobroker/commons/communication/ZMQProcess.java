@@ -1,5 +1,6 @@
 package de.hasenburg.geobroker.commons.communication;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.ZContext;
@@ -59,12 +60,12 @@ public abstract class ZMQProcess implements Runnable {
 			poller.poll(TIMEOUT_SECONDS * 1000);
 
 			if (poller.pollin(zmqControlIndex)) {
-				ZMQControlUtility.ZMQControlCommand zmqControlCommand =
-						ZMQControlUtility.getCommand(poller, zmqControlIndex);
-				if (ZMQControlUtility.ZMQControlCommand.KILL.equals(zmqControlCommand)) {
+				Pair<ZMQControlUtility.ZMQControlCommand, ZMsg> pair =
+						ZMQControlUtility.getCommandAndMsg(poller, zmqControlIndex);
+				if (ZMQControlUtility.ZMQControlCommand.KILL.equals(pair.getLeft())) {
 					break; // break out of while loop, time to shut down
 				} else {
-					processZMQControlCommandOtherThanKill(zmqControlCommand);
+					processZMQControlCommandOtherThanKill(pair.getLeft(), pair.getRight());
 				}
 			} else {
 				// poll each socket
@@ -92,8 +93,8 @@ public abstract class ZMQProcess implements Runnable {
 
 	protected abstract List<Socket> bindAndConnectSockets(ZContext context);
 
-	protected abstract void processZMQControlCommandOtherThanKill(
-			ZMQControlUtility.ZMQControlCommand zmqControlCommand);
+	protected abstract void processZMQControlCommandOtherThanKill(ZMQControlUtility.ZMQControlCommand zmqControlCommand,
+																  ZMsg msg);
 
 	protected abstract void processZMsg(int socketIndex, ZMsg msg);
 

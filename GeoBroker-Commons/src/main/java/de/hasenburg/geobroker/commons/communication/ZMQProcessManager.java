@@ -5,12 +5,15 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
+import org.zeromq.ZMsg;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class ZMQProcessManager {
 
@@ -42,7 +45,7 @@ public class ZMQProcessManager {
 	public boolean tearDown(int timeout) {
 		// send kill command to all
 		List<String> toKill = getIncompleteZMQProcesses();
-		toKill.forEach(identity -> sendKillCommandToZMQProcess(identity));
+		toKill.forEach(identity -> sendCommandToZMQProcess(identity, ZMQControlUtility.ZMQControlCommand.KILL));
 
 		int tries = 0;
 		while (tries < timeout) {
@@ -72,14 +75,14 @@ public class ZMQProcessManager {
 		return true;
 	}
 
-	/**
-	 * TODO F: commands are only received by processes that are polling the socket created with
-	 * ZMQControlUtility.connectWithPoller(context, poller, identity); -> would be good to have a base class that
-	 * enforces such a behavior
-	 */
-	public void sendKillCommandToZMQProcess(String identity) {
-		logger.debug("Sending kill command to {}", identity);
-		ZMQControlUtility.sendZMQControlCommand(zmqController, identity, ZMQControlUtility.ZMQControlCommand.KILL);
+	public void sendCommandToZMQProcess(String targetProcessIdentity, ZMQControlUtility.ZMQControlCommand command) {
+		logger.trace("Sending {} command to {}, no message appended", command, targetProcessIdentity);
+		sendCommandToZMQProcess(targetProcessIdentity, command, null);
+	}
+
+	public void sendCommandToZMQProcess(String targetProcessIdentity, ZMQControlUtility.ZMQControlCommand command, ZMsg msg) {
+		logger.trace("Sending {} command to {}, message is {}", command, targetProcessIdentity, msg);
+		ZMQControlUtility.sendZMQControlCommand(zmqController, targetProcessIdentity, command, msg);
 	}
 
 	public List<String> getIncompleteZMQProcesses() {
