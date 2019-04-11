@@ -33,6 +33,8 @@ import java.util.*;
  * - PUBLISH -> PUBACK
  *
  * Furthermore, the client counts all PUBLISH messages it receives.
+ *
+ * TODO: the benchmark client also does not has to use the order architecture, could be build similarly to StorageClient
  */
 public class ZMQProcess_BenchmarkClient extends ZMQProcess {
 
