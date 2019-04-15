@@ -3,6 +3,7 @@ package de.hasenburg.geobroker.server.main;
 import de.hasenburg.geobroker.commons.communication.ZMQProcessManager;
 import de.hasenburg.geobroker.server.communication.ZMQProcessStarter;
 import de.hasenburg.geobroker.server.distribution.BrokerAreaManager;
+import de.hasenburg.geobroker.server.matching.SingleGeoBrokerMatchingLogic;
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory;
 import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper;
 import org.apache.logging.log4j.LogManager;
@@ -18,17 +19,22 @@ public class Server {
 
 		ClientDirectory clientDirectory = new ClientDirectory();
 		TopicAndGeofenceMapper topicAndGeofenceMapper = new TopicAndGeofenceMapper(configuration);
-		BrokerAreaManager brokerAreaManager = new BrokerAreaManager(configuration.getBrokerId());
-		brokerAreaManager.setup_DefaultFile();
+
+		// in case of DisGB, set brokers
+		// BrokerAreaManager brokerAreaManager = new BrokerAreaManager(configuration.getBrokerId());
+		// brokerAreaManager.setup_DefaultFile();
+
+		// TODO matching logic should be configurable
+		SingleGeoBrokerMatchingLogic matchingLogic =
+				new SingleGeoBrokerMatchingLogic(clientDirectory, topicAndGeofenceMapper);
 
 		ZMQProcessManager processManager = new ZMQProcessManager();
-		ZMQProcessStarter.runZMQProcess_Server(processManager, "tcp://localhost", configuration.getPort(), configuration.getBrokerId() + "-server");
+		ZMQProcessStarter.runZMQProcess_Server(processManager,
+											   "tcp://localhost",
+											   configuration.getPort(),
+											   configuration.getBrokerId() + "-server");
 		for (int i = 1; i <= configuration.getMessageProcessors(); i++) {
-			ZMQProcessStarter.runZMQProcess_MessageProcessor(processManager,
-															 "message_processor-" + i,
-															 clientDirectory,
-															 topicAndGeofenceMapper,
-															 brokerAreaManager);
+			ZMQProcessStarter.runZMQProcess_MessageProcessor(processManager, "message_processor-" + i, matchingLogic);
 
 		}
 

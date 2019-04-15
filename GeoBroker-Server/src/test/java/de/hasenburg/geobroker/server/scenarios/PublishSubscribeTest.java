@@ -10,6 +10,7 @@ import de.hasenburg.geobroker.client.main.SimpleClient;
 import de.hasenburg.geobroker.commons.Utility;
 import de.hasenburg.geobroker.client.communication.InternalClientMessage;
 import de.hasenburg.geobroker.commons.model.message.Topic;
+import de.hasenburg.geobroker.server.matching.SingleGeoBrokerMatchingLogic;
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory;
 import de.hasenburg.geobroker.commons.model.message.payloads.CONNECTPayload;
 import de.hasenburg.geobroker.commons.model.message.payloads.PUBLISHPayload;
@@ -41,16 +42,13 @@ public class PublishSubscribeTest {
 
 		clientDirectory = new ClientDirectory();
 		topicAndGeofenceMapper = new TopicAndGeofenceMapper(new Configuration());
-		BrokerAreaManager brokerAreaManager = new BrokerAreaManager("broker");
-		brokerAreaManager.setup_DefaultFile();
+
+		SingleGeoBrokerMatchingLogic matchingLogic =
+				new SingleGeoBrokerMatchingLogic(clientDirectory, topicAndGeofenceMapper);
 
 		processManager = new ZMQProcessManager();
 		ZMQProcessStarter.runZMQProcess_Server(processManager, "tcp://localhost", 5559, "broker");
-		ZMQProcessStarter.runZMQProcess_MessageProcessor(processManager,
-														 "message_processor",
-														 clientDirectory,
-														 topicAndGeofenceMapper,
-														 brokerAreaManager);
+		ZMQProcessStarter.runZMQProcess_MessageProcessor(processManager, "message_processor", matchingLogic);
 	}
 
 	@After
