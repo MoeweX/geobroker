@@ -15,7 +15,7 @@ import java.util.Optional;
 
 /**
  * Used for communication to other brokers and for the other broker's replies. Note, that other broker receive messages
- * via the {@link ZMQProcess_Server}, so they work with {@link InternalServerMessage}.
+ * via the {@link ZMQProcess_Server}, so they use the {@link InternalServerMessage}.
  */
 public class InternalBrokerMessage {
 

@@ -57,16 +57,16 @@ public class ZMQProcess_StorageClient extends ZMQProcess {
 
 	@Override
 	protected void processZMQControlCommandOtherThanKill(ZMQControlUtility.ZMQControlCommand zmqControlCommand, ZMsg msg) {
-		logger.trace("Sending a message to the server.");
-
 		if (ZMQControlUtility.ZMQControlCommand.SEND_ZMsg.equals(zmqControlCommand)) {
+			logger.trace("Sending a message to the server.");
+
 			//the zMsg should consist of an InternalClientMessage only
 			Optional<InternalClientMessage> clientMessageO = InternalClientMessage.buildMessage(msg);
 
 			if (clientMessageO.isPresent()) {
 				clientMessageO.get().getZMsg().send(sockets.get(SERVER_INDEX));
 			} else {
-				logger.warn("Cannot send message to server is incompatible " + msg);
+				logger.warn("Cannot send message to server as not an InternalClientMessage" + msg);
 			}
 		}
 	}
