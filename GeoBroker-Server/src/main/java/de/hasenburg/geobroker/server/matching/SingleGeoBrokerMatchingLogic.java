@@ -6,7 +6,6 @@ import de.hasenburg.geobroker.commons.model.message.payloads.*;
 import de.hasenburg.geobroker.commons.model.spatial.Geofence;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
 import de.hasenburg.geobroker.server.communication.InternalServerMessage;
-import de.hasenburg.geobroker.server.distribution.BrokerAreaManager;
 import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper;
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -191,6 +190,6 @@ public class SingleGeoBrokerMatchingLogic implements IMatchingLogic {
 
 	@Override
 	public void processBrokerForwardPublish(InternalServerMessage message, Socket clients, Socket brokers) {
-		throw new RuntimeException("Unsupported Operation");
+		logger.warn("Unsupported operation, message is discarded");
 	}
 }

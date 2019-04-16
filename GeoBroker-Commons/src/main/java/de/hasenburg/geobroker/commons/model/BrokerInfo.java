@@ -17,10 +17,14 @@ public class BrokerInfo implements JSONable {
 
 	@JsonCreator
 	public BrokerInfo(@JsonProperty("brokerId") String brokerId, @JsonProperty("address") String address,
-			   @JsonProperty("port") int port) {
+					  @JsonProperty("port") int port) {
 		this.brokerId = brokerId;
 		this.address = address;
 		this.port = port;
+	}
+
+	public String generateZMQtcpAddress() {
+		return address + ":" + port;
 	}
 
 	@Override
