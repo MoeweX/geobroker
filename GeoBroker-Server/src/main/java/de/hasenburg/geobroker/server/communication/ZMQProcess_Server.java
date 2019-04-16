@@ -17,34 +17,40 @@ class ZMQProcess_Server extends ZMQProcess {
 	private static final Logger logger = LogManager.getLogger();
 
 	// Address and port of server frontend
-	private String address;
+	private String ip;
 	private int port;
-
-	// Address of server backend
-	static final String SERVER_INPROC_ADDRESS = "inproc://server";
 
 	// socket indices
 	private final int FRONTEND_INDEX = 0;
 	private final int BACKEND_INDEX = 1;
 
-	ZMQProcess_Server(String address, int port, String identity) {
-		super(identity);
-		this.address = address;
+	/**
+	 * @param brokerId - should be the broker id this server is running on
+	 */
+	ZMQProcess_Server(String ip, int port, String brokerId) {
+		super(getServerIdentity(brokerId));
+		this.ip = ip;
 		this.port = port;
 	}
+
+	public static String getServerIdentity(String brokerId) {
+		return brokerId + "-server";
+	}
+
 
 	@Override
 	protected List<Socket> bindAndConnectSockets(ZContext context) {
 		Socket[] socketArray = new Socket[2];
 
 		Socket frontend = context.createSocket(SocketType.ROUTER);
-		frontend.bind(address + ":" + port);
+		frontend.bind("tcp://" + ip + ":" + port);
 		frontend.setIdentity(identity.getBytes());
 		frontend.setSendTimeOut(1);
 		socketArray[FRONTEND_INDEX] = frontend;
 
 		Socket backend = context.createSocket(SocketType.DEALER);
-		backend.bind(SERVER_INPROC_ADDRESS);
+		backend.bind("inproc://" + identity);
+		// backend.setIdentity(identity.getBytes()); TODO test whether we can do this
 		backend.setSendTimeOut(1);
 		socketArray[BACKEND_INDEX] = backend;
 
@@ -52,7 +58,8 @@ class ZMQProcess_Server extends ZMQProcess {
 	}
 
 	@Override
-	protected void processZMQControlCommandOtherThanKill(ZMQControlUtility.ZMQControlCommand zmqControlCommand, ZMsg msg) {
+	protected void processZMQControlCommandOtherThanKill(ZMQControlUtility.ZMQControlCommand zmqControlCommand,
+														 ZMsg msg) {
 		// no other commands are of interest
 	}
 
@@ -76,7 +83,7 @@ class ZMQProcess_Server extends ZMQProcess {
 
 	@Override
 	protected void shutdownCompleted() {
-		logger.info("Shut down ZMQProcess_Server {}", identity);
+		logger.info("Shut down ZMQProcess_Server {}", getServerIdentity(identity));
 	}
 
 }

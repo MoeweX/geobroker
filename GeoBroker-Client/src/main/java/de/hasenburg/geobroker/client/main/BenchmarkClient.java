@@ -66,7 +66,7 @@ public class BenchmarkClient {
 
 	public static void main (String[] args) {
 		ZMQProcessManager processManager = new ZMQProcessManager();
-		BenchmarkClient client = new BenchmarkClient(null, "tcp://localhost", 5559, processManager);
+		BenchmarkClient client = new BenchmarkClient(null, "localhost", 5559, processManager);
 
 		// connect
 		InternalClientMessage clientMessage = new InternalClientMessage(ControlPacketType.CONNECT, new CONNECTPayload(

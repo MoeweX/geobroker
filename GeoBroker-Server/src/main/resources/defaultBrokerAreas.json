@@ -2,7 +2,7 @@
 	{
 		"responsibleBroker" : {
 			"brokerId" : "broker",
-			"address" : "not important as we do everything",
+			"ip" : "not important as we do everything",
 			"port" : 5559
 		},
 		"coveredArea" : {
@@ -12,7 +12,7 @@
 	{
 		"responsibleBroker" : {
 			"brokerId" : "notUsedBroker",
-			"address" : "not important as overlaps responsible broker area",
+			"ip" : "not important as overlaps responsible broker area",
 			"port" : 5559
 		},
 		"coveredArea" : {

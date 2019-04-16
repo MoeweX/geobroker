@@ -53,7 +53,7 @@ public class StorageClient {
 
 	public static void main(String[] args) throws IOException {
 		ZMQProcessManager processManager = new ZMQProcessManager();
-		StorageClient client = new StorageClient(null, "tcp://localhost", 5559, processManager);
+		StorageClient client = new StorageClient(null, "localhost", 5559, processManager);
 
 		// connect
 		InternalClientMessage clientMessage =

@@ -80,7 +80,7 @@ public class SimpleClient {
 
 	public static void main (String[] args) {
 		ZMQProcessManager processManager = new ZMQProcessManager();
-	    SimpleClient client = new SimpleClient(null, "tcp://localhost", 5559, processManager);
+	    SimpleClient client = new SimpleClient(null, "localhost", 5559, processManager);
 
 	    // connect
 		InternalClientMessage clientMessage = new InternalClientMessage(ControlPacketType.CONNECT, new CONNECTPayload(

@@ -1,5 +1,6 @@
 package de.hasenburg.geobroker.server.scenarios;
 
+import de.hasenburg.geobroker.commons.BenchmarkHelper;
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
 import de.hasenburg.geobroker.commons.model.message.ReasonCode;
 import de.hasenburg.geobroker.commons.communication.ZMQProcessManager;
@@ -9,6 +10,7 @@ import de.hasenburg.geobroker.server.main.Configuration;
 import de.hasenburg.geobroker.client.main.SimpleClient;
 import de.hasenburg.geobroker.commons.Utility;
 import de.hasenburg.geobroker.client.communication.InternalClientMessage;
+import de.hasenburg.geobroker.server.main.server.SingleGeoBrokerServerLogic;
 import de.hasenburg.geobroker.server.matching.SingleGeoBrokerMatchingLogic;
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory;
 import de.hasenburg.geobroker.commons.exceptions.CommunicatorException;
@@ -22,6 +24,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import zmq.Config;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -31,46 +34,43 @@ public class PingTest {
 
 	private static final Logger logger = LogManager.getLogger();
 
-	ClientDirectory clientDirectory;
-	TopicAndGeofenceMapper topicAndGeofenceMapper;
-	ZMQProcessManager processManager;
+	private SingleGeoBrokerServerLogic serverLogic;
+	private ZMQProcessManager clientProcessManager;
 
 	@SuppressWarnings("Duplicates")
 	@Before
 	public void setUp() {
 		logger.info("Running test setUp");
 
-		clientDirectory = new ClientDirectory();
-		topicAndGeofenceMapper = new TopicAndGeofenceMapper(new Configuration());
+		serverLogic = new SingleGeoBrokerServerLogic();
+		serverLogic.loadConfiguration(Configuration.readDefaultConfiguration());
+		serverLogic.initializeFields();
+		serverLogic.startServer();
 
-		SingleGeoBrokerMatchingLogic matchingLogic =
-				new SingleGeoBrokerMatchingLogic(clientDirectory, topicAndGeofenceMapper);
-
-		processManager = new ZMQProcessManager();
-		ZMQProcessStarter.runZMQProcess_Server(processManager, "tcp://localhost", 5559, "broker");
-		ZMQProcessStarter.runZMQProcess_MessageProcessor(processManager, "message_processor", matchingLogic);
+		clientProcessManager = new ZMQProcessManager();
 	}
 
 	@After
 	public void tearDown() {
 		logger.info("Running test tearDown.");
-		assertTrue(processManager.tearDown(5000));
+		clientProcessManager.tearDown(2000);
+		serverLogic.cleanUp();
 	}
 
 	@Test
-	public void testPingWhileConnected() throws InterruptedException, CommunicatorException {
+	public void testPingWhileConnected() {
 		// connect, ping, and disconnect
-		SimpleClient client = new SimpleClient(null, "tcp://localhost", 5559, processManager);
+		SimpleClient client = new SimpleClient(null, "localhost", 5559, clientProcessManager);
 		client.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.CONNECT,
-																   new CONNECTPayload(Location.random())));
+				new CONNECTPayload(Location.random())));
 		for (int i = 0; i < 10; i++) {
 			client.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.PINGREQ,
-																	   new PINGREQPayload(Location.random())));
+					new PINGREQPayload(Location.random())));
 			Utility.sleepNoLog(100, 0);
 		}
 
 		client.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.DISCONNECT,
-																   new DISCONNECTPayload(ReasonCode.NormalDisconnection)));
+				new DISCONNECTPayload(ReasonCode.NormalDisconnection)));
 
 		// check dealer messages
 		for (int i = 0; i < 11; i++) {
@@ -81,24 +81,24 @@ public class PingTest {
 			} else {
 				assertEquals(ControlPacketType.PINGRESP, internalClientMessage.getControlPacketType());
 				assertEquals(ReasonCode.LocationUpdated,
-							 internalClientMessage.getPayload().getPINGRESPPayload().get().getReasonCode());
+						internalClientMessage.getPayload().getPINGRESPPayload().get().getReasonCode());
 			}
 		}
 	}
 
 	@SuppressWarnings("ConstantConditions")
 	@Test
-	public void testPingWhileNotConnected() throws InterruptedException, CommunicatorException {
-		SimpleClient client = new SimpleClient(null, "tcp://localhost", 5559, processManager);
+	public void testPingWhileNotConnected() {
+		SimpleClient client = new SimpleClient(null, "localhost", 5559, clientProcessManager);
 
 		client.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.PINGREQ,
-																   new PINGREQPayload(Location.random())));
+				new PINGREQPayload(Location.random())));
 
 		InternalClientMessage internalClientMessage = client.receiveInternalClientMessage();
 
 		assertEquals(ControlPacketType.PINGRESP, internalClientMessage.getControlPacketType());
 		assertEquals(ReasonCode.NotConnected,
-					 internalClientMessage.getPayload().getPINGRESPPayload().get().getReasonCode());
+				internalClientMessage.getPayload().getPINGRESPPayload().get().getReasonCode());
 	}
 
 }

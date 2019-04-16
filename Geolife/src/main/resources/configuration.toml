@@ -4,7 +4,7 @@ messageProcessors = 1
 
 # ClientConfiguration related to the moving client experiments
 [serverMachine]
-address = "tcp://localhost"
+ip = "tcp://localhost"
 port = 5559
 
 [clientManager]

@@ -1,11 +1,10 @@
 package de.hasenburg.geobroker.server.communication;
 
-import de.hasenburg.geobroker.client.communication.InternalClientMessage;
+import de.hasenburg.geobroker.commons.Utility;
 import de.hasenburg.geobroker.commons.communication.ZMQProcessManager;
 import de.hasenburg.geobroker.commons.model.BrokerInfo;
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
 import de.hasenburg.geobroker.commons.model.message.ReasonCode;
-import de.hasenburg.geobroker.commons.model.message.payloads.BrokerForwardPublishPayload;
 import de.hasenburg.geobroker.commons.model.message.payloads.CONNACKPayload;
 import de.hasenburg.geobroker.commons.model.message.payloads.CONNECTPayload;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
@@ -19,7 +18,6 @@ import org.zeromq.ZMQ.Socket;
 import org.zeromq.ZMsg;
 
 import java.util.Collections;
-import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -30,27 +28,30 @@ public class MessageProcessorToBrokerCommunicatorTest {
 
 	@Test
 	public void test() {
+		String ourBrokerId = "ourBroker";
+
 		ZMQProcessManager processManager = new ZMQProcessManager();
 
 		// as TestDistributionLogic does not really send, does not matter what is put here as long as socket can be created
-		BrokerInfo brokerInfo = new BrokerInfo("targetBroker", "tcp://localhost", 1000);
+		BrokerInfo brokerInfo = new BrokerInfo("targetBroker", "localhost", 5559);
 
 		ZMQProcess_BrokerCommunicator brokerCommunicator = ZMQProcessStarter.runZMQProcess_BrokerCommunicator(
 				processManager,
-				"broker_communicator",
+				ourBrokerId,
+				1,
 				new TestDistributionLogic(),
 				Collections.singletonList(brokerInfo));
 
 		ZMQProcess_MessageProcessor messageProcessor = ZMQProcessStarter.runZMQProcess_MessageProcessor(processManager,
-				"message_processor",
+				ourBrokerId,
+				1,
 				new TestMatchingLogic(),
-				Collections.singletonList(ZMQProcess_BrokerCommunicator.getBrokerCommunicatorAddress(
-						"broker_communicator")));
+				1);
 
 
 		// create a socket that sends to the message processor, the message will simply be forwarded to the broker communicator
 		Socket req = processManager.getContext().createSocket(SocketType.DEALER);
-		req.bind(ZMQProcess_Server.SERVER_INPROC_ADDRESS); // as this is where the message processor connects to
+		req.bind("inproc://" + ZMQProcess_Server.getServerIdentity(ourBrokerId)); // as this is where the message processor connects to
 
 		new InternalServerMessage("clientOrigin",
 				ControlPacketType.CONNECT,
@@ -78,7 +79,7 @@ public class MessageProcessorToBrokerCommunicatorTest {
 			InternalBrokerMessage ibm = new InternalBrokerMessage(ControlPacketType.CONNECT,
 					new CONNECTPayload(Location.random()));
 			ZMsg msg = ZMQProcess_BrokerCommunicator.generatePULLSocketMessage("targetBroker", ibm);
-			logger.info("Sending message {} to targetBroker", msg);
+			logger.info("Sending message {} to broker communicator", msg);
 			msg.send(brokers);
 
 			// respond

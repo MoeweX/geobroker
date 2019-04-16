@@ -49,7 +49,7 @@ public class ZMQProcess_StorageClient extends ZMQProcess {
 
 		Socket serverSocket = context.createSocket(SocketType.DEALER);
 		serverSocket.setIdentity(identity.getBytes());
-		serverSocket.connect(address + ":" + port);
+		serverSocket.connect("tcp://" + address + ":" + port);
 		socketArray[SERVER_INDEX] = serverSocket;
 
 		return Arrays.asList(socketArray);

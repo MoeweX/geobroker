@@ -9,6 +9,7 @@ import de.hasenburg.geobroker.commons.model.message.payloads.*;
 import de.hasenburg.geobroker.commons.model.spatial.Geofence;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
 import de.hasenburg.geobroker.server.distribution.BrokerAreaManager;
+import de.hasenburg.geobroker.server.main.server.ServerLifecycle;
 import de.hasenburg.geobroker.server.matching.IMatchingLogic;
 import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper;
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory;
@@ -26,8 +27,10 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 
 	private static final Logger logger = LogManager.getLogger();
 
+	private final String brokerId;
+	private final int number;
 	private final IMatchingLogic matchingLogic;
-	private List<String> brokerCommunicatorAddresses = new ArrayList<>();
+	private final int numberOfBrokerCommunicators;
 
 	private int numberOfProcessedMessages = 0;
 
@@ -35,18 +38,22 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 	private final int PROCESSOR_INDEX = 0;
 	private final int BROKER_COMMUNICATOR_INDEX = 1;
 
-	ZMQProcess_MessageProcessor(String identity, IMatchingLogic matchingLogic) {
-		super(identity);
+	/**
+	 * @param brokerId - identity should be the broker id this message processor is running on
+	 * @param number - incrementing number for this message processor (as there might be many), starts with 1
+	 * @param numberOfBrokerCommunicators - how many bc exist, can be 0
+	 */
+	ZMQProcess_MessageProcessor(String brokerId, int number, IMatchingLogic matchingLogic,
+								int numberOfBrokerCommunicators) {
+		super(getMessageProcessorIdentity(brokerId, number));
+		this.brokerId = brokerId;
+		this.number = number;
 		this.matchingLogic = matchingLogic;
+		this.numberOfBrokerCommunicators = numberOfBrokerCommunicators;
 	}
 
-	ZMQProcess_MessageProcessor(String identity, IMatchingLogic matchingLogic,
-								List<String> brokerCommunicatorAddresses) {
-		// call other constructor
-		this(identity, matchingLogic);
-
-		// set field
-		this.brokerCommunicatorAddresses = brokerCommunicatorAddresses;
+	static String getMessageProcessorIdentity(String brokerId, int number) {
+		return brokerId + "-message_processor-" + number;
 	}
 
 	@Override
@@ -55,13 +62,15 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 
 		Socket processor = context.createSocket(SocketType.DEALER);
 		processor.setIdentity(identity.getBytes());
-		processor.connect(ZMQProcess_Server.SERVER_INPROC_ADDRESS);
+		processor.connect("inproc://" + ZMQProcess_Server.getServerIdentity(brokerId));
 		socketArray[PROCESSOR_INDEX] = processor;
 
 		Socket bc = context.createSocket(SocketType.PUSH);
+		// ok because processor and bc do not send both to this socket
 		bc.setIdentity(identity.getBytes());
-		for (String brokerCommunicatorAddress : brokerCommunicatorAddresses) {
-			bc.connect(brokerCommunicatorAddress);
+		for (int i = 1; i <= numberOfBrokerCommunicators; i++) {
+			String brokerCommunicatorIdentity = ZMQProcess_BrokerCommunicator.getBrokerCommunicatorId(brokerId, i);
+			bc.connect("inproc://" + brokerCommunicatorIdentity);
 		}
 		socketArray[BROKER_COMMUNICATOR_INDEX] = bc;
 
@@ -86,46 +95,46 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 
 		Optional<InternalServerMessage> messageO = InternalServerMessage.buildMessage(msg);
 		logger.trace("ZMQProcess_MessageProcessor {} processing message number {}",
-					 identity,
-					 numberOfProcessedMessages);
+				identity,
+				numberOfProcessedMessages);
 
 		if (messageO.isPresent()) {
 			InternalServerMessage message = messageO.get();
 			switch (message.getControlPacketType()) {
 				case CONNECT:
 					matchingLogic.processCONNECT(message,
-												 sockets.get(PROCESSOR_INDEX),
-												 sockets.get(BROKER_COMMUNICATOR_INDEX));
+							sockets.get(PROCESSOR_INDEX),
+							sockets.get(BROKER_COMMUNICATOR_INDEX));
 					break;
 				case DISCONNECT:
 					matchingLogic.processDISCONNECT(message,
-													sockets.get(PROCESSOR_INDEX),
-													sockets.get(BROKER_COMMUNICATOR_INDEX));
+							sockets.get(PROCESSOR_INDEX),
+							sockets.get(BROKER_COMMUNICATOR_INDEX));
 					break;
 				case PINGREQ:
 					matchingLogic.processPINGREQ(message,
-												 sockets.get(PROCESSOR_INDEX),
-												 sockets.get(BROKER_COMMUNICATOR_INDEX));
+							sockets.get(PROCESSOR_INDEX),
+							sockets.get(BROKER_COMMUNICATOR_INDEX));
 					break;
 				case SUBSCRIBE:
 					matchingLogic.processSUBSCRIBE(message,
-												   sockets.get(PROCESSOR_INDEX),
-												   sockets.get(BROKER_COMMUNICATOR_INDEX));
+							sockets.get(PROCESSOR_INDEX),
+							sockets.get(BROKER_COMMUNICATOR_INDEX));
 					break;
 				case UNSUBSCRIBE:
 					matchingLogic.processUNSUBSCRIBE(message,
-													 sockets.get(PROCESSOR_INDEX),
-													 sockets.get(BROKER_COMMUNICATOR_INDEX));
+							sockets.get(PROCESSOR_INDEX),
+							sockets.get(BROKER_COMMUNICATOR_INDEX));
 					break;
 				case PUBLISH:
 					matchingLogic.processPUBLISH(message,
-												 sockets.get(PROCESSOR_INDEX),
-												 sockets.get(BROKER_COMMUNICATOR_INDEX));
+							sockets.get(PROCESSOR_INDEX),
+							sockets.get(BROKER_COMMUNICATOR_INDEX));
 					break;
 				case BrokerForwardPublish:
 					matchingLogic.processBrokerForwardPublish(message,
-															  sockets.get(PROCESSOR_INDEX),
-															  sockets.get(BROKER_COMMUNICATOR_INDEX));
+							sockets.get(PROCESSOR_INDEX),
+							sockets.get(BROKER_COMMUNICATOR_INDEX));
 					break;
 				default:
 					logger.warn("Cannot process message {}", message.toString());
@@ -138,7 +147,7 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 
 	@Override
 	protected void shutdownCompleted() {
-		logger.info("Shut down ZMQProcess_MessageProcessor {}", identity);
+		logger.info("Shut down ZMQProcess_MessageProcessor {}", getMessageProcessorIdentity(identity, number));
 	}
 
 	int getNumberOfProcessedMessages() {

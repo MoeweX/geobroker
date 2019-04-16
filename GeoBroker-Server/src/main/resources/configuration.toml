@@ -1,6 +1,6 @@
 [server]
 brokerId = "broker"
-address = "tcp://localhost"
+ip = "localhost"
 port = 5559
 granularity = 5
 messageProcessors = 1

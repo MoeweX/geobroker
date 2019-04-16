@@ -28,25 +28,29 @@ public class ZMQProcessManagerTest {
 		ClientDirectory clientDirectory = new ClientDirectory();
 		TopicAndGeofenceMapper topicAndGeofenceMapper = new TopicAndGeofenceMapper(new Configuration());
 
-		SingleGeoBrokerMatchingLogic matchingLogic =
-				new SingleGeoBrokerMatchingLogic(clientDirectory, topicAndGeofenceMapper);
+		SingleGeoBrokerMatchingLogic matchingLogic = new SingleGeoBrokerMatchingLogic(clientDirectory,
+				topicAndGeofenceMapper);
 
 		ZMQProcessManager pm = new ZMQProcessManager();
 		assertTrue(pm.getIncompleteZMQProcesses().isEmpty());
 
 		// start two processes
-		ZMQProcessStarter.runZMQProcess_MessageProcessor(pm, "Process 1", matchingLogic);
-		ZMQProcessStarter.runZMQProcess_MessageProcessor(pm, "Process 2", matchingLogic);
+		ZMQProcessStarter.runZMQProcess_MessageProcessor(pm, "test", 1, matchingLogic, 0);
+		ZMQProcessStarter.runZMQProcess_MessageProcessor(pm, "test", 2, matchingLogic, 0);
 		Utility.sleepNoLog(100, 0);
-		assertTrue(pm.getIncompleteZMQProcesses().containsAll(Arrays.asList("Process 1", "Process 2")));
+		assertTrue(pm.getIncompleteZMQProcesses()
+					 .containsAll(Arrays.asList(ZMQProcess_MessageProcessor.getMessageProcessorIdentity("test", 1),
+							 ZMQProcess_MessageProcessor.getMessageProcessorIdentity("test", 2))));
 		logger.info("Started two message processor processes");
+		Utility.sleepNoLog(100, 0);
 
+		logger.info("Sending kill to processes");
 		// kill 1
-		pm.sendCommandToZMQProcess("Process 1", ZMQControlUtility.ZMQControlCommand.KILL);
+		pm.sendCommandToZMQProcess(ZMQProcess_MessageProcessor.getMessageProcessorIdentity("test", 1), ZMQControlUtility.ZMQControlCommand.KILL);
 
 		Utility.sleepNoLog(100, 0);
-		assertFalse(pm.getIncompleteZMQProcesses().contains("Process 1"));
-		assertTrue(pm.getIncompleteZMQProcesses().contains("Process 2"));
+		assertFalse(pm.getIncompleteZMQProcesses().contains(ZMQProcess_MessageProcessor.getMessageProcessorIdentity("test", 1)));
+		assertTrue(pm.getIncompleteZMQProcesses().contains(ZMQProcess_MessageProcessor.getMessageProcessorIdentity("test", 2)));
 		logger.info("Killed first message processor processes");
 
 		// tear down
