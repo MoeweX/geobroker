@@ -61,7 +61,7 @@ public class Configuration {
 	private static Configuration parseToml(Configuration c, Toml toml) {
 		Toml server = toml.getTable("server");
 		c.brokerId = server.getString("brokerId", c.brokerId);
-		c.port = Math.toIntExact(server.getLong("brokerId", c.port.longValue()));
+		c.port = Math.toIntExact(server.getLong("port", c.port.longValue()));
 
 		c.granularity = Math.toIntExact(server.getLong("granularity", c.granularity.longValue()));
 		c.messageProcessors = Math.toIntExact(server.getLong("messageProcessors", c.messageProcessors.longValue()));

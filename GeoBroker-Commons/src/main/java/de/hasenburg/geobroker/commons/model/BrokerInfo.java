@@ -6,20 +6,20 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Objects;
 
 /**
- * Stores information of a given broker: brokerId, publicly reachable server address and server port.
+ * Stores information of a given broker: brokerId, publicly reachable server ip and server port.
  */
 public class BrokerInfo implements JSONable {
 
 	private final String brokerId;
-	// This is the public address used by other brokers, so should be reachable via the internet
-	private final String address;
+	// This is the public ip used by other brokers, so should be reachable via the internet
+	private final String ip;
 	private final int port;
 
 	@JsonCreator
-	public BrokerInfo(@JsonProperty("brokerId") String brokerId, @JsonProperty("address") String address,
-			   @JsonProperty("port") int port) {
+	public BrokerInfo(@JsonProperty("brokerId") String brokerId, @JsonProperty("ip") String ip,
+					  @JsonProperty("port") int port) {
 		this.brokerId = brokerId;
-		this.address = address;
+		this.ip = ip;
 		this.port = port;
 	}
 
@@ -36,8 +36,8 @@ public class BrokerInfo implements JSONable {
 		return brokerId;
 	}
 
-	public String getAddress() {
-		return address;
+	public String getIp() {
+		return ip;
 	}
 
 	public int getPort() {
@@ -49,11 +49,11 @@ public class BrokerInfo implements JSONable {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		BrokerInfo that = (BrokerInfo) o;
-		return port == that.port && brokerId.equals(that.brokerId) && address.equals(that.address);
+		return port == that.port && brokerId.equals(that.brokerId) && ip.equals(that.ip);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(brokerId, address, port);
+		return Objects.hash(brokerId, ip, port);
 	}
 }

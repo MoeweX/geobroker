@@ -44,6 +44,7 @@ public class Location implements JSONable {
 
 	/**
 	 * Creates a random location (Not inclusive of (-90, 0))
+	 * TODO B: has returned ones a longitude of 180.1050074731543
 	 */
 	public static Location random() {
 		Random random = new Random();

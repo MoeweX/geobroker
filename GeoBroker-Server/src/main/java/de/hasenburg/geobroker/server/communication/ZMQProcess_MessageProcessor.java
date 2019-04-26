@@ -1,6 +1,5 @@
 package de.hasenburg.geobroker.server.communication;
 
-import de.hasenburg.geobroker.commons.BenchmarkHelper;
 import de.hasenburg.geobroker.commons.communication.ZMQControlUtility;
 import de.hasenburg.geobroker.commons.communication.ZMQProcess;
 import de.hasenburg.geobroker.commons.model.BrokerInfo;
@@ -10,313 +9,148 @@ import de.hasenburg.geobroker.commons.model.message.payloads.*;
 import de.hasenburg.geobroker.commons.model.spatial.Geofence;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
 import de.hasenburg.geobroker.server.distribution.BrokerAreaManager;
+import de.hasenburg.geobroker.server.main.server.ServerLifecycle;
+import de.hasenburg.geobroker.server.matching.IMatchingLogic;
 import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper;
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.SocketType;
-import org.zeromq.ZMQ;
+import org.zeromq.ZContext;
+import org.zeromq.ZMQ.Socket;
 import org.zeromq.ZMsg;
 
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 class ZMQProcess_MessageProcessor extends ZMQProcess {
 
 	private static final Logger logger = LogManager.getLogger();
-	private static final int TIMEOUT_SECONDS = 10; // logs when not received in time, but repeats
 
-	private final ClientDirectory clientDirectory;
-	private final TopicAndGeofenceMapper topicAndGeofenceMapper;
-	private final BrokerAreaManager brokerAreaManager;
+	private final String brokerId;
+	private final int number;
+	private final IMatchingLogic matchingLogic;
+	private final int numberOfBrokerCommunicators;
 
-	private ZMQ.Socket processor;
+	private int numberOfProcessedMessages = 0;
 
-	ZMQProcess_MessageProcessor(String identity, ClientDirectory clientDirectory,
-								TopicAndGeofenceMapper topicAndGeofenceMapper, BrokerAreaManager brokerAreaManager) {
-		super(identity);
-		this.clientDirectory = clientDirectory;
-		this.topicAndGeofenceMapper = topicAndGeofenceMapper;
-		this.brokerAreaManager = brokerAreaManager;
+	// socket index
+	private final int PROCESSOR_INDEX = 0;
+	private final int BROKER_COMMUNICATOR_INDEX = 1;
+
+	/**
+	 * @param brokerId - identity should be the broker id this message processor is running on
+	 * @param number - incrementing number for this message processor (as there might be many), starts with 1
+	 * @param numberOfBrokerCommunicators - how many bc exist, can be 0
+	 */
+	ZMQProcess_MessageProcessor(String brokerId, int number, IMatchingLogic matchingLogic,
+								int numberOfBrokerCommunicators) {
+		super(getMessageProcessorIdentity(brokerId, number));
+		this.brokerId = brokerId;
+		this.number = number;
+		this.matchingLogic = matchingLogic;
+		this.numberOfBrokerCommunicators = numberOfBrokerCommunicators;
+	}
+
+	static String getMessageProcessorIdentity(String brokerId, int number) {
+		return brokerId + "-message_processor-" + number;
 	}
 
 	@Override
-	public void run() {
-		Thread.currentThread().setName(identity);
+	protected List<Socket> bindAndConnectSockets(ZContext context) {
+		Socket[] socketArray = new Socket[2];
 
-		processor = context.createSocket(SocketType.DEALER);
+		Socket processor = context.createSocket(SocketType.DEALER);
 		processor.setIdentity(identity.getBytes());
-		processor.connect(ZMQProcess_Server.SERVER_INPROC_ADDRESS);
+		processor.connect("inproc://" + ZMQProcess_Server.getServerIdentity(brokerId));
+		socketArray[PROCESSOR_INDEX] = processor;
 
-		ZMQ.Poller poller = context.createPoller(1);
-		int zmqControlIndex = ZMQControlUtility.connectWithPoller(context, poller, identity);
-		poller.register(processor, ZMQ.Poller.POLLIN);
+		Socket bc = context.createSocket(SocketType.PUSH);
+		// ok because processor and bc do not send both to this socket
+		bc.setIdentity(identity.getBytes());
+		for (int i = 1; i <= numberOfBrokerCommunicators; i++) {
+			String brokerCommunicatorIdentity = ZMQProcess_BrokerCommunicator.getBrokerCommunicatorId(brokerId, i);
+			bc.connect("inproc://" + brokerCommunicatorIdentity);
+		}
+		socketArray[BROKER_COMMUNICATOR_INDEX] = bc;
 
-		int number = 1;
+		return Arrays.asList(socketArray);
+	}
 
-		while (!Thread.currentThread().isInterrupted()) {
+	@Override
+	protected void processZMQControlCommandOtherThanKill(ZMQControlUtility.ZMQControlCommand zmqControlCommand,
+														 ZMsg msg) {
+		// no other commands are of interest
+	}
 
-			logger.trace("ZMQProcess_MessageProcessor {} waiting {}s for a message",
-						 new String(processor.getIdentity()),
-						 TIMEOUT_SECONDS);
-			poller.poll(TIMEOUT_SECONDS * 1000);
+	@Override
+	protected void processZMsg(int socketIndex, ZMsg msg) {
 
-			if (poller.pollin(zmqControlIndex)) {
-				if (ZMQControlUtility
-						.getCommand(poller, zmqControlIndex)
-						.equals(ZMQControlUtility.ZMQControlCommand.KILL)) {
+		if (socketIndex != PROCESSOR_INDEX) {
+			logger.error("Cannot process message for socket at index {}, as this index is not known.", socketIndex);
+		}
+
+		// start processing the message
+		numberOfProcessedMessages++;
+
+		Optional<InternalServerMessage> messageO = InternalServerMessage.buildMessage(msg);
+		logger.trace("ZMQProcess_MessageProcessor {} processing message number {}",
+				identity,
+				numberOfProcessedMessages);
+
+		if (messageO.isPresent()) {
+			InternalServerMessage message = messageO.get();
+			switch (message.getControlPacketType()) {
+				case CONNECT:
+					matchingLogic.processCONNECT(message,
+							sockets.get(PROCESSOR_INDEX),
+							sockets.get(BROKER_COMMUNICATOR_INDEX));
 					break;
-				}
-			} else if (poller.pollin(1)) {
-				ZMsg zMsg = ZMsg.recvMsg(processor);
-				number++;
-				Optional<InternalServerMessage> messageO = InternalServerMessage.buildMessage(zMsg);
-				logger.debug("ZMQProcess_MessageProcessor {} processing message number {}",
-							 new String(processor.getIdentity()),
-							 number);
-				if (messageO.isPresent()) {
-					InternalServerMessage message = messageO.get();
-					long time = System.nanoTime();
-					switch (message.getControlPacketType()) {
-						case CONNECT:
-							processCONNECT(message);
-							BenchmarkHelper.addEntry("processCONNECT", System.nanoTime() - time);
-							break;
-						case DISCONNECT:
-							processDISCONNECT(message);
-							BenchmarkHelper.addEntry("processDISCONNECT", System.nanoTime() - time);
-							break;
-						case PINGREQ:
-							processPINGREQ(message);
-							BenchmarkHelper.addEntry("processPINGREQ", System.nanoTime() - time);
-							break;
-						case SUBSCRIBE:
-							processSUBSCRIBEforConnection(message);
-							BenchmarkHelper.addEntry("processSUBSCRIBEforConnection", System.nanoTime() - time);
-							break;
-						case PUBLISH:
-							processPublish(message);
-							BenchmarkHelper.addEntry("processPublish", System.nanoTime() - time);
-							break;
-						default:
-							logger.warn("Cannot process message {}", message.toString());
-					}
-				} else {
-					logger.warn("Received an incompatible message: {}", zMsg);
-				}
-			} else {
-				logger.debug("Did not receive a message for {}s", TIMEOUT_SECONDS);
+				case DISCONNECT:
+					matchingLogic.processDISCONNECT(message,
+							sockets.get(PROCESSOR_INDEX),
+							sockets.get(BROKER_COMMUNICATOR_INDEX));
+					break;
+				case PINGREQ:
+					matchingLogic.processPINGREQ(message,
+							sockets.get(PROCESSOR_INDEX),
+							sockets.get(BROKER_COMMUNICATOR_INDEX));
+					break;
+				case SUBSCRIBE:
+					matchingLogic.processSUBSCRIBE(message,
+							sockets.get(PROCESSOR_INDEX),
+							sockets.get(BROKER_COMMUNICATOR_INDEX));
+					break;
+				case UNSUBSCRIBE:
+					matchingLogic.processUNSUBSCRIBE(message,
+							sockets.get(PROCESSOR_INDEX),
+							sockets.get(BROKER_COMMUNICATOR_INDEX));
+					break;
+				case PUBLISH:
+					matchingLogic.processPUBLISH(message,
+							sockets.get(PROCESSOR_INDEX),
+							sockets.get(BROKER_COMMUNICATOR_INDEX));
+					break;
+				case BrokerForwardPublish:
+					matchingLogic.processBrokerForwardPublish(message,
+							sockets.get(PROCESSOR_INDEX),
+							sockets.get(BROKER_COMMUNICATOR_INDEX));
+					break;
+				default:
+					logger.warn("Cannot process message {}", message.toString());
 			}
-
-		} // end while loop
-
-		// sub control socket
-		context.destroySocket(poller.getSocket(0));
-
-		// processor socket
-		context.destroySocket(processor);
-		logger.info("Shut down ZMQProcess_MessageProcessor, socket were destroyed.");
-	}
-
-	/*****************************************************************
-	 * Message Processing
-	 * 	- we already validated the messages above using #buildMessage()
-	 * 	-> we expect the payload to be compatible with the control packet type
-	 * 	-> we expect all fields to be set
-	 ****************************************************************/
-
-	@SuppressWarnings("OptionalGetWithoutIsPresent")
-	private void processCONNECT(InternalServerMessage message) {
-		InternalServerMessage response;
-		CONNECTPayload payload = message.getPayload().getCONNECTPayload().get();
-
-		if (!handleResponsibility(message.getClientIdentifier(), payload.getLocation())) {
-			return; // we are not responsible, client has been notified
-		}
-
-		boolean success = clientDirectory.addClient(message.getClientIdentifier(), payload.getLocation());
-
-		if (success) {
-			logger.debug("Created client {}, acknowledging.", message.getClientIdentifier());
-			response = new InternalServerMessage(message.getClientIdentifier(),
-												 ControlPacketType.CONNACK,
-												 new CONNACKPayload(ReasonCode.Success));
 		} else {
-			logger.debug("Client {} already exists, so protocol error. Disconnecting.", message.getClientIdentifier());
-			clientDirectory.removeClient(message.getClientIdentifier());
-			response = new InternalServerMessage(message.getClientIdentifier(),
-												 ControlPacketType.DISCONNECT,
-												 new DISCONNECTPayload(ReasonCode.ProtocolError));
+			logger.warn("Received an incompatible message: {}", msg);
 		}
 
-		logger.trace("Sending response " + response);
-		response.getZMsg().send(processor);
 	}
 
-	@SuppressWarnings("OptionalGetWithoutIsPresent")
-	private void processDISCONNECT(InternalServerMessage message) {
-		DISCONNECTPayload payload = message.getPayload().getDISCONNECTPayload().get();
-
-		boolean success = clientDirectory.removeClient(message.getClientIdentifier());
-		if (!success) {
-			logger.trace("Client for {} did not exist", message.getClientIdentifier());
-			return;
-		}
-
-		logger.debug("Disconnected client {}, code {}", message.getClientIdentifier(), payload.getReasonCode());
+	@Override
+	protected void shutdownCompleted() {
+		logger.info("Shut down ZMQProcess_MessageProcessor {}", getMessageProcessorIdentity(identity, number));
 	}
 
-	@SuppressWarnings("OptionalGetWithoutIsPresent")
-	private void processPINGREQ(InternalServerMessage message) {
-		InternalServerMessage response;
-		PINGREQPayload payload = message.getPayload().getPINGREQPayload().get();
-
-		// check whether client has moved to another broker area
-		if (!handleResponsibility(message.getClientIdentifier(), payload.getLocation())) {
-			// TODO F: migrate client data to other broker, right now he has to update the information himself
-			clientDirectory.removeClient(message.getClientIdentifier());
-			return; // we are not responsible, client has been notified
-		}
-
-		boolean success = clientDirectory.updateClientLocation(message.getClientIdentifier(), payload.getLocation());
-		if (success) {
-			logger.debug("Updated location of {} to {}", message.getClientIdentifier(), payload.getLocation());
-
-			response = new InternalServerMessage(message.getClientIdentifier(),
-												 ControlPacketType.PINGRESP,
-												 new PINGRESPPayload(ReasonCode.LocationUpdated));
-		} else {
-			logger.debug("Client {} is not connected", message.getClientIdentifier());
-			response = new InternalServerMessage(message.getClientIdentifier(),
-												 ControlPacketType.PINGRESP,
-												 new PINGRESPPayload(ReasonCode.NotConnected));
-		}
-
-		logger.trace("Sending response " + response);
-		response.getZMsg().send(processor);
+	int getNumberOfProcessedMessages() {
+		return numberOfProcessedMessages;
 	}
-
-	@SuppressWarnings("OptionalGetWithoutIsPresent")
-	private void processSUBSCRIBEforConnection(InternalServerMessage message) {
-		InternalServerMessage response;
-		SUBSCRIBEPayload payload = message.getPayload().getSUBSCRIBEPayload().get();
-
-		ImmutablePair<ImmutablePair<String, Integer>, Geofence> subscribed =
-				clientDirectory.checkIfSubscribed(message.getClientIdentifier(),
-												  payload.getTopic(),
-												  payload.getGeofence());
-
-		// if already subscribed -> remove subscription id from now unrelated geofence parts
-		if (subscribed != null) {
-			topicAndGeofenceMapper.removeSubscriptionId(subscribed.left, payload.getTopic(), subscribed.right);
-		}
-
-		ImmutablePair<String, Integer> subscriptionId = clientDirectory.putSubscription(message.getClientIdentifier(),
-																						payload.getTopic(),
-																						payload.getGeofence());
-
-		if (subscriptionId == null) {
-			logger.debug("Client {} is not connected", message.getClientIdentifier());
-			response = new InternalServerMessage(message.getClientIdentifier(),
-												 ControlPacketType.SUBACK,
-												 new SUBACKPayload(ReasonCode.NotConnected));
-		} else {
-			topicAndGeofenceMapper.putSubscriptionId(subscriptionId, payload.getTopic(), payload.getGeofence());
-			logger.debug("Client {} subscribed to topic {} and geofence {}",
-						 message.getClientIdentifier(),
-						 payload.getTopic(),
-						 payload.getGeofence());
-			response = new InternalServerMessage(message.getClientIdentifier(),
-												 ControlPacketType.SUBACK,
-												 new SUBACKPayload(ReasonCode.GrantedQoS0));
-		}
-
-		logger.trace("Sending response " + response);
-		response.getZMsg().send(processor);
-	}
-
-	public void processUNSUBSCRIBEforConnection(InternalServerMessage message) {
-		// TODO Implement
-		throw new RuntimeException("Not yet implemented");
-	}
-
-	@SuppressWarnings("OptionalGetWithoutIsPresent")
-	private void processPublish(InternalServerMessage message) {
-		InternalServerMessage response;
-		PUBLISHPayload payload = message.getPayload().getPUBLISHPayload().get();
-
-		Location publisherLocation = clientDirectory.getClientLocation(message.getClientIdentifier());
-		if (publisherLocation != null) {
-			logger.debug("Publishing topic {} to all subscribers", payload.getTopic());
-
-			// get subscriptions that have a geofence containing the publisher location
-			Set<ImmutablePair<String, Integer>> subscriptionIds =
-					topicAndGeofenceMapper.getSubscriptionIds(payload.getTopic(), publisherLocation);
-
-			// only keep subscription if subscriber location is insider publisher geofence
-			subscriptionIds.removeIf(subId -> !payload
-					.getGeofence()
-					.contains(clientDirectory.getClientLocation(subId.left)));
-
-			// publish message to remaining subscribers
-			for (ImmutablePair<String, Integer> subscriptionId : subscriptionIds) {
-				String subscriberClientIdentifier = subscriptionId.left;
-				logger.debug("Client {} is a subscriber", subscriberClientIdentifier);
-				InternalServerMessage toPublish =
-						new InternalServerMessage(subscriberClientIdentifier, ControlPacketType.PUBLISH, payload);
-				logger.trace("Publishing " + toPublish);
-				toPublish.getZMsg().send(processor);
-			}
-
-			if (subscriptionIds.isEmpty()) {
-				logger.debug("No subscriber exists.");
-				response = new InternalServerMessage(message.getClientIdentifier(),
-													 ControlPacketType.PUBACK,
-													 new PUBACKPayload(ReasonCode.NoMatchingSubscribers));
-			} else {
-				response = new InternalServerMessage(message.getClientIdentifier(),
-													 ControlPacketType.PUBACK,
-													 new PUBACKPayload(ReasonCode.Success));
-			}
-
-		} else {
-			logger.debug("Client {} is not connected", message.getClientIdentifier());
-			response = new InternalServerMessage(message.getClientIdentifier(),
-												 ControlPacketType.PUBACK,
-												 new PUBACKPayload(ReasonCode.NotConnected));
-		}
-
-		// send response to publisher
-		logger.trace("Sending response " + response);
-		response.getZMsg().send(processor);
-	}
-
-	/*****************************************************************
-	 * Message Processing Helper
-	 ****************************************************************/
-
-	/**
-	 * Checks whether this particular broker is responsible for the client with the given location.
-	 * If not, sends a disconnect message with the responsible broker, if any exists.
-	 * Otherwise, does nothing
-	 *
-	 * @return true, if this broker is responsible, otherwise false
-	 */
-	private boolean handleResponsibility(String clientIdentifier, Location clientLocation) {
-		if (!brokerAreaManager.checkIfResponsibleForClientLocation(clientLocation)) {
-			// get responsible broker
-			BrokerInfo repBroker = brokerAreaManager.getOtherBrokerForClientLocation(clientLocation);
-
-			InternalServerMessage response = new InternalServerMessage(clientIdentifier,
-												 ControlPacketType.DISCONNECT,
-												 new DISCONNECTPayload(ReasonCode.WrongBroker, repBroker));
-			logger.debug("Not responsible for client {}, responsible broker is {}", clientIdentifier, repBroker);
-
-			response.getZMsg().send(processor);
-			return false;
-		}
-		return true;
-	}
-
 }

@@ -1,9 +1,11 @@
 package de.hasenburg.geobroker.server.communication;
 
+import de.hasenburg.geobroker.commons.communication.ZMQControlUtility;
 import de.hasenburg.geobroker.commons.communication.ZMQProcessManager;
 import de.hasenburg.geobroker.server.distribution.BrokerAreaManager;
 import de.hasenburg.geobroker.server.main.Configuration;
 import de.hasenburg.geobroker.commons.Utility;
+import de.hasenburg.geobroker.server.matching.SingleGeoBrokerMatchingLogic;
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory;
 import de.hasenburg.geobroker.commons.exceptions.CommunicatorException;
 import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper;
@@ -25,32 +27,30 @@ public class ZMQProcessManagerTest {
 		// prepare
 		ClientDirectory clientDirectory = new ClientDirectory();
 		TopicAndGeofenceMapper topicAndGeofenceMapper = new TopicAndGeofenceMapper(new Configuration());
-		BrokerAreaManager brokerAreaManager = new BrokerAreaManager("broker");
-		brokerAreaManager.setup_DefaultFile();
+
+		SingleGeoBrokerMatchingLogic matchingLogic = new SingleGeoBrokerMatchingLogic(clientDirectory,
+				topicAndGeofenceMapper);
 
 		ZMQProcessManager pm = new ZMQProcessManager();
 		assertTrue(pm.getIncompleteZMQProcesses().isEmpty());
 
 		// start two processes
-		ZMQProcessStarter.runZMQProcess_MessageProcessor(pm,
-														 "Process 1",
-														 clientDirectory,
-														 topicAndGeofenceMapper,
-														 brokerAreaManager);
-		ZMQProcessStarter.runZMQProcess_MessageProcessor(pm,
-														 "Process 2",
-														 clientDirectory,
-														 topicAndGeofenceMapper,
-														 brokerAreaManager);
+		ZMQProcessStarter.runZMQProcess_MessageProcessor(pm, "test", 1, matchingLogic, 0);
+		ZMQProcessStarter.runZMQProcess_MessageProcessor(pm, "test", 2, matchingLogic, 0);
 		Utility.sleepNoLog(100, 0);
-		assertTrue(pm.getIncompleteZMQProcesses().containsAll(Arrays.asList("Process 1", "Process 2")));
+		assertTrue(pm.getIncompleteZMQProcesses()
+					 .containsAll(Arrays.asList(ZMQProcess_MessageProcessor.getMessageProcessorIdentity("test", 1),
+							 ZMQProcess_MessageProcessor.getMessageProcessorIdentity("test", 2))));
 		logger.info("Started two message processor processes");
-
-		// kill 1
-		pm.sendKillCommandToZMQProcess("Process 1");
 		Utility.sleepNoLog(100, 0);
-		assertFalse(pm.getIncompleteZMQProcesses().contains("Process 1"));
-		assertTrue(pm.getIncompleteZMQProcesses().contains("Process 2"));
+
+		logger.info("Sending kill to processes");
+		// kill 1
+		pm.sendCommandToZMQProcess(ZMQProcess_MessageProcessor.getMessageProcessorIdentity("test", 1), ZMQControlUtility.ZMQControlCommand.KILL);
+
+		Utility.sleepNoLog(100, 0);
+		assertFalse(pm.getIncompleteZMQProcesses().contains(ZMQProcess_MessageProcessor.getMessageProcessorIdentity("test", 1)));
+		assertTrue(pm.getIncompleteZMQProcesses().contains(ZMQProcess_MessageProcessor.getMessageProcessorIdentity("test", 2)));
 		logger.info("Killed first message processor processes");
 
 		// tear down

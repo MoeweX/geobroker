@@ -10,6 +10,8 @@ import de.hasenburg.geobroker.client.main.SimpleClient;
 import de.hasenburg.geobroker.commons.Utility;
 import de.hasenburg.geobroker.client.communication.InternalClientMessage;
 import de.hasenburg.geobroker.commons.model.message.Topic;
+import de.hasenburg.geobroker.server.main.server.SingleGeoBrokerServerLogic;
+import de.hasenburg.geobroker.server.matching.SingleGeoBrokerMatchingLogic;
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory;
 import de.hasenburg.geobroker.commons.model.message.payloads.CONNECTPayload;
 import de.hasenburg.geobroker.commons.model.message.payloads.PUBLISHPayload;
@@ -29,34 +31,27 @@ public class PublishSubscribeTest {
 
 	private static final Logger logger = LogManager.getLogger();
 
-	ClientDirectory clientDirectory;
-	TopicAndGeofenceMapper topicAndGeofenceMapper;
-	ZMQProcessManager processManager;
-
+	private SingleGeoBrokerServerLogic serverLogic;
+	private ZMQProcessManager clientProcessManager;
 
 	@SuppressWarnings("Duplicates")
 	@Before
 	public void setUp() {
 		logger.info("Running test setUp");
 
-		clientDirectory = new ClientDirectory();
-		topicAndGeofenceMapper = new TopicAndGeofenceMapper(new Configuration());
-		BrokerAreaManager brokerAreaManager = new BrokerAreaManager("broker");
-		brokerAreaManager.setup_DefaultFile();
+		serverLogic = new SingleGeoBrokerServerLogic();
+		serverLogic.loadConfiguration(Configuration.readDefaultConfiguration());
+		serverLogic.initializeFields();
+		serverLogic.startServer();
 
-		processManager = new ZMQProcessManager();
-		ZMQProcessStarter.runZMQProcess_Server(processManager, "tcp://localhost", 5559, "broker");
-		ZMQProcessStarter.runZMQProcess_MessageProcessor(processManager,
-														 "message_processor",
-														 clientDirectory,
-														 topicAndGeofenceMapper,
-														 brokerAreaManager);
+		clientProcessManager = new ZMQProcessManager();
 	}
 
 	@After
 	public void tearDown() {
 		logger.info("Running test tearDown.");
-		assertTrue(processManager.tearDown(5000));
+		clientProcessManager.tearDown(2000);
+		serverLogic.cleanUp();
 	}
 
 	@SuppressWarnings({"ConstantConditions", "OptionalGetWithoutIsPresent"})
@@ -69,12 +64,12 @@ public class PublishSubscribeTest {
 		Geofence g = Geofence.circle(l, 0.4);
 		Topic t = new Topic("test");
 
-		SimpleClient client = new SimpleClient(null, "tcp://localhost", 5559, processManager);
+		SimpleClient client = new SimpleClient(null, "localhost", 5559, clientProcessManager);
 		client.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.CONNECT, new CONNECTPayload(l)));
 		client.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.SUBSCRIBE,
-																   new SUBSCRIBEPayload(t, g)));
+				new SUBSCRIBEPayload(t, g)));
 		client.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.PUBLISH,
-																   new PUBLISHPayload(t, g, "Content")));
+				new PUBLISHPayload(t, g, "Content")));
 
 		Utility.sleepNoLog(500, 0);
 
@@ -103,18 +98,18 @@ public class PublishSubscribeTest {
 		Geofence g = Geofence.circle(l, 0.4);
 		Topic t = new Topic("test");
 
-		SimpleClient clientSubscriber = new SimpleClient(null, "tcp://localhost", 5559, processManager);
+		SimpleClient clientSubscriber = new SimpleClient(null, "localhost", 5559, clientProcessManager);
 		clientSubscriber.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.CONNECT,
-																			 new CONNECTPayload(Location.random()))); // subscriber not in geofence
+				new CONNECTPayload(Location.random()))); // subscriber not in geofence
 		clientSubscriber.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.SUBSCRIBE,
-																			 new SUBSCRIBEPayload(t, g)));
+				new SUBSCRIBEPayload(t, g)));
 
 		// publisher
-		SimpleClient clientPublisher = new SimpleClient(null, "tcp://localhost", 5559, processManager);
+		SimpleClient clientPublisher = new SimpleClient(null, "localhost", 5559, clientProcessManager);
 		clientPublisher.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.CONNECT,
-																			new CONNECTPayload(l))); // publisher is in geofence
+				new CONNECTPayload(l))); // publisher is in geofence
 		clientPublisher.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.PUBLISH,
-																			new PUBLISHPayload(t, g, "Content")));
+				new PUBLISHPayload(t, g, "Content")));
 
 		Utility.sleepNoLog(500, 0);
 
@@ -129,18 +124,18 @@ public class PublishSubscribeTest {
 		Geofence g = Geofence.circle(l, 0.4);
 		Topic t = new Topic("test");
 
-		SimpleClient clientSubscriber = new SimpleClient(null, "tcp://localhost", 5559, processManager);
+		SimpleClient clientSubscriber = new SimpleClient(null, "localhost", 5559, clientProcessManager);
 		clientSubscriber.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.CONNECT,
-																			 new CONNECTPayload(l))); // subscriber is in geofence
+				new CONNECTPayload(l))); // subscriber is in geofence
 		clientSubscriber.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.SUBSCRIBE,
-																			 new SUBSCRIBEPayload(t, g)));
+				new SUBSCRIBEPayload(t, g)));
 
 		// publisher
-		SimpleClient clientPublisher = new SimpleClient(null, "tcp://localhost", 5559, processManager);
+		SimpleClient clientPublisher = new SimpleClient(null, "localhost", 5559, clientProcessManager);
 		clientPublisher.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.CONNECT,
-																			new CONNECTPayload(Location.random()))); // publisher is not in geofence
+				new CONNECTPayload(Location.random()))); // publisher is not in geofence
 		clientPublisher.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.PUBLISH,
-																			new PUBLISHPayload(t, g, "Content")));
+				new PUBLISHPayload(t, g, "Content")));
 
 		Utility.sleepNoLog(500, 0);
 
@@ -153,9 +148,7 @@ public class PublishSubscribeTest {
 		int subscriberMessageCount = 2;
 		for (int i = 0; i < subscriberMessageCount; i++) {
 			assertNotEquals(ControlPacketType.PUBLISH,
-							clientSubscriber
-									.receiveInternalClientMessage()
-									.getControlPacketType()); // no publish message
+					clientSubscriber.receiveInternalClientMessage().getControlPacketType()); // no publish message
 		}
 
 		// check publisher messages: should contain a PUBACK with no matching subscribers
@@ -166,7 +159,7 @@ public class PublishSubscribeTest {
 			if (i == 1) {
 				assertEquals(ControlPacketType.PUBACK, message.getControlPacketType());
 				assertEquals(ReasonCode.NoMatchingSubscribers,
-							 message.getPayload().getPUBACKPayload().get().getReasonCode());
+						message.getPayload().getPUBACKPayload().get().getReasonCode());
 			}
 		}
 	}

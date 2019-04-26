@@ -18,6 +18,9 @@ public enum ControlPacketType {
 	PINGREQ,
 	PINGRESP,
 	DISCONNECT,
-	AUTH
+	AUTH,
+
+	// Inter-Broker Communication (no typical MQTT messages, so other spelling)
+	BrokerForwardPublish
 
 }

@@ -8,7 +8,9 @@ import de.hasenburg.geobroker.commons.model.message.payloads.PUBLISHPayload;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.SocketType;
+import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
+import org.zeromq.ZMQ.Socket;
 import org.zeromq.ZMsg;
 
 import java.io.BufferedWriter;
@@ -32,8 +34,7 @@ import java.util.*;
  *
  * Furthermore, the client counts all PUBLISH messages it receives.
  *
- * WARNING: This client waits 5 seconds after it received the kill command so that its sockets have time to transmit
- * remaining messages. During that interval, it will not parse any incoming messages.
+ * TODO: the benchmark client also does not has to use the order architecture, could be build similarly to StorageClient
  */
 public class ZMQProcess_BenchmarkClient extends ZMQProcess {
 
@@ -42,7 +43,6 @@ public class ZMQProcess_BenchmarkClient extends ZMQProcess {
 	}
 
 	private static final Logger logger = LogManager.getLogger();
-	private static final int TIMEOUT_SECONDS = 10; // logs when not received in time, but repeats
 
 	// Client processing backend, accepts REQ and answers with REP
 	private final String CLIENT_ORDER_BACKEND;
@@ -55,7 +55,11 @@ public class ZMQProcess_BenchmarkClient extends ZMQProcess {
 	private Map<Integer, List<Long>> timestamps;
 	private int receivedForeignPublishMessages = 0;
 
-	protected ZMQProcess_BenchmarkClient(String address, int port, String identity) {
+	// socket indices
+	private final int ORDER_INDEX = 0;
+	private final int SERVER_INDEX = 1;
+
+	ZMQProcess_BenchmarkClient(String address, int port, String identity) {
 		super(identity);
 		this.address = address;
 		this.port = port;
@@ -76,36 +80,34 @@ public class ZMQProcess_BenchmarkClient extends ZMQProcess {
 	}
 
 	@Override
-	public void run() {
-		Thread.currentThread().setName(identity);
+	protected List<ZMQ.Socket> bindAndConnectSockets(ZContext context) {
+		Socket[] socketArray = new ZMQ.Socket[2];
 
-		ZMQ.Socket orders = context.createSocket(SocketType.REP);
+		Socket orders = context.createSocket(SocketType.REP);
 		orders.bind(CLIENT_ORDER_BACKEND);
+		socketArray[ORDER_INDEX] = orders;
 
-		ZMQ.Socket serverSocket = context.createSocket(SocketType.DEALER);
+		Socket serverSocket = context.createSocket(SocketType.DEALER);
 		serverSocket.setIdentity(identity.getBytes());
-		serverSocket.connect(address + ":" + port);
+		serverSocket.connect("tcp://" + address + ":" + port);
+		socketArray[SERVER_INDEX] = serverSocket;
 
-		ZMQ.Poller poller = context.createPoller(3);
-		int zmqControlIndex = ZMQControlUtility.connectWithPoller(context, poller, identity); // 0
-		poller.register(serverSocket, ZMQ.Poller.POLLIN); // 1
-		poller.register(orders, ZMQ.Poller.POLLIN); // 2
+		return Arrays.asList(socketArray);
+	}
 
-		while (!Thread.currentThread().isInterrupted()) {
+	@Override
+	protected void processZMQControlCommandOtherThanKill(ZMQControlUtility.ZMQControlCommand zmqControlCommand, ZMsg msg) {
 
-			logger.trace("ZMQProcess_BenchmarkClient waiting for orders");
-			poller.poll(TIMEOUT_SECONDS * 1000);
-			long timestamp = new Date().getTime();
+	}
 
-			if (poller.pollin(zmqControlIndex)) {
-				if (ZMQControlUtility
-						.getCommand(poller, zmqControlIndex)
-						.equals(ZMQControlUtility.ZMQControlCommand.KILL)) {
-					break;
-				}
-			} else if (poller.pollin(1)) { // check if we received a message
-				Optional<InternalClientMessage> serverMessage =
-						InternalClientMessage.buildMessage(ZMsg.recvMsg(serverSocket, true));
+	@Override
+	protected void processZMsg(int socketIndex, ZMsg msg) {
+		long timestamp = new Date().getTime();
+
+		switch (socketIndex) {
+			case SERVER_INDEX: // got a reply from the server
+
+				Optional<InternalClientMessage> serverMessage = InternalClientMessage.buildMessage(msg);
 				logger.trace("Received message {}, storing timestamp", serverMessage);
 				if (serverMessage.isPresent()) {
 					if (ControlPacketType.PUBLISH.equals(serverMessage.get().getControlPacketType())) {
@@ -129,21 +131,22 @@ public class ZMQProcess_BenchmarkClient extends ZMQProcess {
 					logger.error("Server message was malformed or empty, so no timestamp was stored");
 				}
 
-			} else if (poller.pollin(2)) { // check if we got the order to send a message
-				ZMsg order = ZMsg.recvMsg(orders);
+
+				break;
+			case ORDER_INDEX: // got the order to do something
 
 				boolean valid = true;
-				if (order.size() < 1) {
-					logger.warn("Order has the wrong length {}" + order);
+				if (msg.size() < 1) {
+					logger.warn("Order has the wrong length {}", msg);
 					valid = false;
 				}
-				String orderType = order.popString();
+				String orderType = msg.popString();
 
 				if (valid && ORDERS.SEND.name().equals(orderType)) {
 					logger.trace("Sending message to server");
 
 					//the zMsg should consist of an InternalClientMessage only, as other entries are popped
-					Optional<InternalClientMessage> clientMessageO = InternalClientMessage.buildMessage(order);
+					Optional<InternalClientMessage> clientMessageO = InternalClientMessage.buildMessage(msg);
 
 					if (clientMessageO.isPresent()) {
 						List<Long> longs = timestamps.get(clientMessageO.get().getControlPacketType().ordinal());
@@ -151,8 +154,8 @@ public class ZMQProcess_BenchmarkClient extends ZMQProcess {
 						if (longs != null) {
 							longs.add(timestamp);
 						}
-						clientMessageO.get().getZMsg().send(serverSocket);
-						ZMsg.newStringMsg(ORDERS.CONFIRM.name()).send(orders);
+						clientMessageO.get().getZMsg().send(sockets.get(SERVER_INDEX));
+						ZMsg.newStringMsg(ORDERS.CONFIRM.name()).send(sockets.get(ORDER_INDEX));
 					} else {
 						logger.warn("Cannot run send as given message is incompatible");
 						valid = false;
@@ -160,24 +163,21 @@ public class ZMQProcess_BenchmarkClient extends ZMQProcess {
 				}
 				if (!valid || !ORDERS.SEND.name().equals(orderType)) {
 					// send order response if not already done
-					ZMsg.newStringMsg(ORDERS.FAIL.name()).send(orders);
+					ZMsg.newStringMsg(ORDERS.FAIL.name()).send(sockets.get(ORDER_INDEX));
 				}
-			}
-		} // end while loop
 
+				break;
+			default:
+				logger.error("Cannot process message for socket at index {}, as this index is not known.", socketIndex);
+		}
+	}
+
+	@Override
+	protected void shutdownCompleted() {
 		// write results to disk
 		writeResultsToDisk();
 
-		// let's wait 5 seconds so that all messages are send properly
-		Utility.sleepNoLog(5000, 0);
-
-		// sub control socket
-		context.destroySocket(poller.getSocket(0));
-
-		// other sockets
-		context.destroySocket(orders);
-		context.destroySocket(serverSocket);
-		logger.info("Shut down ZMQProcess_BenchmarkClient, orders and server sockets were destroyed.");
+		logger.info("Shut down ZMQProcess_BenchmarkClient {}", identity);
 	}
 
 	private void writeResultsToDisk() {
