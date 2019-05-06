@@ -29,7 +29,8 @@ public class DisGBAtSubscriberMatchingLogic implements IMatchingLogic {
 	private final TopicAndGeofenceMapper topicAndGeofenceMapper;
 	private final BrokerAreaManager brokerAreaManager;
 
-	public DisGBAtSubscriberMatchingLogic(ClientDirectory clientDirectory, TopicAndGeofenceMapper topicAndGeofenceMapper,
+	public DisGBAtSubscriberMatchingLogic(ClientDirectory clientDirectory,
+										  TopicAndGeofenceMapper topicAndGeofenceMapper,
 										  BrokerAreaManager brokerAreaManager) {
 		this.clientDirectory = clientDirectory;
 		this.topicAndGeofenceMapper = topicAndGeofenceMapper;
@@ -38,27 +39,16 @@ public class DisGBAtSubscriberMatchingLogic implements IMatchingLogic {
 
 	@Override
 	public void processCONNECT(InternalServerMessage message, Socket clients, Socket brokers) {
-		InternalServerMessage response;
 		CONNECTPayload payload = message.getPayload().getCONNECTPayload().get();
 
 		if (!handleResponsibility(message.getClientIdentifier(), payload.getLocation(), clients)) {
 			return; // we are not responsible, client has been notified
 		}
 
-		boolean success = clientDirectory.addClient(message.getClientIdentifier(), payload.getLocation());
-
-		if (success) {
-			logger.debug("Created client {}, acknowledging.", message.getClientIdentifier());
-			response = new InternalServerMessage(message.getClientIdentifier(),
-												 ControlPacketType.CONNACK,
-												 new CONNACKPayload(ReasonCode.Success));
-		} else {
-			logger.debug("Client {} already exists, so protocol error. Disconnecting.", message.getClientIdentifier());
-			clientDirectory.removeClient(message.getClientIdentifier());
-			response = new InternalServerMessage(message.getClientIdentifier(),
-												 ControlPacketType.DISCONNECT,
-												 new DISCONNECTPayload(ReasonCode.ProtocolError));
-		}
+		InternalServerMessage response = CommonMatchingTasks.connectClientAtLocalBroker(message.getClientIdentifier(),
+				payload.getLocation(),
+				clientDirectory,
+				logger);
 
 		logger.trace("Sending response " + response);
 		response.getZMsg().send(clients);
@@ -80,29 +70,18 @@ public class DisGBAtSubscriberMatchingLogic implements IMatchingLogic {
 
 	@Override
 	public void processPINGREQ(InternalServerMessage message, Socket clients, Socket brokers) {
-		InternalServerMessage response;
 		PINGREQPayload payload = message.getPayload().getPINGREQPayload().get();
 
 		// check whether client has moved to another broker area
 		if (!handleResponsibility(message.getClientIdentifier(), payload.getLocation(), clients)) {
-			// TODO F: migrate client data to other broker, right now he has to update the information himself
-			clientDirectory.removeClient(message.getClientIdentifier());
 			return; // we are not responsible, client has been notified
 		}
 
-		boolean success = clientDirectory.updateClientLocation(message.getClientIdentifier(), payload.getLocation());
-		if (success) {
-			logger.debug("Updated location of {} to {}", message.getClientIdentifier(), payload.getLocation());
-
-			response = new InternalServerMessage(message.getClientIdentifier(),
-												 ControlPacketType.PINGRESP,
-												 new PINGRESPPayload(ReasonCode.LocationUpdated));
-		} else {
-			logger.debug("Client {} is not connected", message.getClientIdentifier());
-			response = new InternalServerMessage(message.getClientIdentifier(),
-												 ControlPacketType.PINGRESP,
-												 new PINGRESPPayload(ReasonCode.NotConnected));
-		}
+		InternalServerMessage response =
+				CommonMatchingTasks.updateClientLocationAtLocalBroker(message.getClientIdentifier(),
+						payload.getLocation(),
+						clientDirectory,
+						logger);
 
 		logger.trace("Sending response " + response);
 		response.getZMsg().send(clients);
@@ -110,8 +89,17 @@ public class DisGBAtSubscriberMatchingLogic implements IMatchingLogic {
 
 	@Override
 	public void processSUBSCRIBE(InternalServerMessage message, Socket clients, Socket brokers) {
-		// TODO Implement
-		throw new RuntimeException("Not yet implemented");
+		SUBSCRIBEPayload payload = message.getPayload().getSUBSCRIBEPayload().get();
+
+		InternalServerMessage response = CommonMatchingTasks.subscribeAtLocalBroker(message.getClientIdentifier(),
+				clientDirectory,
+				topicAndGeofenceMapper,
+				payload.getTopic(),
+				payload.getGeofence(),
+				logger);
+
+		logger.trace("Sending response " + response);
+		response.getZMsg().send(clients);
 	}
 
 	@Override
@@ -137,9 +125,9 @@ public class DisGBAtSubscriberMatchingLogic implements IMatchingLogic {
 	 ****************************************************************/
 
 	/**
-	 * Checks whether this particular broker is responsible for the client with the given location.
-	 * If not, sends a disconnect message with the responsible broker, if any exists.
-	 * Otherwise, does nothing
+	 * Checks whether this particular broker is responsible for the client with the given location. If not, sends a
+	 * disconnect message and information about the responsible broker, if any exists. The client is also removed from
+	 * the client directory. Otherwise, does nothing.
 	 *
 	 * @return true, if this broker is responsible, otherwise false
 	 */
@@ -149,13 +137,19 @@ public class DisGBAtSubscriberMatchingLogic implements IMatchingLogic {
 			BrokerInfo repBroker = brokerAreaManager.getOtherBrokerForClientLocation(clientLocation);
 
 			InternalServerMessage response = new InternalServerMessage(clientIdentifier,
-																	   ControlPacketType.DISCONNECT,
-																	   new DISCONNECTPayload(ReasonCode.WrongBroker, repBroker));
+					ControlPacketType.DISCONNECT,
+					new DISCONNECTPayload(ReasonCode.WrongBroker, repBroker));
 			logger.debug("Not responsible for client {}, responsible broker is {}", clientIdentifier, repBroker);
 
 			response.getZMsg().send(clients);
+
+			// TODO F: migrate client data to other broker, right now he has to update the information himself
+			logger.debug("Client had {} active subscriptions",
+					clientDirectory.getCurrentClientSubscriptions(clientIdentifier));
+			clientDirectory.removeClient(clientIdentifier);
 			return false;
 		}
 		return true;
 	}
+
 }

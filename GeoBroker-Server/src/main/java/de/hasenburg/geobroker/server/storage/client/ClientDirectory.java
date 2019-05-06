@@ -63,6 +63,15 @@ public class ClientDirectory {
 		return true;
 	}
 
+	public int getCurrentClientSubscriptions(String clientIdentifier) {
+		logger.trace("Checking amount of active subscriptions for client {}");
+		Client c = clients.get(clientIdentifier);
+
+		if (c == null) return 0;
+
+		return c.getSubscriptionCount();
+	}
+
 	public Location getClientLocation(String clientIdentifier) {
 		logger.trace("Retrieving location of client {}", clientIdentifier);
 		Client c = clients.get(clientIdentifier);
