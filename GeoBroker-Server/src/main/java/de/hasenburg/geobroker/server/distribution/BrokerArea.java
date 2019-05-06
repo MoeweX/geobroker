@@ -17,7 +17,8 @@ public class BrokerArea implements JSONable {
 	private final Geofence coveredArea;
 
 	@JsonCreator
-	BrokerArea(@JsonProperty("responsibleBroker") BrokerInfo responsibleBroker, @JsonProperty("coveredArea") Geofence coveredArea) {
+	public BrokerArea(@JsonProperty("responsibleBroker") BrokerInfo responsibleBroker,
+					  @JsonProperty("coveredArea") Geofence coveredArea) {
 		this.responsibleBroker = responsibleBroker;
 		this.coveredArea = coveredArea;
 	}

@@ -3,7 +3,10 @@ package de.hasenburg.geobroker.server.main.server;
 import de.hasenburg.geobroker.commons.Utility;
 import de.hasenburg.geobroker.commons.communication.ZMQProcessManager;
 import de.hasenburg.geobroker.server.communication.ZMQProcessStarter;
+import de.hasenburg.geobroker.server.distribution.BrokerAreaManager;
+import de.hasenburg.geobroker.server.distribution.DisGBDistributionLogic;
 import de.hasenburg.geobroker.server.main.Configuration;
+import de.hasenburg.geobroker.server.matching.DisGBAtSubscriberMatchingLogic;
 import de.hasenburg.geobroker.server.matching.SingleGeoBrokerMatchingLogic;
 import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper;
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory;
@@ -12,12 +15,14 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class SingleGeoBrokerServerLogic implements IServerLogic {
+public class DisGBServerLogic implements IServerLogic {
 
 	private static final Logger logger = LogManager.getLogger();
 
 	private Configuration configuration;
-	private SingleGeoBrokerMatchingLogic matchingLogic;
+	BrokerAreaManager brokerAreaManager;
+	private DisGBAtSubscriberMatchingLogic matchingLogic;
+	private DisGBDistributionLogic distributionLogic;
 	private ZMQProcessManager processManager;
 	private ClientDirectory clientDirectory;
 
@@ -28,10 +33,15 @@ public class SingleGeoBrokerServerLogic implements IServerLogic {
 
 	@Override
 	public void initializeFields() {
+		brokerAreaManager = new BrokerAreaManager(configuration.getBrokerId());
+		brokerAreaManager.setup_DefaultFile();
+
 		clientDirectory = new ClientDirectory();
 		TopicAndGeofenceMapper topicAndGeofenceMapper = new TopicAndGeofenceMapper(configuration);
 
-		matchingLogic = new SingleGeoBrokerMatchingLogic(clientDirectory, topicAndGeofenceMapper);
+		matchingLogic = new DisGBAtSubscriberMatchingLogic(clientDirectory, topicAndGeofenceMapper, brokerAreaManager);
+		distributionLogic = new DisGBDistributionLogic();
+
 		processManager = new ZMQProcessManager();
 	}
 
@@ -41,12 +51,20 @@ public class SingleGeoBrokerServerLogic implements IServerLogic {
 				"0.0.0.0",
 				configuration.getPort(),
 				configuration.getBrokerId());
+
+		// TODO configure amount via configuration
+		ZMQProcessStarter.runZMQProcess_BrokerCommunicator(processManager,
+				configuration.getBrokerId(),
+				1,
+				distributionLogic,
+				brokerAreaManager.getOtherBrokerInfo());
+
 		for (int number = 1; number <= configuration.getMessageProcessors(); number++) {
 			ZMQProcessStarter.runZMQProcess_MessageProcessor(processManager,
 					configuration.getBrokerId(),
 					number,
 					matchingLogic,
-					0);
+					1);
 		}
 		logger.info("Started server successfully!");
 	}
@@ -74,5 +92,9 @@ public class SingleGeoBrokerServerLogic implements IServerLogic {
 
 	public ClientDirectory getClientDirectory() {
 		return clientDirectory;
+	}
+
+	public BrokerAreaManager getBrokerAreaManager() {
+		return brokerAreaManager;
 	}
 }

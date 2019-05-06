@@ -11,9 +11,9 @@
 	},
 	{
 		"responsibleBroker" : {
-			"brokerId" : "notUsedBroker",
-			"ip" : "not important as overlaps responsible broker area",
-			"port" : 5559
+			"brokerId" : "notUsedBroker (but info must allow tcp socket connect)",
+			"ip" : "localhost",
+			"port" : 1234
 		},
 		"coveredArea" : {
 			"WKT" : "ENVELOPE (-1, 1, 1, -1)"

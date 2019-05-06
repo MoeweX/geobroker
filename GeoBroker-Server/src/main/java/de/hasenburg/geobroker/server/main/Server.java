@@ -26,10 +26,6 @@ public class Server {
 		lifecycle.run(configuration);
 		logger.info("End of lifecycle reached, shutting down");
 
-		// in case of DisGB, set brokers
-		// BrokerAreaManager brokerAreaManager = new BrokerAreaManager(configuration.getBrokerId());
-		// brokerAreaManager.setup_DefaultFile();
-
 	}
 
 }

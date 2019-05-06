@@ -75,6 +75,10 @@ public class BrokerAreaManager {
 		return otherBrokers;
 	}
 
+	public List<BrokerInfo> getOtherBrokerInfo() {
+		return otherAreas.stream().map(BrokerArea::getResponsibleBroker).collect(Collectors.toList());
+	}
+
 	public String getOwnBrokerId() {
 		return this.ownBrokerId;
 	}
@@ -87,7 +91,7 @@ public class BrokerAreaManager {
 	 * Helper Methods
 	 ****************************************************************/
 
-	void createFromJson (String json) {
+	void createFromJson(String json) {
 		JSONArray jsonArray = new JSONArray(json);
 		for (int i = 0; i < jsonArray.length(); i++) {
 			JSONObject object = jsonArray.getJSONObject(i);

@@ -14,6 +14,7 @@ import de.hasenburg.geobroker.server.communication.ZMQProcessStarter;
 import de.hasenburg.geobroker.server.distribution.BrokerArea;
 import de.hasenburg.geobroker.server.distribution.BrokerAreaManager;
 import de.hasenburg.geobroker.server.main.Configuration;
+import de.hasenburg.geobroker.server.main.server.DisGBServerLogic;
 import de.hasenburg.geobroker.server.main.server.SingleGeoBrokerServerLogic;
 import de.hasenburg.geobroker.server.matching.DisGBAtSubscriberMatchingLogic;
 import de.hasenburg.geobroker.server.matching.SingleGeoBrokerMatchingLogic;
@@ -37,7 +38,7 @@ public class ConnectAndDisconnectTest {
 
 	private static final Logger logger = LogManager.getLogger();
 
-	private SingleGeoBrokerServerLogic serverLogic;
+	private DisGBServerLogic serverLogic;
 	private ZMQProcessManager clientProcessManager;
 
 	@SuppressWarnings("Duplicates")
@@ -45,13 +46,12 @@ public class ConnectAndDisconnectTest {
 	public void setUp() {
 		logger.info("Running test setUp");
 
-		logger.info("Running test setUp");
-
-		serverLogic = new SingleGeoBrokerServerLogic(); // TODO use DisGBServerLogic so that responsibility test can be used again
+		serverLogic = new DisGBServerLogic();
 		serverLogic.loadConfiguration(Configuration.readDefaultConfiguration());
 		serverLogic.initializeFields();
 		serverLogic.startServer();
 
+		logger.info("Starting client zmq process manager");
 		clientProcessManager = new ZMQProcessManager();
 
 		assertEquals(0, serverLogic.getClientDirectory().getNumberOfClients());
@@ -70,7 +70,7 @@ public class ConnectAndDisconnectTest {
 
 		// connect
 		client.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.CONNECT,
-																   new CONNECTPayload(Location.random())));
+				new CONNECTPayload(Location.random())));
 		assertEquals(ControlPacketType.CONNACK, client.receiveInternalClientMessage().getControlPacketType());
 
 		// check whether client exists
@@ -78,7 +78,7 @@ public class ConnectAndDisconnectTest {
 
 		// disconnect
 		client.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.DISCONNECT,
-																   new DISCONNECTPayload(ReasonCode.NormalDisconnection)));
+				new DISCONNECTPayload(ReasonCode.NormalDisconnection)));
 
 		// check whether disconnected and no more messages received
 		Utility.sleepNoLog(1, 0);
@@ -100,10 +100,10 @@ public class ConnectAndDisconnectTest {
 		// send connects and randomly also disconnect
 		for (SimpleClient client : clients) {
 			client.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.CONNECT,
-																	   new CONNECTPayload(Location.random())));
+					new CONNECTPayload(Location.random())));
 			if (random.nextBoolean()) {
 				client.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.DISCONNECT,
-																		   new DISCONNECTPayload(ReasonCode.NormalDisconnection)));
+						new DISCONNECTPayload(ReasonCode.NormalDisconnection)));
 				activeConnections--;
 			}
 		}
@@ -115,26 +115,30 @@ public class ConnectAndDisconnectTest {
 
 		Utility.sleepNoLog(1, 0);
 		// check number of active clients
-		assertEquals("Wrong number of active clients", activeConnections, serverLogic.getClientDirectory().getNumberOfClients());
+		assertEquals("Wrong number of active clients",
+				activeConnections,
+				serverLogic.getClientDirectory().getNumberOfClients());
 		logger.info("{} out of {} clients were active, so everything fine", activeConnections, 10);
 	}
 
-//	@Test
-//	public void testNotResponsibleClient() {
-//		brokerAreaManager.updateOwnBrokerArea(new BrokerArea(brokerAreaManager.getOwnBrokerInfo(),
-//															 Geofence.circle(new Location(0, 0), 10)));
-//
-//		SimpleClient client = new SimpleClient(null, "tcp://localhost", 5559, processManager);
-//
-//		// connect
-//		client.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.CONNECT,
-//																   new CONNECTPayload(new Location(30, 30))));
-//		InternalClientMessage response = client.receiveInternalClientMessage();
-//		assertEquals(ControlPacketType.DISCONNECT, response.getControlPacketType());
-//		assertEquals(ReasonCode.WrongBroker, response.getPayload().getDISCONNECTPayload().get().getReasonCode());
-//
-//		// check whether client exists
-//		assertEquals(0, clientDirectory.getNumberOfClients());
-//	}
+	@Test
+	public void testNotResponsibleClient() {
+		serverLogic.getBrokerAreaManager().updateOwnBrokerArea(new BrokerArea(serverLogic.getBrokerAreaManager()
+																						 .getOwnBrokerInfo(),
+				Geofence.circle(new Location(0, 0), 10)));
+
+		SimpleClient client = new SimpleClient(null, "localhost", 5559, clientProcessManager);
+
+		// connect
+		client.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.CONNECT,
+				new CONNECTPayload(new Location(30, 30))));
+		InternalClientMessage response = client.receiveInternalClientMessage();
+		logger.info("Client received response {}", response.getControlPacketType().toString());
+		assertEquals(ControlPacketType.DISCONNECT, response.getControlPacketType());
+		assertEquals(ReasonCode.WrongBroker, response.getPayload().getDISCONNECTPayload().get().getReasonCode());
+
+		// check whether client exists
+		assertEquals(0, serverLogic.getClientDirectory().getNumberOfClients());
+	}
 
 }
