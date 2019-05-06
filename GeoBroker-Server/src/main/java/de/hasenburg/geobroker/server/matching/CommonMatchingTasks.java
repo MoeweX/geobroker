@@ -86,50 +86,46 @@ class CommonMatchingTasks {
 		}
 	}
 
-	static InternalServerMessage publishMessageToLocalClients(String publisherIdentifier, Location publisherLocation, PUBLISHPayload publishPayload,
+	/**
+	 * @param senderIdentifier - this is either a clientId, or in case of a BrokerForwardPublish, a brokerId.
+	 * @param publisherLocation - the location of the publisher
+	 */
+	static InternalServerMessage publishMessageToLocalClients(String senderIdentifier, Location publisherLocation,
+															  PUBLISHPayload publishPayload,
 															  ClientDirectory clientDirectory,
 															  TopicAndGeofenceMapper topicAndGeofenceMapper,
 															  Socket clients, Logger logger) {
 
-		if (publisherLocation != null) {
-			logger.debug("Publishing topic {} to all subscribers", publishPayload.getTopic());
+		logger.debug("Publishing topic {} to all subscribers", publishPayload.getTopic());
 
-			// get subscriptions that have a geofence containing the publisher location
-			Set<ImmutablePair<String, Integer>> subscriptionIds = topicAndGeofenceMapper.getSubscriptionIds(
-					publishPayload.getTopic(),
-					publisherLocation);
+		// get subscriptions that have a geofence containing the publisher location
+		Set<ImmutablePair<String, Integer>> subscriptionIds =
+				topicAndGeofenceMapper.getSubscriptionIds(publishPayload.getTopic(), publisherLocation);
 
-			// only keep subscription if subscriber location is insider message geofence
-			subscriptionIds.removeIf(subId -> !publishPayload.getGeofence()
-															 .contains(clientDirectory.getClientLocation(subId.left)));
+		// only keep subscription if subscriber location is insider message geofence
+		subscriptionIds.removeIf(subId -> !publishPayload.getGeofence()
+														 .contains(clientDirectory.getClientLocation(subId.left)));
 
-			// publish message to remaining subscribers
-			for (ImmutablePair<String, Integer> subscriptionId : subscriptionIds) {
-				String subscriberClientIdentifier = subscriptionId.left;
-				logger.debug("Client {} is a subscriber", subscriberClientIdentifier);
-				InternalServerMessage toPublish = new InternalServerMessage(subscriberClientIdentifier,
-						ControlPacketType.PUBLISH,
-						publishPayload);
-				logger.trace("Publishing " + toPublish);
-				toPublish.getZMsg().send(clients);
-			}
+		// publish message to remaining subscribers
+		for (ImmutablePair<String, Integer> subscriptionId : subscriptionIds) {
+			String subscriberClientIdentifier = subscriptionId.left;
+			logger.debug("Client {} is a subscriber", subscriberClientIdentifier);
+			InternalServerMessage toPublish = new InternalServerMessage(subscriberClientIdentifier,
+					ControlPacketType.PUBLISH,
+					publishPayload);
+			logger.trace("Publishing " + toPublish);
+			toPublish.getZMsg().send(clients);
+		}
 
-			if (subscriptionIds.isEmpty()) {
-				logger.debug("No subscriber exists.");
-				return new InternalServerMessage(publisherIdentifier,
-						ControlPacketType.PUBACK,
-						new PUBACKPayload(ReasonCode.NoMatchingSubscribers));
-			} else {
-				return new InternalServerMessage(publisherIdentifier,
-						ControlPacketType.PUBACK,
-						new PUBACKPayload(ReasonCode.Success));
-			}
-
-		} else {
-			logger.debug("Client {} is not connected", publisherIdentifier);
-			return new InternalServerMessage(publisherIdentifier,
+		if (subscriptionIds.isEmpty()) {
+			logger.debug("No subscriber exists.");
+			return new InternalServerMessage(senderIdentifier,
 					ControlPacketType.PUBACK,
-					new PUBACKPayload(ReasonCode.NotConnected));
+					new PUBACKPayload(ReasonCode.NoMatchingSubscribers));
+		} else {
+			return new InternalServerMessage(senderIdentifier,
+					ControlPacketType.PUBACK,
+					new PUBACKPayload(ReasonCode.Success));
 		}
 
 	}

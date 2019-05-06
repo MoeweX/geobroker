@@ -15,6 +15,12 @@ import org.zeromq.ZMsg;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Messages send by this class appear, for other brokers, to be send by clients, as they are received
+ * by the {@link ZMQProcess_Server}.
+ *
+ * Responses of other brokers are sent back to this class.
+ */
 public class ZMQProcess_BrokerCommunicator extends ZMQProcess {
 
 	private static final Logger logger = LogManager.getLogger();
@@ -94,7 +100,8 @@ public class ZMQProcess_BrokerCommunicator extends ZMQProcess {
 		int dealerIndex = socketIndex - SOCKET_OFFSET;
 
 		if (otherBrokerInfos.size() - 1 < dealerIndex) {
-			distributionLogic.processOtherBrokerAcknowledgement(msg);
+			String otherBrokerId = otherBrokerInfos.get(dealerIndex).getBrokerId();
+			distributionLogic.processOtherBrokerAcknowledgement(msg, otherBrokerId);
 			return;
 		}
 
@@ -129,7 +136,7 @@ public class ZMQProcess_BrokerCommunicator extends ZMQProcess {
 
 		Socket socket = sockets.get(socketIndex);
 
-		distributionLogic.sendMessageToOtherBrokers(msg, socket);
+		distributionLogic.sendMessageToOtherBrokers(msg, socket, targetBrokerId);
 	}
 
 	/*****************************************************************

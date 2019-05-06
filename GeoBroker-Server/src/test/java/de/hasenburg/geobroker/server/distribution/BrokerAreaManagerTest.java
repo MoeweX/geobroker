@@ -28,7 +28,7 @@ public class BrokerAreaManagerTest {
 		// as the areas overlap in the default config, two brokers are responsible in theory.
 		BrokerInfo otherBroker = brokerAreaManager.getOtherBrokerForClientLocation(location);
 		assertNotNull(otherBroker);
-		assertEquals("notUsedBroker", otherBroker.getBrokerId());
+		assertEquals("notUsedBroker (but info must allow tcp socket connect)", otherBroker.getBrokerId());
 	}
 
 }

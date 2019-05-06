@@ -95,16 +95,24 @@ public class SingleGeoBrokerMatchingLogic implements IMatchingLogic {
 
 	@Override
 	public void processPUBLISH(InternalServerMessage message, Socket clients, Socket brokers) {
+		InternalServerMessage response;
 		PUBLISHPayload payload = message.getPayload().getPUBLISHPayload().get();
 		Location publisherLocation = clientDirectory.getClientLocation(message.getClientIdentifier());
 
-		InternalServerMessage response = CommonMatchingTasks.publishMessageToLocalClients(message.getClientIdentifier(),
-				publisherLocation,
-				payload,
-				clientDirectory,
-				topicAndGeofenceMapper,
-				clients,
-				logger);
+		if (publisherLocation == null) { // null if client is not connected
+			logger.debug("Client {} is not connected", message.getClientIdentifier());
+			response = new InternalServerMessage(message.getClientIdentifier(),
+					ControlPacketType.PUBACK,
+					new PUBACKPayload(ReasonCode.NotConnected));
+		} else {
+			response = CommonMatchingTasks.publishMessageToLocalClients(message.getClientIdentifier(),
+					publisherLocation,
+					payload,
+					clientDirectory,
+					topicAndGeofenceMapper,
+					clients,
+					logger);
+		}
 
 		// send response to publisher
 		logger.trace("Sending response " + response);

@@ -110,46 +110,73 @@ public class DisGBAtSubscriberMatchingLogic implements IMatchingLogic {
 
 	@Override
 	public void processPUBLISH(InternalServerMessage message, Socket clients, Socket brokers) {
+		InternalServerMessage response;
 		PUBLISHPayload payload = message.getPayload().getPUBLISHPayload().get();
 		Location publisherLocation = clientDirectory.getClientLocation(message.getClientIdentifier());
 
-		// find other brokers whose broker area intersects with the message geofence
-		List<BrokerInfo> otherBrokers = brokerAreaManager.getOtherBrokersForMessageGeofence(payload.getGeofence());
-		for (BrokerInfo otherBroker : otherBrokers) {
-			logger.trace("Broker area of {} intersects with message from client {}",
-					otherBroker.getBrokerId(),
-					message.getClientIdentifier());
-			// send message to BrokerCommunicator who takes care of the rest
-			ZMQProcess_BrokerCommunicator.generatePULLSocketMessage(otherBroker.getBrokerId(),
-					new InternalBrokerMessage(ControlPacketType.BrokerForwardPublish,
-							new BrokerForwardPublishPayload(payload, publisherLocation))).send(brokers);
+		if (publisherLocation == null) { // null if client is not connected
+			logger.debug("Client {} is not connected", message.getClientIdentifier());
+			response = new InternalServerMessage(message.getClientIdentifier(),
+					ControlPacketType.PUBACK,
+					new PUBACKPayload(ReasonCode.NotConnected));
+		} else {
+			ReasonCode responseCode;
 
+			// find other brokers whose broker area intersects with the message geofence
+			List<BrokerInfo> otherBrokers = brokerAreaManager.getOtherBrokersForMessageGeofence(payload.getGeofence());
+			for (BrokerInfo otherBroker : otherBrokers) {
+				logger.trace("Broker area of {} intersects with message from client {}",
+						otherBroker.getBrokerId(),
+						message.getClientIdentifier());
+				// send message to BrokerCommunicator who takes care of the rest
+				ZMQProcess_BrokerCommunicator.generatePULLSocketMessage(otherBroker.getBrokerId(),
+						new InternalBrokerMessage(ControlPacketType.BrokerForwardPublish,
+								new BrokerForwardPublishPayload(payload, publisherLocation))).send(brokers);
+
+			}
+
+			if (otherBrokers.size() > 0) {
+				responseCode = ReasonCode.NoMatchingSubscribersButForwarded;
+			} else {
+				responseCode = ReasonCode.NoMatchingSubscribers;
+			}
+
+			// check if own broker area intersects with the message geofence
+			if (brokerAreaManager.checkOurAreaForMessageGeofence(payload.getGeofence())) {
+				response = CommonMatchingTasks.publishMessageToLocalClients(message.getClientIdentifier(),
+						publisherLocation,
+						payload,
+						clientDirectory,
+						topicAndGeofenceMapper,
+						clients,
+						logger);
+
+				if (response.getPayload().getPUBACKPayload().get().getReasonCode().equals(ReasonCode.Success)) {
+					responseCode = ReasonCode.Success;
+				}
+			}
+
+			// now we generate the client answer if he was connected with the correct response code
+			response = new InternalServerMessage(message.getClientIdentifier(),
+					ControlPacketType.PUBACK,
+					new PUBACKPayload(responseCode));
 		}
 
-		// check if own broker area intersects with the message geofence
-		if (brokerAreaManager.checkOurAreaForMessageGeofence(payload.getGeofence())) {
-			InternalServerMessage response =
-					CommonMatchingTasks.publishMessageToLocalClients(message.getClientIdentifier(),
-							publisherLocation,
-							payload,
-							clientDirectory,
-							topicAndGeofenceMapper,
-							clients,
-							logger);
-
-			// send response to publisher
-			logger.trace("Sending response " + response);
-			response.getZMsg().send(clients);
-		}
+		// send response to publisher
+		logger.trace("Sending response " + response);
+		response.getZMsg().send(clients);
 
 	}
 
 	@Override
 	public void processBrokerForwardPublish(InternalServerMessage message, Socket clients, Socket brokers) {
-		// we received this because another broker knows that our area intersects
+		// we received this because another broker knows that our area intersects and he knows the publishing client is connected
 		BrokerForwardPublishPayload payload = message.getPayload().getBrokerForwardPublishPayload().get();
 
-		InternalServerMessage response = CommonMatchingTasks.publishMessageToLocalClients(message.getClientIdentifier(),
+		// the id is determined by ZeroMQ based on the first frame, so here it is the id of the forwarding broker
+		String otherBrokerId = message.getClientIdentifier();
+
+		InternalServerMessage response = CommonMatchingTasks.publishMessageToLocalClients(otherBrokerId,
 				payload.getPublisherLocation(),
 				payload.getPublishPayload(),
 				clientDirectory,
@@ -157,7 +184,11 @@ public class DisGBAtSubscriberMatchingLogic implements IMatchingLogic {
 				clients,
 				logger);
 
-		// TODO acknowledge publish operation to other broker
+		// acknowledge publish operation to other broker, he does not expect a particular message so we just reply
+		// with the response that we have generated anyways (needs to go via the clients socket as response has to
+		// go out of the ZMQProcess_Server
+		response.getZMsg().send(clients);
+
 	}
 
 	/*****************************************************************

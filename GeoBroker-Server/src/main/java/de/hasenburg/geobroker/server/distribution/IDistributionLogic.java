@@ -8,8 +8,8 @@ import org.zeromq.ZMQ.Socket;
  */
 public interface IDistributionLogic {
 
-	void sendMessageToOtherBrokers(ZMsg msg, Socket broker);
+	void sendMessageToOtherBrokers(ZMsg msg, Socket broker, String targetBrokerId);
 
-	void processOtherBrokerAcknowledgement(ZMsg msg);
+	void processOtherBrokerAcknowledgement(ZMsg msg, String otherBrokerId);
 
 }
