@@ -2,6 +2,7 @@ package de.hasenburg.geobroker.server.distribution;
 
 import de.hasenburg.geobroker.commons.model.BrokerInfo;
 import de.hasenburg.geobroker.commons.model.JSONable;
+import de.hasenburg.geobroker.commons.model.spatial.Geofence;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -51,6 +52,10 @@ public class BrokerAreaManager {
 		return ownArea.ContainsLocation(clientLocation);
 	}
 
+	public boolean checkOurAreaForMessageGeofence(Geofence messageGeofence) {
+		return ownArea.intersects(messageGeofence);
+	}
+
 	public @Nullable BrokerInfo getOtherBrokerForClientLocation(Location clientLocation) {
 		for (BrokerArea area : otherAreas) {
 			if (area.ContainsLocation(clientLocation)) {
@@ -58,6 +63,16 @@ public class BrokerAreaManager {
 			}
 		}
 		return null;
+	}
+
+	public List<BrokerInfo> getOtherBrokersForMessageGeofence(Geofence messageGeofence) {
+		List<BrokerInfo> otherBrokers = new ArrayList<>();
+		for (BrokerArea area : otherAreas) {
+			if (area.intersects(messageGeofence)) {
+				otherBrokers.add(area.getResponsibleBroker());
+			}
+		}
+		return otherBrokers;
 	}
 
 	public String getOwnBrokerId() {
@@ -86,4 +101,5 @@ public class BrokerAreaManager {
 			});
 		}
 	}
+
 }

@@ -15,7 +15,7 @@ import org.zeromq.ZMsg;
 import java.util.Arrays;
 import java.util.List;
 
-class ZMQProcess_BrokerCommunicator extends ZMQProcess {
+public class ZMQProcess_BrokerCommunicator extends ZMQProcess {
 
 	private static final Logger logger = LogManager.getLogger();
 
@@ -136,13 +136,13 @@ class ZMQProcess_BrokerCommunicator extends ZMQProcess {
 	 * Message Generation Helpers
 	 ****************************************************************/
 
-	static ZMsg generatePULLSocketMessage(String targetBrokerId, InternalBrokerMessage ibm) {
+	public static ZMsg generatePULLSocketMessage(String targetBrokerId, InternalBrokerMessage ibm) {
 		ZMsg msg = ZMsg.newStringMsg(targetBrokerId);
 		ZMsg ibm_message = ibm.getZMsg();
 		msg.add(ibm_message.pop());
 		msg.add(ibm_message.pop());
 		if (ibm_message.size() > 0) {
-			logger.error("All message frames should have been popped.");
+			logger.error("All message frames should have been popped, it remains {}", msg);
 		}
 		return msg;
 	}

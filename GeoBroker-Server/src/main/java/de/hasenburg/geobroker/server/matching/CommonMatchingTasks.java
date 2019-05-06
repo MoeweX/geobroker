@@ -3,10 +3,7 @@ package de.hasenburg.geobroker.server.matching;
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
 import de.hasenburg.geobroker.commons.model.message.ReasonCode;
 import de.hasenburg.geobroker.commons.model.message.Topic;
-import de.hasenburg.geobroker.commons.model.message.payloads.CONNACKPayload;
-import de.hasenburg.geobroker.commons.model.message.payloads.DISCONNECTPayload;
-import de.hasenburg.geobroker.commons.model.message.payloads.PINGRESPPayload;
-import de.hasenburg.geobroker.commons.model.message.payloads.SUBACKPayload;
+import de.hasenburg.geobroker.commons.model.message.payloads.*;
 import de.hasenburg.geobroker.commons.model.spatial.Geofence;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
 import de.hasenburg.geobroker.server.communication.InternalServerMessage;
@@ -14,6 +11,9 @@ import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper;
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.logging.log4j.Logger;
+import org.zeromq.ZMQ.Socket;
+
+import java.util.Set;
 
 class CommonMatchingTasks {
 
@@ -84,6 +84,54 @@ class CommonMatchingTasks {
 					ControlPacketType.SUBACK,
 					new SUBACKPayload(ReasonCode.GrantedQoS0));
 		}
+	}
+
+	static InternalServerMessage publishMessageToLocalClients(String publisherIdentifier, Location publisherLocation, PUBLISHPayload publishPayload,
+															  ClientDirectory clientDirectory,
+															  TopicAndGeofenceMapper topicAndGeofenceMapper,
+															  Socket clients, Logger logger) {
+
+		if (publisherLocation != null) {
+			logger.debug("Publishing topic {} to all subscribers", publishPayload.getTopic());
+
+			// get subscriptions that have a geofence containing the publisher location
+			Set<ImmutablePair<String, Integer>> subscriptionIds = topicAndGeofenceMapper.getSubscriptionIds(
+					publishPayload.getTopic(),
+					publisherLocation);
+
+			// only keep subscription if subscriber location is insider message geofence
+			subscriptionIds.removeIf(subId -> !publishPayload.getGeofence()
+															 .contains(clientDirectory.getClientLocation(subId.left)));
+
+			// publish message to remaining subscribers
+			for (ImmutablePair<String, Integer> subscriptionId : subscriptionIds) {
+				String subscriberClientIdentifier = subscriptionId.left;
+				logger.debug("Client {} is a subscriber", subscriberClientIdentifier);
+				InternalServerMessage toPublish = new InternalServerMessage(subscriberClientIdentifier,
+						ControlPacketType.PUBLISH,
+						publishPayload);
+				logger.trace("Publishing " + toPublish);
+				toPublish.getZMsg().send(clients);
+			}
+
+			if (subscriptionIds.isEmpty()) {
+				logger.debug("No subscriber exists.");
+				return new InternalServerMessage(publisherIdentifier,
+						ControlPacketType.PUBACK,
+						new PUBACKPayload(ReasonCode.NoMatchingSubscribers));
+			} else {
+				return new InternalServerMessage(publisherIdentifier,
+						ControlPacketType.PUBACK,
+						new PUBACKPayload(ReasonCode.Success));
+			}
+
+		} else {
+			logger.debug("Client {} is not connected", publisherIdentifier);
+			return new InternalServerMessage(publisherIdentifier,
+					ControlPacketType.PUBACK,
+					new PUBACKPayload(ReasonCode.NotConnected));
+		}
+
 	}
 
 }

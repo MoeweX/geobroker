@@ -95,49 +95,16 @@ public class SingleGeoBrokerMatchingLogic implements IMatchingLogic {
 
 	@Override
 	public void processPUBLISH(InternalServerMessage message, Socket clients, Socket brokers) {
-		InternalServerMessage response;
 		PUBLISHPayload payload = message.getPayload().getPUBLISHPayload().get();
-
 		Location publisherLocation = clientDirectory.getClientLocation(message.getClientIdentifier());
-		if (publisherLocation != null) {
-			logger.debug("Publishing topic {} to all subscribers", payload.getTopic());
 
-			// get subscriptions that have a geofence containing the publisher location
-			Set<ImmutablePair<String, Integer>> subscriptionIds =
-					topicAndGeofenceMapper.getSubscriptionIds(payload.getTopic(), publisherLocation);
-
-			// only keep subscription if subscriber location is insider publisher geofence
-			subscriptionIds.removeIf(subId -> !payload.getGeofence()
-													  .contains(clientDirectory.getClientLocation(subId.left)));
-
-			// publish message to remaining subscribers
-			for (ImmutablePair<String, Integer> subscriptionId : subscriptionIds) {
-				String subscriberClientIdentifier = subscriptionId.left;
-				logger.debug("Client {} is a subscriber", subscriberClientIdentifier);
-				InternalServerMessage toPublish = new InternalServerMessage(subscriberClientIdentifier,
-						ControlPacketType.PUBLISH,
-						payload);
-				logger.trace("Publishing " + toPublish);
-				toPublish.getZMsg().send(clients);
-			}
-
-			if (subscriptionIds.isEmpty()) {
-				logger.debug("No subscriber exists.");
-				response = new InternalServerMessage(message.getClientIdentifier(),
-						ControlPacketType.PUBACK,
-						new PUBACKPayload(ReasonCode.NoMatchingSubscribers));
-			} else {
-				response = new InternalServerMessage(message.getClientIdentifier(),
-						ControlPacketType.PUBACK,
-						new PUBACKPayload(ReasonCode.Success));
-			}
-
-		} else {
-			logger.debug("Client {} is not connected", message.getClientIdentifier());
-			response = new InternalServerMessage(message.getClientIdentifier(),
-					ControlPacketType.PUBACK,
-					new PUBACKPayload(ReasonCode.NotConnected));
-		}
+		InternalServerMessage response = CommonMatchingTasks.publishMessageToLocalClients(message.getClientIdentifier(),
+				publisherLocation,
+				payload,
+				clientDirectory,
+				topicAndGeofenceMapper,
+				clients,
+				logger);
 
 		// send response to publisher
 		logger.trace("Sending response " + response);

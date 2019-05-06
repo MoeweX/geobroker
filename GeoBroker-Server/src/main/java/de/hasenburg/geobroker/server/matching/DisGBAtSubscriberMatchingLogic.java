@@ -4,18 +4,18 @@ import de.hasenburg.geobroker.commons.model.BrokerInfo;
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
 import de.hasenburg.geobroker.commons.model.message.ReasonCode;
 import de.hasenburg.geobroker.commons.model.message.payloads.*;
-import de.hasenburg.geobroker.commons.model.spatial.Geofence;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
+import de.hasenburg.geobroker.server.communication.InternalBrokerMessage;
 import de.hasenburg.geobroker.server.communication.InternalServerMessage;
+import de.hasenburg.geobroker.server.communication.ZMQProcess_BrokerCommunicator;
 import de.hasenburg.geobroker.server.distribution.BrokerAreaManager;
 import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper;
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.ZMQ.Socket;
 
-import java.util.Set;
+import java.util.List;
 
 /**
  * One GeoBroker instance that does not communicate with others. Uses the {@link TopicAndGeofenceMapper}.
@@ -110,14 +110,54 @@ public class DisGBAtSubscriberMatchingLogic implements IMatchingLogic {
 
 	@Override
 	public void processPUBLISH(InternalServerMessage message, Socket clients, Socket brokers) {
-		// TODO Implement
-		throw new RuntimeException("Not yet implemented");
+		PUBLISHPayload payload = message.getPayload().getPUBLISHPayload().get();
+		Location publisherLocation = clientDirectory.getClientLocation(message.getClientIdentifier());
+
+		// find other brokers whose broker area intersects with the message geofence
+		List<BrokerInfo> otherBrokers = brokerAreaManager.getOtherBrokersForMessageGeofence(payload.getGeofence());
+		for (BrokerInfo otherBroker : otherBrokers) {
+			logger.trace("Broker area of {} intersects with message from client {}",
+					otherBroker.getBrokerId(),
+					message.getClientIdentifier());
+			// send message to BrokerCommunicator who takes care of the rest
+			ZMQProcess_BrokerCommunicator.generatePULLSocketMessage(otherBroker.getBrokerId(),
+					new InternalBrokerMessage(ControlPacketType.BrokerForwardPublish,
+							new BrokerForwardPublishPayload(payload, publisherLocation))).send(brokers);
+
+		}
+
+		// check if own broker area intersects with the message geofence
+		if (brokerAreaManager.checkOurAreaForMessageGeofence(payload.getGeofence())) {
+			InternalServerMessage response =
+					CommonMatchingTasks.publishMessageToLocalClients(message.getClientIdentifier(),
+							publisherLocation,
+							payload,
+							clientDirectory,
+							topicAndGeofenceMapper,
+							clients,
+							logger);
+
+			// send response to publisher
+			logger.trace("Sending response " + response);
+			response.getZMsg().send(clients);
+		}
+
 	}
 
 	@Override
 	public void processBrokerForwardPublish(InternalServerMessage message, Socket clients, Socket brokers) {
-		// TODO Implement
-		throw new RuntimeException("Not yet implemented");
+		// we received this because another broker knows that our area intersects
+		BrokerForwardPublishPayload payload = message.getPayload().getBrokerForwardPublishPayload().get();
+
+		InternalServerMessage response = CommonMatchingTasks.publishMessageToLocalClients(message.getClientIdentifier(),
+				payload.getPublisherLocation(),
+				payload.getPublishPayload(),
+				clientDirectory,
+				topicAndGeofenceMapper,
+				clients,
+				logger);
+
+		// TODO acknowledge publish operation to other broker
 	}
 
 	/*****************************************************************
