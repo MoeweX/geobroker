@@ -87,14 +87,12 @@ class CommonMatchingTasks {
 	}
 
 	/**
-	 * @param senderIdentifier - this is either a clientId, or in case of a BrokerForwardPublish, a brokerId.
 	 * @param publisherLocation - the location of the publisher
 	 */
-	static InternalServerMessage publishMessageToLocalClients(String senderIdentifier, Location publisherLocation,
-															  PUBLISHPayload publishPayload,
-															  ClientDirectory clientDirectory,
-															  TopicAndGeofenceMapper topicAndGeofenceMapper,
-															  Socket clients, Logger logger) {
+	static ReasonCode publishMessageToLocalClients(Location publisherLocation, PUBLISHPayload publishPayload,
+												   ClientDirectory clientDirectory,
+												   TopicAndGeofenceMapper topicAndGeofenceMapper, Socket clients,
+												   Logger logger) {
 
 		logger.debug("Publishing topic {} to all subscribers", publishPayload.getTopic());
 
@@ -119,13 +117,9 @@ class CommonMatchingTasks {
 
 		if (subscriptionIds.isEmpty()) {
 			logger.debug("No subscriber exists.");
-			return new InternalServerMessage(senderIdentifier,
-					ControlPacketType.PUBACK,
-					new PUBACKPayload(ReasonCode.NoMatchingSubscribers));
+			return ReasonCode.NoMatchingSubscribers;
 		} else {
-			return new InternalServerMessage(senderIdentifier,
-					ControlPacketType.PUBACK,
-					new PUBACKPayload(ReasonCode.Success));
+			return ReasonCode.Success;
 		}
 
 	}

@@ -31,13 +31,13 @@ public class BrokerAreaManager {
 		this.ownBrokerId = ownBrokerId;
 	}
 
-	public void setup_DefaultFile() {
+	public void readFromFile(String filepath) {
 		String json = "[]";
-		InputStream is = BrokerAreaManager.class.getClassLoader().getResourceAsStream("defaultBrokerAreas.json");
+		InputStream is = BrokerAreaManager.class.getClassLoader().getResourceAsStream(filepath);
 		try (BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
 			json = br.lines().collect(Collectors.joining(System.lineSeparator()));
 		} catch (IOException | NullPointerException e) {
-			logger.fatal("Could not read default broker area file", e);
+			logger.fatal("Could not read broker area file from {}", filepath, e);
 			System.exit(1);
 		}
 

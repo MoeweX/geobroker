@@ -7,7 +7,6 @@ import de.hasenburg.geobroker.server.distribution.BrokerAreaManager;
 import de.hasenburg.geobroker.server.distribution.DisGBDistributionLogic;
 import de.hasenburg.geobroker.server.main.Configuration;
 import de.hasenburg.geobroker.server.matching.DisGBAtSubscriberMatchingLogic;
-import de.hasenburg.geobroker.server.matching.SingleGeoBrokerMatchingLogic;
 import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper;
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory;
 import org.apache.logging.log4j.LogManager;
@@ -34,7 +33,7 @@ public class DisGBServerLogic implements IServerLogic {
 	@Override
 	public void initializeFields() {
 		brokerAreaManager = new BrokerAreaManager(configuration.getBrokerId());
-		brokerAreaManager.setup_DefaultFile();
+		brokerAreaManager.readFromFile(configuration.getBrokerAreaFilePath());
 
 		clientDirectory = new ClientDirectory();
 		TopicAndGeofenceMapper topicAndGeofenceMapper = new TopicAndGeofenceMapper(configuration);
@@ -53,18 +52,20 @@ public class DisGBServerLogic implements IServerLogic {
 				configuration.getBrokerId());
 
 		// TODO configure amount via configuration
-		ZMQProcessStarter.runZMQProcess_BrokerCommunicator(processManager,
-				configuration.getBrokerId(),
-				1,
-				distributionLogic,
-				brokerAreaManager.getOtherBrokerInfo());
+		for (int number = 1; number <= configuration.getBrokerCommunicators(); number++) {
+			ZMQProcessStarter.runZMQProcess_BrokerCommunicator(processManager,
+					configuration.getBrokerId(),
+					number,
+					distributionLogic,
+					brokerAreaManager.getOtherBrokerInfo());
+		}
 
 		for (int number = 1; number <= configuration.getMessageProcessors(); number++) {
 			ZMQProcessStarter.runZMQProcess_MessageProcessor(processManager,
 					configuration.getBrokerId(),
 					number,
 					matchingLogic,
-					1);
+					configuration.getBrokerCommunicators());
 		}
 		logger.info("Started server successfully!");
 	}

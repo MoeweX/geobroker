@@ -110,17 +110,14 @@ public class DisGBAtSubscriberMatchingLogic implements IMatchingLogic {
 
 	@Override
 	public void processPUBLISH(InternalServerMessage message, Socket clients, Socket brokers) {
-		InternalServerMessage response;
+		ReasonCode reasonCode;
 		PUBLISHPayload payload = message.getPayload().getPUBLISHPayload().get();
 		Location publisherLocation = clientDirectory.getClientLocation(message.getClientIdentifier());
 
 		if (publisherLocation == null) { // null if client is not connected
 			logger.debug("Client {} is not connected", message.getClientIdentifier());
-			response = new InternalServerMessage(message.getClientIdentifier(),
-					ControlPacketType.PUBACK,
-					new PUBACKPayload(ReasonCode.NotConnected));
+			reasonCode = ReasonCode.NotConnected;
 		} else {
-			ReasonCode responseCode;
 
 			// find other brokers whose broker area intersects with the message geofence
 			List<BrokerInfo> otherBrokers = brokerAreaManager.getOtherBrokersForMessageGeofence(payload.getGeofence());
@@ -135,35 +132,34 @@ public class DisGBAtSubscriberMatchingLogic implements IMatchingLogic {
 
 			}
 
-			if (otherBrokers.size() > 0) {
-				responseCode = ReasonCode.NoMatchingSubscribersButForwarded;
-			} else {
-				responseCode = ReasonCode.NoMatchingSubscribers;
-			}
 
+			ReasonCode ourReasonCode = ReasonCode.NoMatchingSubscribers;
 			// check if own broker area intersects with the message geofence
 			if (brokerAreaManager.checkOurAreaForMessageGeofence(payload.getGeofence())) {
-				response = CommonMatchingTasks.publishMessageToLocalClients(message.getClientIdentifier(),
-						publisherLocation,
+				ourReasonCode = CommonMatchingTasks.publishMessageToLocalClients(publisherLocation,
 						payload,
 						clientDirectory,
 						topicAndGeofenceMapper,
 						clients,
 						logger);
-
-				if (response.getPayload().getPUBACKPayload().get().getReasonCode().equals(ReasonCode.Success)) {
-					responseCode = ReasonCode.Success;
-				}
 			}
 
-			// now we generate the client answer if he was connected with the correct response code
-			response = new InternalServerMessage(message.getClientIdentifier(),
-					ControlPacketType.PUBACK,
-					new PUBACKPayload(responseCode));
+			if (otherBrokers.size() > 0 && ourReasonCode == ReasonCode.NoMatchingSubscribers) {
+				reasonCode = ReasonCode.NoMatchingSubscribersButForwarded;
+			} else if (otherBrokers.size() == 0 && ourReasonCode == ReasonCode.NoMatchingSubscribers) {
+				reasonCode = ReasonCode.NoMatchingSubscribers;
+			} else {
+				reasonCode = ReasonCode.Success;
+			}
+
 		}
 
+		InternalServerMessage response = new InternalServerMessage(message.getClientIdentifier(),
+				ControlPacketType.PUBACK,
+				new PUBACKPayload(reasonCode));
+
 		// send response to publisher
-		logger.trace("Sending response " + response);
+		logger.trace("Sending response with reason code " + reasonCode.toString());
 		response.getZMsg().send(clients);
 
 	}
@@ -175,20 +171,24 @@ public class DisGBAtSubscriberMatchingLogic implements IMatchingLogic {
 
 		// the id is determined by ZeroMQ based on the first frame, so here it is the id of the forwarding broker
 		String otherBrokerId = message.getClientIdentifier();
+		logger.trace("Processing BrokerForwardPublish from broker {}", otherBrokerId);
 
-		InternalServerMessage response = CommonMatchingTasks.publishMessageToLocalClients(otherBrokerId,
-				payload.getPublisherLocation(),
+		ReasonCode reasonCode = CommonMatchingTasks.publishMessageToLocalClients(payload.getPublisherLocation(),
 				payload.getPublishPayload(),
 				clientDirectory,
 				topicAndGeofenceMapper,
 				clients,
 				logger);
 
+		InternalServerMessage response = new InternalServerMessage(otherBrokerId,
+				ControlPacketType.PUBACK,
+				new PUBACKPayload(reasonCode));
+
 		// acknowledge publish operation to other broker, he does not expect a particular message so we just reply
 		// with the response that we have generated anyways (needs to go via the clients socket as response has to
 		// go out of the ZMQProcess_Server
+		logger.trace("Sending response with reason code " + reasonCode.toString());
 		response.getZMsg().send(clients);
-
 	}
 
 	/*****************************************************************

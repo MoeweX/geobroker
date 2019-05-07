@@ -1,0 +1,16 @@
+# server information
+[server]
+brokerId = "broker"
+port = 5559
+granularity = 5
+messageProcessors = 1
+
+    # server mode specific information (only one should be uncommented)
+#    [server.mode]
+#    name = "single"
+
+    [server.mode]
+    name = "disgb"
+    brokerAreaFilePath = "defaultBrokerAreas.json"
+    brokerCommunicators = 1
+

@@ -1,7 +1,0 @@
-[server]
-brokerId = "broker"
-ip = "localhost"
-port = 5559
-granularity = 5
-messageProcessors = 1
-

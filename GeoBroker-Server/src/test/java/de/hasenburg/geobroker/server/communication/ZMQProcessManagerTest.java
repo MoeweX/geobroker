@@ -2,7 +2,6 @@ package de.hasenburg.geobroker.server.communication;
 
 import de.hasenburg.geobroker.commons.communication.ZMQControlUtility;
 import de.hasenburg.geobroker.commons.communication.ZMQProcessManager;
-import de.hasenburg.geobroker.server.distribution.BrokerAreaManager;
 import de.hasenburg.geobroker.server.main.Configuration;
 import de.hasenburg.geobroker.commons.Utility;
 import de.hasenburg.geobroker.server.matching.SingleGeoBrokerMatchingLogic;

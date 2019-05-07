@@ -14,11 +14,11 @@ public class BrokerAreaManagerTest {
 	private static final Logger logger = LogManager.getLogger();
 
 	@Test
-	public void testSetupDefault() {
+	public void test_readFile() {
 		Location location = new Location(0, 0);
 
 		BrokerAreaManager brokerAreaManager = new BrokerAreaManager("broker");
-		brokerAreaManager.setup_DefaultFile();
+		brokerAreaManager.readFromFile("defaultBrokerAreas.json");
 
 		// we are responsible
 		assertTrue(brokerAreaManager.checkIfResponsibleForClientLocation(location));

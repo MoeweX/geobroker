@@ -5,8 +5,6 @@ import de.hasenburg.geobroker.commons.Utility;
 import de.hasenburg.geobroker.commons.model.message.Topic;
 import de.hasenburg.geobroker.commons.model.spatial.Geofence;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
-import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper;
-import de.hasenburg.geobroker.server.storage.TopicLevel;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

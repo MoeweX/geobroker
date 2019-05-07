@@ -5,21 +5,15 @@ import de.hasenburg.geobroker.commons.BenchmarkHelper;
 import de.hasenburg.geobroker.commons.Utility;
 import de.hasenburg.geobroker.commons.communication.ZMQProcessManager;
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
-import de.hasenburg.geobroker.server.communication.ZMQProcessStarter;
 import de.hasenburg.geobroker.client.communication.InternalClientMessage;
 import de.hasenburg.geobroker.commons.model.message.Topic;
-import de.hasenburg.geobroker.server.distribution.BrokerAreaManager;
-import de.hasenburg.geobroker.server.main.server.ServerLifecycle;
 import de.hasenburg.geobroker.server.main.server.SingleGeoBrokerServerLogic;
-import de.hasenburg.geobroker.server.matching.SingleGeoBrokerMatchingLogic;
-import de.hasenburg.geobroker.server.storage.client.ClientDirectory;
 import de.hasenburg.geobroker.commons.model.message.payloads.CONNECTPayload;
 import de.hasenburg.geobroker.commons.model.message.payloads.PINGREQPayload;
 import de.hasenburg.geobroker.commons.model.message.payloads.PUBLISHPayload;
 import de.hasenburg.geobroker.commons.model.message.payloads.SUBSCRIBEPayload;
 import de.hasenburg.geobroker.commons.model.spatial.Geofence;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
-import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -45,7 +39,7 @@ public class LoadTest {
 		logger.info("Running setUp");
 		BenchmarkHelper.startBenchmarking();
 
-		Configuration configuration = Configuration.readDefaultConfiguration();
+		Configuration configuration = new Configuration();
 		serverLogic = new SingleGeoBrokerServerLogic();
 		serverLogic.loadConfiguration(configuration);
 		serverLogic.initializeFields();
