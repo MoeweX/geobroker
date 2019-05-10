@@ -6,6 +6,7 @@ import de.hasenburg.geobroker.commons.model.spatial.Location;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,8 +39,8 @@ public class ClientDirectory {
 	}
 
 	/**
-	 * Removes a client from the directory. <br>
-	 * TODO B: the client's subscriptions should be removed from the TopicAndGeofenceMapper as well
+	 * Removes a client from the directory. <br> TODO B: the client's subscriptions should be removed from the
+	 * TopicAndGeofenceMapper as well
 	 *
 	 * @param clientIdentifier of the to be removed client
 	 * @return true, if client existed before
@@ -64,7 +65,7 @@ public class ClientDirectory {
 	}
 
 	public int getCurrentClientSubscriptions(String clientIdentifier) {
-		logger.trace("Checking amount of active subscriptions for client {}");
+		logger.trace("Checking amount of active subscriptions for client {}", clientIdentifier);
 		Client c = clients.get(clientIdentifier);
 
 		if (c == null) return 0;
@@ -102,8 +103,8 @@ public class ClientDirectory {
 	 * @param geofence - see above
 	 * @return see above
 	 */
-	public ImmutablePair<ImmutablePair<String, Integer>, Geofence> checkIfSubscribed(String clientIdentifier,
-																					 Topic topic, Geofence geofence) {
+	public @Nullable ImmutablePair<ImmutablePair<String, Integer>, Geofence> checkIfSubscribed(String clientIdentifier,
+																							   Topic topic, Geofence geofence) {
 		Client c = clients.get(clientIdentifier);
 		if (c == null) return null;
 

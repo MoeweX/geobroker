@@ -9,6 +9,7 @@ import de.hasenburg.geobroker.commons.model.spatial.Location
 import de.hasenburg.geobroker.server.communication.InternalServerMessage
 import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory
+import org.apache.commons.lang3.tuple.ImmutablePair
 import org.apache.logging.log4j.Logger
 import org.zeromq.ZMQ.Socket
 
@@ -81,15 +82,13 @@ fun updateClientLocationAtLocalBroker(clientIdentifier: String, location: Locati
 fun subscribeAtLocalBroker(clientIdentifier: String, clientDirectory: ClientDirectory,
                            topicAndGeofenceMapper: TopicAndGeofenceMapper, topic: Topic,
                            geofence: Geofence, logger: Logger): InternalServerMessage {
-    val subscribed = clientDirectory.checkIfSubscribed(
+    val subscribed: ImmutablePair<ImmutablePair<String, Int>, Geofence>? = clientDirectory.checkIfSubscribed(
             clientIdentifier,
             topic,
             geofence)
 
     // if already subscribed -> remove subscription id from now unrelated geofence parts
-    if (subscribed != null) {
-        topicAndGeofenceMapper.removeSubscriptionId(subscribed.left, topic, subscribed.right)
-    }
+    subscribed?.let { topicAndGeofenceMapper.removeSubscriptionId(subscribed.left, topic, subscribed.right) }
 
     val subscriptionId = clientDirectory.putSubscription(clientIdentifier,
             topic,

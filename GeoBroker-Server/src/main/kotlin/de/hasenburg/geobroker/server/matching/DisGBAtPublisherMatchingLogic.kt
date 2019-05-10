@@ -3,6 +3,7 @@ package de.hasenburg.geobroker.server.matching
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType
 import de.hasenburg.geobroker.commons.model.message.ReasonCode
 import de.hasenburg.geobroker.commons.model.message.payloads.DISCONNECTPayload
+import de.hasenburg.geobroker.commons.model.message.payloads.PUBACKPayload
 import de.hasenburg.geobroker.commons.model.spatial.Location
 import de.hasenburg.geobroker.server.communication.InternalServerMessage
 import de.hasenburg.geobroker.server.distribution.BrokerAreaManager
@@ -35,7 +36,15 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
     }
 
     override fun processDISCONNECT(message: InternalServerMessage, clients: ZMQ.Socket, brokers: ZMQ.Socket) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val payload = message.payload.disconnectPayload.get()
+
+        val success = clientDirectory.removeClient(message.clientIdentifier)
+        if (!success) {
+            logger.trace("Client for {} did not exist", message.clientIdentifier)
+            return
+        }
+
+        logger.debug("Disconnected client {}, code {}", message.clientIdentifier, payload.reasonCode)
     }
 
     override fun processPINGREQ(message: InternalServerMessage, clients: ZMQ.Socket, brokers: ZMQ.Socket) {
@@ -43,6 +52,13 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
     }
 
     override fun processSUBSCRIBE(message: InternalServerMessage, clients: ZMQ.Socket, brokers: ZMQ.Socket) {
+        // calculate what brokers are affected by the subscription's geofence
+
+        // lookup in client directory whether this subscription already existed
+
+        // it exists ->
+
+
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
@@ -51,11 +67,32 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
     }
 
     override fun processPUBLISH(message: InternalServerMessage, clients: ZMQ.Socket, brokers: ZMQ.Socket) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val reasonCode: ReasonCode
+        val payload = message.payload.publishPayload.get()
+        val publisherLocation = clientDirectory.getClientLocation(message.clientIdentifier)
+
+        if (publisherLocation == null) { // null if client is not connected
+            logger.debug("Client {} is not connected", message.clientIdentifier)
+            reasonCode = ReasonCode.NotConnected
+        } else {
+            reasonCode = publishMessageToLocalClients(publisherLocation,
+                    payload,
+                    clientDirectory,
+                    topicAndGeofenceMapper,
+                    clients,
+                    logger)
+        }
+
+        // send response to publisher
+        logger.trace("Sending response with reason code $reasonCode")
+        val response = InternalServerMessage(message.clientIdentifier,
+                ControlPacketType.PUBACK,
+                PUBACKPayload(reasonCode))
+        response.zMsg.send(clients)
     }
 
     override fun processBrokerForwardPublish(message: InternalServerMessage, clients: ZMQ.Socket, brokers: ZMQ.Socket) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        logger.warn("Unsupported operation, message is discarded")
     }
 
     /*****************************************************************

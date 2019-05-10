@@ -50,7 +50,6 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
         }
 
         logger.debug("Disconnected client {}, code {}", message.clientIdentifier, payload.reasonCode)
-
     }
 
     override fun processPINGREQ(message: InternalServerMessage, clients: Socket, brokers: Socket) {
@@ -172,7 +171,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
 
     /*****************************************************************
      * Message Processing Helper
-     */
+     ****************************************************************/
 
     /**
      * Checks whether this particular broker is responsible for the client with the given location. If not, sends a

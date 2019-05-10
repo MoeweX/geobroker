@@ -12,11 +12,8 @@ import org.apache.logging.log4j.Level
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.apache.logging.log4j.core.LoggerContext
-import org.apache.logging.log4j.core.config.Configuration
-import org.apache.logging.log4j.core.config.LoggerConfig
 
 import java.util.Random
-import java.util.function.Supplier
 
 private val logger = LogManager.getLogger()
 private val r = Random()
@@ -160,6 +157,14 @@ fun buildPayloadFromString(s: String, controlPacketType: ControlPacketType): Abs
                     .fromJSON<BrokerForwardPublishPayload>(s, BrokerForwardPublishPayload::class.java).orElseGet({ BrokerForwardPublishPayload() })
             if (!brokerForwardPublishPayload.nullField()) {
                 return brokerForwardPublishPayload
+            }
+        }
+        ControlPacketType.BrokerForwardPingreq -> {
+            val brokerForwardPublishPingreq = JSONable
+                    .fromJSON<BrokerForwardPingreqPayload>(s, BrokerForwardPingreqPayload::class.java).orElseGet({
+                        BrokerForwardPingreqPayload() })
+            if (!brokerForwardPublishPingreq.nullField()) {
+                return brokerForwardPublishPingreq
             }
         }
         else -> throw CommunicatorException("ControlPacketType ${controlPacketType.name} is not supported")

@@ -21,6 +21,7 @@ public enum ControlPacketType {
 	AUTH,
 
 	// Inter-Broker Communication (no typical MQTT messages, so other spelling)
+	BrokerForwardPingreq,
 	BrokerForwardPublish
 
 }
