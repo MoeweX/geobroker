@@ -104,7 +104,8 @@ public class ClientDirectory {
 	 * @return see above
 	 */
 	public @Nullable ImmutablePair<ImmutablePair<String, Integer>, Geofence> checkIfSubscribed(String clientIdentifier,
-																							   Topic topic, Geofence geofence) {
+																							   Topic topic,
+																							   Geofence geofence) {
 		Client c = clients.get(clientIdentifier);
 		if (c == null) return null;
 
@@ -115,16 +116,15 @@ public class ClientDirectory {
 	}
 
 	/**
-	 * Creates a new {@link Subscription} based on the provided information and replace the existing one, if any
-	 * existed. Returns the subscription id of the newly created subscription, in case an old has has been replaced, the
-	 * newly created subscription has the same identifier as the replaced one.
+	 * Creates a new {@link Subscription} based on the provided information. Returns the subscription id of the
+	 * subscription. In case one existed already, only the geofence is updated.
 	 *
 	 * @param clientIdentifier - identifier of the {@link Client}
 	 * @param topic - topic of subscription
 	 * @param geofence - geofence of subscription
-	 * @return the above specified subscription id
+	 * @return the above specified subscription id or null if no client existed
 	 */
-	public ImmutablePair<String, Integer> putSubscription(String clientIdentifier, Topic topic, Geofence geofence) {
+	public ImmutablePair<String, Integer> updateSubscription(String clientIdentifier, Topic topic, Geofence geofence) {
 		Client c = clients.get(clientIdentifier);
 		if (c == null) return null;
 

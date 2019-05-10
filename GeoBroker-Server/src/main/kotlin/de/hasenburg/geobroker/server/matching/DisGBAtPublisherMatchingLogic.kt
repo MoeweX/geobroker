@@ -52,14 +52,49 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
     }
 
     override fun processSUBSCRIBE(message: InternalServerMessage, clients: ZMQ.Socket, brokers: ZMQ.Socket) {
+        val payload = message.payload.subscribePayload.get()
+
+        /*****************************************************************
+         * Local Things
+         * - done first to create subscription if did not exist
+         * - we always create a subscription, even if not in area, so that the "main broker" knows about any
+         * - to simplify code, the subscription id is also added to raster entries outside of the broker area as this
+         * does not affect the result (see [processBrokerForwardSubscribe] for a longer explanation)
+         ****************************************************************/
+
+        // TODO use response code
+        val response = subscribeAtLocalBroker(message.clientIdentifier,
+                clientDirectory,
+                topicAndGeofenceMapper,
+                payload.topic,
+                payload.geofence,
+                logger)
+
+
+        /*****************************************************************
+         * Remote Things
+         *
+         * TODO necessary things:
+         * - subclass for ClientDirectory (methods to add affected brokers)
+         * - subclass for Client (bool to indicate whether remote)
+         * - subclass for Subscription (add Set for affected broker areas)
+         * ****************************************************************/
+
         // calculate what brokers are affected by the subscription's geofence
 
-        // lookup in client directory whether this subscription already existed
+        // forward message to all now affected brokers
 
-        // it exists ->
+        // update affected broker information in client directory -> returns now not anymore affected brokers
 
+        // unsubscribe these not affected brokers (forwardUnsubscribe?)
 
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        /*****************************************************************
+         * Response
+         ****************************************************************/
+
+        // send response TODO
+        // logger.trace("Sending response $response")
+        // response.zMsg.send(clients)
     }
 
     override fun processUNSUBSCRIBE(message: InternalServerMessage, clients: ZMQ.Socket, brokers: ZMQ.Socket) {
@@ -95,14 +130,30 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
         logger.warn("Unsupported operation, message is discarded")
     }
 
+    /**
+     * Creates a subscription for a client based on information forwarded by another a broker.
+     * In theory, it is sufficient to only create the subscription in the RasterEntries that are inside the broker's
+     * area.
+     * However, to simplify this method the subscription is added to all RasterEntries intersecting with the given
+     * geofence's outer bounding box, as this does not affect the result. I.e., as only publishers whose location is
+     * inside the broker's area are communicating with this broker, all RasterEntries outside of the broker area are not
+     * used anyways.
+     */
+    fun processBrokerForwardSubscribe() {
+
+    }
+
     /*****************************************************************
      * Message Processing Helper
      ****************************************************************/
 
     /**
-     * Checks whether this particular broker is responsible for the client with the given location. If not, sends a
+     * Checks whether this particular broker is responsible for the client with the given [clientLocation]. If not, sends a
      * disconnect message and information about the responsible broker, if any exists. The client is also removed from
      * the client directory. Otherwise, does nothing.
+     *
+     * TODO removing a client from the client directly requires notifying all remote brokers of the same matter
+     * (forwardDisconnect?)
      *
      * @return true, if this broker is responsible, otherwise false
      */

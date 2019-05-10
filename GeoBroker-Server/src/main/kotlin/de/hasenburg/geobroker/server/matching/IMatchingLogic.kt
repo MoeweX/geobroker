@@ -90,7 +90,7 @@ fun subscribeAtLocalBroker(clientIdentifier: String, clientDirectory: ClientDire
     // if already subscribed -> remove subscription id from now unrelated geofence parts
     subscribed?.let { topicAndGeofenceMapper.removeSubscriptionId(subscribed.left, topic, subscribed.right) }
 
-    val subscriptionId = clientDirectory.putSubscription(clientIdentifier,
+    val subscriptionId = clientDirectory.updateSubscription(clientIdentifier,
             topic,
             geofence)
 
