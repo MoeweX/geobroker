@@ -31,7 +31,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
             return  // we are not responsible, client has been notified
         }
 
-        val response = CommonMatchingTasks.connectClientAtLocalBroker(message.clientIdentifier,
+        val response = connectClientAtLocalBroker(message.clientIdentifier,
                 payload.location,
                 clientDirectory,
                 logger)
@@ -61,7 +61,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
             return  // we are not responsible, client has been notified
         }
 
-        val response = CommonMatchingTasks.updateClientLocationAtLocalBroker(message.clientIdentifier,
+        val response = updateClientLocationAtLocalBroker(message.clientIdentifier,
                 payload.location,
                 clientDirectory,
                 logger)
@@ -73,7 +73,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
     override fun processSUBSCRIBE(message: InternalServerMessage, clients: Socket, brokers: Socket) {
         val payload = message.payload.subscribePayload.get()
 
-        val response = CommonMatchingTasks.subscribeAtLocalBroker(message.clientIdentifier,
+        val response = subscribeAtLocalBroker(message.clientIdentifier,
                 clientDirectory,
                 topicAndGeofenceMapper,
                 payload.topic,
@@ -116,7 +116,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
             var ourReasonCode = ReasonCode.NoMatchingSubscribers
             // check if own broker area intersects with the message geofence
             if (brokerAreaManager.checkOurAreaForMessageGeofence(payload.geofence)) {
-                ourReasonCode = CommonMatchingTasks.publishMessageToLocalClients(publisherLocation,
+                ourReasonCode = publishMessageToLocalClients(publisherLocation,
                         payload,
                         clientDirectory,
                         topicAndGeofenceMapper,
@@ -152,7 +152,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
         val otherBrokerId = message.clientIdentifier
         logger.trace("Processing BrokerForwardPublish from broker {}", otherBrokerId)
 
-        val reasonCode = CommonMatchingTasks.publishMessageToLocalClients(payload.publisherLocation,
+        val reasonCode = publishMessageToLocalClients(payload.publisherLocation,
                 payload.getPublishPayload(),
                 clientDirectory,
                 topicAndGeofenceMapper,

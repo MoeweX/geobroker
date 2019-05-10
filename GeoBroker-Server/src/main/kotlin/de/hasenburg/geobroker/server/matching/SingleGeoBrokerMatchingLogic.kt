@@ -20,7 +20,7 @@ class SingleGeoBrokerMatchingLogic(private val clientDirectory: ClientDirectory,
     override fun processCONNECT(message: InternalServerMessage, clients: Socket, brokers: Socket) {
         val payload = message.payload.connectPayload.get()
 
-        val response = CommonMatchingTasks.connectClientAtLocalBroker(message.clientIdentifier,
+        val response = connectClientAtLocalBroker(message.clientIdentifier,
                 payload.location,
                 clientDirectory,
                 logger)
@@ -45,7 +45,7 @@ class SingleGeoBrokerMatchingLogic(private val clientDirectory: ClientDirectory,
     override fun processPINGREQ(message: InternalServerMessage, clients: Socket, brokers: Socket) {
         val payload = message.payload.pingreqPayload.get()
 
-        val response = CommonMatchingTasks.updateClientLocationAtLocalBroker(message.clientIdentifier,
+        val response = updateClientLocationAtLocalBroker(message.clientIdentifier,
                 payload.location,
                 clientDirectory,
                 logger)
@@ -57,7 +57,7 @@ class SingleGeoBrokerMatchingLogic(private val clientDirectory: ClientDirectory,
     override fun processSUBSCRIBE(message: InternalServerMessage, clients: Socket, brokers: Socket) {
         val payload = message.payload.subscribePayload.get()
 
-        val response = CommonMatchingTasks.subscribeAtLocalBroker(message.clientIdentifier,
+        val response = subscribeAtLocalBroker(message.clientIdentifier,
                 clientDirectory,
                 topicAndGeofenceMapper,
                 payload.topic,
@@ -82,7 +82,7 @@ class SingleGeoBrokerMatchingLogic(private val clientDirectory: ClientDirectory,
             logger.debug("Client {} is not connected", message.clientIdentifier)
             reasonCode = ReasonCode.NotConnected
         } else {
-            reasonCode = CommonMatchingTasks.publishMessageToLocalClients(publisherLocation,
+            reasonCode = publishMessageToLocalClients(publisherLocation,
                     payload,
                     clientDirectory,
                     topicAndGeofenceMapper,
