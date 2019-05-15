@@ -44,11 +44,11 @@ public class Location implements JSONable {
 
 	/**
 	 * Creates a random location (Not inclusive of (-90, 0))
-	 * TODO B: has returned ones a longitude of 180.1050074731543
 	 */
 	public static Location random() {
 		Random random = new Random();
-		return new Location((random.nextDouble() * -180.0) + 90.0, (random.nextDouble() * -360.0) + 180.0);
+		return new Location((random.nextDouble() * -180.0) + 90.0,
+				Math.min((random.nextDouble() * -360.0) + 180.0, 180.0)); // there have been rounding errors
 	}
 
 	/**
@@ -123,10 +123,10 @@ public class Location implements JSONable {
 		return Objects.hash(getPoint());
 	}
 
-	public static void main (String[] args) {
-	    Location l = new Location(39.984702,116.318417);
-	    Location l2 = new Location(39.974702,116.318417);
-	    logger.info("Distance is {}km", l.distanceKmTo(l2));
+	public static void main(String[] args) {
+		Location l = new Location(39.984702, 116.318417);
+		Location l2 = new Location(39.974702, 116.318417);
+		logger.info("Distance is {}km", l.distanceKmTo(l2));
 	}
 
 }
