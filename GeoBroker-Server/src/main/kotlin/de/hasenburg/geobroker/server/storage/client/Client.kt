@@ -24,16 +24,11 @@ class Client(protected val clientIdentifier: String, location: Location) {
     private val lastSubscriptionId = AtomicInteger(0)
     private val subscriptions = ConcurrentHashMap<Topic, Subscription>()
 
+    val subscriptionCount: Int
+        get() = subscriptions.keys.size
+
     init {
         updateHeartbeat()
-    }
-
-    /*****************************************************************
-     * Subscription
-     ****************************************************************/
-
-    fun getSubscriptionCount(): Int {
-        return subscriptions.keys.size
     }
 
     /*****************************************************************

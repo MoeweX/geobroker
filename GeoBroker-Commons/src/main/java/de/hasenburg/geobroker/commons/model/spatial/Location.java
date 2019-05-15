@@ -47,8 +47,9 @@ public class Location implements JSONable {
 	 */
 	public static Location random() {
 		Random random = new Random();
-		return new Location((random.nextDouble() * -180.0) + 90.0,
-				Math.min((random.nextDouble() * -360.0) + 180.0, 180.0)); // there have been rounding errors
+		// there have been rounding errors
+		return new Location(Math.min((random.nextDouble() * -180.0) + 90.0, 90),
+				Math.min((random.nextDouble() * -360.0) + 180.0, 180.0));
 	}
 
 	/**
