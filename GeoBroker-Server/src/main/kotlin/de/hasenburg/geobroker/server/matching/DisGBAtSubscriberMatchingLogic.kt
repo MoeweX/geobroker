@@ -89,6 +89,8 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
     }
 
     override fun processPUBLISH(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+        // TODO do local before remote, orient on structure of DisGBAtPublisherMatching code
+
         val reasonCode: ReasonCode
         val payload = message.payload.publishPayload.get()
         val publisherLocation = clientDirectory.getClientLocation(message.clientIdentifier)

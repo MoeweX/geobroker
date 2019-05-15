@@ -10,12 +10,10 @@ import org.apache.logging.log4j.Logger
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
-private val logger = LogManager.getLogger()
-
 /**
  * [clientIdentifier] must be unique
  */
-class Client(protected val clientIdentifier: String, location: Location) {
+class Client(val clientIdentifier: String, location: Location) {
 
     var location: Location = location
         protected set // prevent to be set by other classes
@@ -67,15 +65,10 @@ class Client(protected val clientIdentifier: String, location: Location) {
     override fun toString(): String {
         val s = StringBuilder("\n")
         for (subscription in subscriptions.values) {
-            s.append(subscription.toString()).append(", ")
+            s.append("$subscription, ")
         }
 
-        return "Client{" +
-                "heartbeat=" + heartbeat +
-                ", clientIdentifier='" + clientIdentifier + '\''.toString() +
-                ", location=" + location +
-                ", subscriptions=" + s +
-                '}'.toString()
+        return "Client{heartbeat=$heartbeat, clientIdentifier=$clientIdentifier, location=$location, subscriptions=$s}"
     }
 
 }
