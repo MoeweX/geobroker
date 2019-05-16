@@ -48,15 +48,15 @@ public class BrokerAreaManager {
 		this.ownArea = ownArea;
 	}
 
-	public boolean checkIfResponsibleForClientLocation(Location clientLocation) {
+	public boolean checkIfOurAreaContainsLocation(Location clientLocation) {
 		return ownArea.ContainsLocation(clientLocation);
 	}
 
-	public boolean checkOurAreaForMessageGeofence(Geofence messageGeofence) {
+	public boolean checkOurAreaForGeofenceIntersection(Geofence messageGeofence) {
 		return ownArea.intersects(messageGeofence);
 	}
 
-	public @Nullable BrokerInfo getOtherBrokerForClientLocation(Location clientLocation) {
+	public @Nullable BrokerInfo getOtherBrokersContainingLocation(Location clientLocation) {
 		for (BrokerArea area : otherAreas) {
 			if (area.ContainsLocation(clientLocation)) {
 				return area.getResponsibleBroker();
@@ -65,10 +65,10 @@ public class BrokerAreaManager {
 		return null;
 	}
 
-	public List<BrokerInfo> getOtherBrokersForMessageGeofence(Geofence messageGeofence) {
+	public List<BrokerInfo> getOtherBrokersIntersectingWithGeofence(Geofence geofence) {
 		List<BrokerInfo> otherBrokers = new ArrayList<>();
 		for (BrokerArea area : otherAreas) {
-			if (area.intersects(messageGeofence)) {
+			if (area.intersects(geofence)) {
 				otherBrokers.add(area.getResponsibleBroker());
 			}
 		}

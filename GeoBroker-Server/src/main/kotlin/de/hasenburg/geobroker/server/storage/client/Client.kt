@@ -6,14 +6,18 @@ import de.hasenburg.geobroker.commons.model.spatial.Location
 import org.apache.commons.lang3.tuple.ImmutablePair
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
+import de.hasenburg.geobroker.server.matching.DisGBAtPublisherMatchingLogic
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * [clientIdentifier] must be unique
+ *
+ * @param remote - indicates whether the client is connected to another broker, so far only needed for
+ * [DisGBAtPublisherMatchingLogic]
  */
-class Client(val clientIdentifier: String, location: Location) {
+class Client(val clientIdentifier: String, location: Location, val remote: Boolean = false) {
 
     var location: Location = location
         protected set // prevent to be set by other classes

@@ -18,7 +18,7 @@ class ClientDirectory {
         get() = clients.size
 
     /*****************************************************************
-     * Client code
+     * Clients
      ****************************************************************/
 
     /**
@@ -62,6 +62,18 @@ class ClientDirectory {
         return true
     }
 
+    fun getClientLocation(clientIdentifier: String): Location? {
+        logger.trace("Retrieving location of client {}", clientIdentifier)
+        val c = clients[clientIdentifier] ?: return null
+
+        return c.location
+
+    }
+
+    /*****************************************************************
+     * Subscriptions of Clients
+     ****************************************************************/
+
     fun getCurrentClientSubscriptions(clientIdentifier: String): Int {
         logger.trace("Checking amount of active subscriptions for client {}", clientIdentifier)
         val c = clients[clientIdentifier] ?: return 0
@@ -69,12 +81,8 @@ class ClientDirectory {
         return c.subscriptionCount
     }
 
-    fun getClientLocation(clientIdentifier: String): Location? {
-        logger.trace("Retrieving location of client {}", clientIdentifier)
-        val c = clients[clientIdentifier] ?: return null
-
-        return c.location
-
+    fun getSubscription(clientIdentifier: String, topic: Topic): Subscription? {
+        return clients[clientIdentifier]?.getSubscription(topic)
     }
 
     /**

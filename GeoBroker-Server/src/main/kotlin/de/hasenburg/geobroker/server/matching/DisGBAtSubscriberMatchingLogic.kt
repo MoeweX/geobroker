@@ -104,7 +104,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
         } else {
 
             // find other brokers whose broker area intersects with the message geofence
-            val otherBrokers = brokerAreaManager.getOtherBrokersForMessageGeofence(payload.geofence)
+            val otherBrokers = brokerAreaManager.getOtherBrokersIntersectingWithGeofence(payload.geofence)
             for (otherBroker in otherBrokers) {
                 logger.trace("Broker area of {} intersects with message from client {}",
                         otherBroker.brokerId,
@@ -119,7 +119,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
 
             var ourReasonCode = ReasonCode.NoMatchingSubscribers
             // check if own broker area intersects with the message geofence
-            if (brokerAreaManager.checkOurAreaForMessageGeofence(payload.geofence)) {
+            if (brokerAreaManager.checkOurAreaForGeofenceIntersection(payload.geofence)) {
                 ourReasonCode = publishMessageToLocalClients(publisherLocation,
                         payload,
                         clientDirectory,
@@ -186,9 +186,9 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
      * @return true, if this broker is responsible, otherwise false
      */
     private fun handleResponsibility(clientIdentifier: String, clientLocation: Location, clients: Socket): Boolean {
-        if (!brokerAreaManager.checkIfResponsibleForClientLocation(clientLocation)) {
+        if (!brokerAreaManager.checkIfOurAreaContainsLocation(clientLocation)) {
             // get responsible broker
-            val repBroker = brokerAreaManager.getOtherBrokerForClientLocation(clientLocation)
+            val repBroker = brokerAreaManager.getOtherBrokersContainingLocation(clientLocation)
 
             val response = InternalServerMessage(clientIdentifier,
                     ControlPacketType.DISCONNECT,
