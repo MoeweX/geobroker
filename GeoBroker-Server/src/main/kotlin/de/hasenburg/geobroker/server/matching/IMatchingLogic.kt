@@ -81,7 +81,7 @@ fun updateClientLocationAtLocalBroker(clientIdentifier: String, location: Locati
 
 fun subscribeAtLocalBroker(clientIdentifier: String, clientDirectory: ClientDirectory,
                            topicAndGeofenceMapper: TopicAndGeofenceMapper, topic: Topic,
-                           geofence: Geofence, logger: Logger): InternalServerMessage {
+                           geofence: Geofence, logger: Logger): ReasonCode {
     val subscribed: ImmutablePair<ImmutablePair<String, Int>, Geofence>? = clientDirectory.checkIfSubscribed(
             clientIdentifier,
             topic,
@@ -96,15 +96,11 @@ fun subscribeAtLocalBroker(clientIdentifier: String, clientDirectory: ClientDire
 
     if (subscriptionId == null) {
         logger.debug("Client {} is not connected", clientIdentifier)
-        return InternalServerMessage(clientIdentifier,
-                ControlPacketType.SUBACK,
-                SUBACKPayload(ReasonCode.NotConnected))
+        return ReasonCode.NotConnected
     } else {
         topicAndGeofenceMapper.putSubscriptionId(subscriptionId, topic, geofence)
         logger.debug("Client {} subscribed to topic {} and geofence {}", clientIdentifier, topic, geofence)
-        return InternalServerMessage(clientIdentifier,
-                ControlPacketType.SUBACK,
-                SUBACKPayload(ReasonCode.GrantedQoS0))
+        return ReasonCode.GrantedQoS0
     }
 }
 

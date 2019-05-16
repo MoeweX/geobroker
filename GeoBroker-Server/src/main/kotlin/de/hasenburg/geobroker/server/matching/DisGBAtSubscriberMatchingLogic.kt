@@ -5,6 +5,7 @@ import de.hasenburg.geobroker.commons.model.message.ReasonCode
 import de.hasenburg.geobroker.commons.model.message.payloads.BrokerForwardPublishPayload
 import de.hasenburg.geobroker.commons.model.message.payloads.DISCONNECTPayload
 import de.hasenburg.geobroker.commons.model.message.payloads.PUBACKPayload
+import de.hasenburg.geobroker.commons.model.message.payloads.SUBACKPayload
 import de.hasenburg.geobroker.commons.model.spatial.Location
 import de.hasenburg.geobroker.server.communication.InternalBrokerMessage
 import de.hasenburg.geobroker.server.communication.InternalServerMessage
@@ -72,12 +73,14 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
     override fun processSUBSCRIBE(message: InternalServerMessage, clients: Socket, brokers: Socket) {
         val payload = message.payload.subscribePayload.get()
 
-        val response = subscribeAtLocalBroker(message.clientIdentifier,
+        val reasonCode = subscribeAtLocalBroker(message.clientIdentifier,
                 clientDirectory,
                 topicAndGeofenceMapper,
                 payload.topic,
                 payload.geofence,
                 logger)
+
+        val response = InternalServerMessage(message.clientIdentifier, ControlPacketType.SUBACK, SUBACKPayload(reasonCode))
 
         logger.trace("Sending response $response")
         response.zMsg.send(clients)

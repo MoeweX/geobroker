@@ -3,6 +3,8 @@ package de.hasenburg.geobroker.server.matching
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType
 import de.hasenburg.geobroker.commons.model.message.ReasonCode
 import de.hasenburg.geobroker.commons.model.message.payloads.PUBACKPayload
+import de.hasenburg.geobroker.commons.model.message.payloads.SUBACKPayload
+import de.hasenburg.geobroker.commons.model.message.payloads.SUBSCRIBEPayload
 import de.hasenburg.geobroker.server.communication.InternalServerMessage
 import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory
@@ -57,12 +59,14 @@ class SingleGeoBrokerMatchingLogic(private val clientDirectory: ClientDirectory,
     override fun processSUBSCRIBE(message: InternalServerMessage, clients: Socket, brokers: Socket) {
         val payload = message.payload.subscribePayload.get()
 
-        val response = subscribeAtLocalBroker(message.clientIdentifier,
+        val reasonCode = subscribeAtLocalBroker(message.clientIdentifier,
                 clientDirectory,
                 topicAndGeofenceMapper,
                 payload.topic,
                 payload.geofence,
                 logger)
+
+        val response = InternalServerMessage(message.clientIdentifier, ControlPacketType.SUBACK, SUBACKPayload(reasonCode))
 
         logger.trace("Sending response $response")
         response.zMsg.send(clients)
