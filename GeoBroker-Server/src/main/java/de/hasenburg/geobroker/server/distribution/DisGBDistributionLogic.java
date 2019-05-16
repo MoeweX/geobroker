@@ -11,10 +11,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * As {@link PUBLISHPayload} and {@link PUBACKPayload} do not have an id, this class simply counts published and
- * acknowledged messages.
+ * As any {@link AbstractPayload} does not have an id, this class simply counts outgoing and
+ * ingoing (acknowledged) messages.
  *
- * An alternative to adding an ID to the two mentioned payloads would be to add an ID to {@link
+ * An alternative to adding an ID to every payload would be to add an ID only to BrokerForward payloads, e.g., {@link
  * BrokerForwardPublishPayload}.
  */
 public class DisGBDistributionLogic implements IDistributionLogic {

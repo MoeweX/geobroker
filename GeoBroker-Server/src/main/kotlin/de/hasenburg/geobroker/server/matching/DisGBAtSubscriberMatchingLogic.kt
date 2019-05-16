@@ -32,10 +32,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
             return  // we are not responsible, client has been notified
         }
 
-        val response = connectClientAtLocalBroker(message.clientIdentifier,
-                payload.location,
-                clientDirectory,
-                logger)
+        val response = connectClientAtLocalBroker(message.clientIdentifier, payload.location, clientDirectory, logger)
 
         logger.trace("Sending response $response")
         response.zMsg.send(clients)
@@ -80,7 +77,9 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
                 payload.geofence,
                 logger)
 
-        val response = InternalServerMessage(message.clientIdentifier, ControlPacketType.SUBACK, SUBACKPayload(reasonCode))
+        val response = InternalServerMessage(message.clientIdentifier,
+                ControlPacketType.SUBACK,
+                SUBACKPayload(reasonCode))
 
         logger.trace("Sending response $response")
         response.zMsg.send(clients)
@@ -148,8 +147,13 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
 
     }
 
+    /**
+     * Publishes a message to local clients that originates from a client connected to another broker.
+     *
+     * As the other broker tells us about this message, we are responding to the other broker rather than responding
+     * to the original client.
+     */
     override fun processBrokerForwardPublish(message: InternalServerMessage, clients: Socket, brokers: Socket) {
-        // we received this because another broker knows that our area intersects and he knows the publishing client is connected
         val payload = message.payload.brokerForwardPublishPayload.get()
 
         // the id is determined by ZeroMQ based on the first frame, so here it is the id of the forwarding broker
@@ -163,9 +167,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
                 clients,
                 logger)
 
-        val response = InternalServerMessage(otherBrokerId,
-                ControlPacketType.PUBACK,
-                PUBACKPayload(reasonCode))
+        val response = InternalServerMessage(otherBrokerId, ControlPacketType.PUBACK, PUBACKPayload(reasonCode))
 
         // acknowledge publish operation to other broker, he does not expect a particular message so we just reply
         // with the response that we have generated anyways (needs to go via the clients socket as response has to

@@ -129,6 +129,15 @@ public abstract class AbstractPayload implements JSONable {
 		}
 	}
 
+	@JsonIgnore
+	public Optional<BrokerForwardSubscribePayload> getBrokerForwardSubscribePayload() {
+		if (this instanceof BrokerForwardSubscribePayload) {
+			return Optional.of((BrokerForwardSubscribePayload) this);
+		} else {
+			return Optional.empty();
+		}
+	}
+
 	/*****************************************************************
 	 * JSON and String
 	 ****************************************************************/

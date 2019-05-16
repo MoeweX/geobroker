@@ -82,6 +82,7 @@ fun updateClientLocationAtLocalBroker(clientIdentifier: String, location: Locati
 fun subscribeAtLocalBroker(clientIdentifier: String, clientDirectory: ClientDirectory,
                            topicAndGeofenceMapper: TopicAndGeofenceMapper, topic: Topic,
                            geofence: Geofence, logger: Logger): ReasonCode {
+
     val subscribed: ImmutablePair<ImmutablePair<String, Int>, Geofence>? = clientDirectory.checkIfSubscribed(
             clientIdentifier,
             topic,

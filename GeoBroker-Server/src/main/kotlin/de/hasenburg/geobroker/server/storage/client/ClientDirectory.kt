@@ -5,7 +5,6 @@ import de.hasenburg.geobroker.commons.model.spatial.Geofence
 import de.hasenburg.geobroker.commons.model.spatial.Location
 import org.apache.commons.lang3.tuple.ImmutablePair
 import org.apache.logging.log4j.LogManager
-import org.apache.logging.log4j.Logger
 import java.util.concurrent.ConcurrentHashMap
 
 private val logger = LogManager.getLogger()
@@ -21,20 +20,25 @@ class ClientDirectory {
      * Clients
      ****************************************************************/
 
+    fun clientExists(clientIdentifier: String): Boolean {
+        return clients.containsKey(clientIdentifier)
+    }
+
     /**
      * Add a client to the directory, if it did not exist before.
      *
      * @param clientIdentifier of the to be added client
      * @param initialLocation - the initial location of the client
+     * @param remote - whether the client is a remote client (connected to another broker)
      * @return true, if added
      */
-    fun addClient(clientIdentifier: String, initialLocation: Location): Boolean {
-        logger.trace("Connecting client {}", clientIdentifier)
+    fun addClient(clientIdentifier: String, initialLocation: Location, remote: Boolean = false): Boolean {
+        logger.trace("Connecting client {}, is remote: {}", clientIdentifier, remote)
         if (clients.containsKey(clientIdentifier)) {
             logger.warn("Tried to add client {}, but already existed", clientIdentifier)
             return false
         }
-        clients[clientIdentifier] = Client(clientIdentifier, initialLocation)
+        clients[clientIdentifier] = Client(clientIdentifier, initialLocation, remote)
         return true
     }
 
@@ -104,8 +108,7 @@ class ClientDirectory {
      * @param geofence - see above
      * @return see above
      */
-    fun checkIfSubscribed(clientIdentifier: String,
-                          topic: Topic,
+    fun checkIfSubscribed(clientIdentifier: String, topic: Topic,
                           geofence: Geofence): ImmutablePair<ImmutablePair<String, Int>, Geofence>? {
         val c = clients[clientIdentifier] ?: return null
         val s = c.getSubscription(topic) ?: return null

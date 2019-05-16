@@ -1,5 +1,6 @@
 package de.hasenburg.geobroker.server.matching
 
+import de.hasenburg.geobroker.client.communication.InternalClientMessage
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType
 import de.hasenburg.geobroker.commons.model.message.ReasonCode
 import de.hasenburg.geobroker.commons.model.message.payloads.*
@@ -62,8 +63,12 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
          * does not affect the result (see [processBrokerForwardSubscribe] for a longer explanation)
          ****************************************************************/
 
-        val reasonCode = subscribeAtLocalBroker(message.clientIdentifier, clientDirectory, topicAndGeofenceMapper,
-                payload.topic, payload.geofence, logger)
+        val reasonCode = subscribeAtLocalBroker(message.clientIdentifier,
+                clientDirectory,
+                topicAndGeofenceMapper,
+                payload.topic,
+                payload.geofence,
+                logger)
         val subscriptionId = clientDirectory.getSubscription(message.clientIdentifier, payload.topic)?.subscriptionId
 
         // it is possible that someone has already unsubscribed again
@@ -71,7 +76,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
             logger.warn("Subscription was deleted again before it could be send to other brokers")
             return
         }
-        
+
         /*****************************************************************
          * Remote Things
          * ****************************************************************/
@@ -86,7 +91,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
             // send message to BrokerCommunicator who takes care of the rest
             ZMQProcess_BrokerCommunicator.generatePULLSocketMessage(otherAffectedBroker.brokerId,
                     InternalBrokerMessage(ControlPacketType.BrokerForwardSubscribe,
-                            BrokerForwardSubscribePayload(payload))).send(brokers)
+                            BrokerForwardSubscribePayload(message.clientIdentifier, payload))).send(brokers)
         }
 
         // update broker affection -> returns now not anymore affected brokers
@@ -105,7 +110,8 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
          ****************************************************************/
 
         // send response
-        val response = InternalServerMessage(message.clientIdentifier, ControlPacketType.SUBACK,
+        val response = InternalServerMessage(message.clientIdentifier,
+                ControlPacketType.SUBACK,
                 SUBACKPayload(reasonCode))
         logger.trace("Sending response $response")
         response.zMsg.send(clients)
@@ -124,13 +130,18 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
             logger.debug("Client {} is not connected", message.clientIdentifier)
             reasonCode = ReasonCode.NotConnected
         } else {
-            reasonCode = publishMessageToLocalClients(publisherLocation, payload, clientDirectory,
-                    topicAndGeofenceMapper, clients, logger)
+            reasonCode = publishMessageToLocalClients(publisherLocation,
+                    payload,
+                    clientDirectory,
+                    topicAndGeofenceMapper,
+                    clients,
+                    logger)
         }
 
         // send response to publisher
         logger.trace("Sending response with reason code $reasonCode")
-        val response = InternalServerMessage(message.clientIdentifier, ControlPacketType.PUBACK,
+        val response = InternalServerMessage(message.clientIdentifier,
+                ControlPacketType.PUBACK,
                 PUBACKPayload(reasonCode))
         response.zMsg.send(clients)
     }
@@ -141,6 +152,9 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
 
     /**
      * Creates a subscription for a client based on information forwarded by another a broker.
+     * Before creating the subscription, we need to make sure that the client is present in the client directory (as
+     * a remote client).
+     *
      * In theory, it is sufficient to only create the subscription in the RasterEntries that are inside the broker's
      * area.
      * However, to simplify this method the subscription is added to all RasterEntries intersecting with the given
@@ -148,8 +162,34 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
      * inside the broker's area are communicating with this broker, all RasterEntries outside of the broker area are not
      * used anyways.
      */
-    fun processBrokerForwardSubscribe() {
+    fun processBrokerForwardSubscribe(message: InternalServerMessage, clients: ZMQ.Socket, brokers: ZMQ.Socket) {
+        val payload = message.payload.brokerForwardSubscribePayload.get()
 
+        // the id is determined by ZeroMQ based on the first frame, so here it is the id of the forwarding broker
+        val otherBrokerId = message.clientIdentifier
+        logger.trace("Processing BrokerForwardSubscribe from broker {}", otherBrokerId)
+
+        // make sure client exists as he did not send a connect
+        if (!clientDirectory.clientExists(payload.clientIdentifier)) {
+            // add client to directory as remote client
+            clientDirectory.addClient(payload.clientIdentifier, Location.undefined())
+        }
+
+        // now we can do local subscribe
+        val reasonCode = subscribeAtLocalBroker(message.clientIdentifier,
+                clientDirectory,
+                topicAndGeofenceMapper,
+                payload.getSubscribePayload().topic,
+                payload.getSubscribePayload().geofence,
+                logger)
+
+        val response = InternalServerMessage(otherBrokerId, ControlPacketType.SUBACK, SUBACKPayload(reasonCode))
+
+        // acknowledge subscribe operation to other broker, he does not expect a particular message so we just reply
+        // with the response that we have generated anyways (needs to go via the clients socket as response has to
+        // go out of the ZMQProcess_Server
+        logger.trace("Sending response with reason code $reasonCode")
+        response.zMsg.send(clients)
     }
 
     /*****************************************************************
@@ -171,7 +211,8 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
             // get responsible broker
             val repBroker = brokerAreaManager.getOtherBrokersContainingLocation(clientLocation)
 
-            val response = InternalServerMessage(clientIdentifier, ControlPacketType.DISCONNECT,
+            val response = InternalServerMessage(clientIdentifier,
+                    ControlPacketType.DISCONNECT,
                     DISCONNECTPayload(ReasonCode.WrongBroker, repBroker))
             logger.debug("Not responsible for client {}, responsible broker is {}", clientIdentifier, repBroker)
 

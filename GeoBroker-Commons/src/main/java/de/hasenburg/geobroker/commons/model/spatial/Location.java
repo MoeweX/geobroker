@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import de.hasenburg.geobroker.commons.model.JSONable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.locationtech.spatial4j.io.ShapeWriter;
 import org.locationtech.spatial4j.shape.Point;
 
@@ -22,14 +23,26 @@ public class Location implements JSONable {
 
 	private final Point point;
 
+	private boolean undefined = false;
+
 	private Location(Point point) {
 		this.point = point;
 	}
 
+	private Location(boolean undefined) {
+		this.undefined = undefined;
+		this.point = null;
+	}
+
 	@JsonCreator
 	private Location(@JsonProperty("WKT") String wkt) throws ParseException {
-		WKTReader reader = (WKTReader) GEO.getFormats().getWktReader();
-		this.point = (Point) reader.parse(wkt);
+		if ("{ undefined }".equals(wkt)) {
+			this.point = null;
+			this.undefined = true;
+		} else {
+			WKTReader reader = (WKTReader) GEO.getFormats().getWktReader();
+			this.point = (Point) reader.parse(wkt);
+		}
 	}
 
 	/**
@@ -40,6 +53,14 @@ public class Location implements JSONable {
 	 */
 	public Location(double lat, double lon) {
 		point = GEO.getShapeFactory().pointLatLon(lat, lon);
+	}
+
+	/**
+	 * Creates an undefined location, i.e., one that does not have a point and is not contained in any geofence.
+	 */
+	@NotNull
+	public static Location undefined() {
+		return new Location(true);
 	}
 
 	/**
@@ -56,9 +77,12 @@ public class Location implements JSONable {
 	 * Distance between this location and the given one, as determined by the Haversine formula, in radians
 	 *
 	 * @param toL - the other location
-	 * @return distance in radians
+	 * @return distance in radians or -1 if one location is undefined
 	 */
 	public double distanceRadiansTo(Location toL) {
+		if (undefined || toL.undefined) {
+			return -1.0;
+		}
 		return GEO.getDistCalc().distance(point, toL.getPoint());
 	}
 
@@ -66,9 +90,12 @@ public class Location implements JSONable {
 	 * Distance between this location and the given one, as determined by the Haversine formula, in km
 	 *
 	 * @param toL - the other location
-	 * @return distance in km
+	 * @return distance in km or -1 if one location is undefined
 	 */
 	public double distanceKmTo(Location toL) {
+		if (undefined || toL.undefined) {
+			return -1.0;
+		}
 		return distanceRadiansTo(toL) * DEG_TO_KM;
 	}
 
@@ -93,8 +120,16 @@ public class Location implements JSONable {
 
 	@JsonProperty("WKT")
 	public String getWKTString() {
+		if (undefined) {
+			return "{ undefined }";
+		}
 		ShapeWriter writer = GEO.getFormats().getWktWriter();
 		return writer.toString(point);
+	}
+
+	@JsonIgnore
+	public boolean isUndefined() {
+		return undefined;
 	}
 
 	@Override
@@ -108,20 +143,15 @@ public class Location implements JSONable {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
 		Location location = (Location) o;
-		return Objects.equals(getPoint(), location.getPoint());
+		return undefined == location.undefined && Objects.equals(point, location.point);
 	}
 
 	@Override
 	public int hashCode() {
-
-		return Objects.hash(getPoint());
+		return Objects.hash(point, undefined);
 	}
 
 	public static void main(String[] args) {
@@ -129,5 +159,4 @@ public class Location implements JSONable {
 		Location l2 = new Location(39.974702, 116.318417);
 		logger.info("Distance is {}km", l.distanceKmTo(l2));
 	}
-
 }

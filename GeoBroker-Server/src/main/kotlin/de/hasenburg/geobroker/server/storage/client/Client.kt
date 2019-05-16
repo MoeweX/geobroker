@@ -4,8 +4,6 @@ import de.hasenburg.geobroker.commons.model.message.Topic
 import de.hasenburg.geobroker.commons.model.spatial.Geofence
 import de.hasenburg.geobroker.commons.model.spatial.Location
 import org.apache.commons.lang3.tuple.ImmutablePair
-import org.apache.logging.log4j.LogManager
-import org.apache.logging.log4j.Logger
 import de.hasenburg.geobroker.server.matching.DisGBAtPublisherMatchingLogic
 
 import java.util.concurrent.ConcurrentHashMap
@@ -20,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger
 class Client(val clientIdentifier: String, location: Location, val remote: Boolean = false) {
 
     var location: Location = location
-        protected set // prevent to be set by other classes
+        private set // prevent to be set by other classes
 
     var heartbeat: Long = 0
     private val lastSubscriptionId = AtomicInteger(0)
