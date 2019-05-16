@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * An alternative to adding an ID to every payload would be to add an ID only to BrokerForward payloads, e.g., {@link
  * BrokerForwardPublishPayload}.
  */
-public class DisGBDistributionLogic implements IDistributionLogic {
+public class DisGBSubscriberMatchingDistributionLogic implements IDistributionLogic {
 
 	private static final Logger logger = LogManager.getLogger();
 

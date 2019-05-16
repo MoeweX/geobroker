@@ -4,11 +4,12 @@ import de.hasenburg.geobroker.commons.model.BrokerInfo
 import org.apache.commons.lang3.tuple.ImmutablePair
 import org.apache.logging.log4j.LogManager
 import java.util.concurrent.ConcurrentHashMap
+import de.hasenburg.geobroker.server.matching.DisGBAtPublisherMatchingLogic
 
 private val logger = LogManager.getLogger()
 
 /**
- * This class manages what other brokers are affected by a subscription in case of matching at the publisher.
+ * This class manages what other brokers are affected by a subscription in case of [DisGBAtPublisherMatchingLogic].
  * Only the subscriptions of non remote brokers should be added here.
  *
  * Note: I know that affection != affected ;)

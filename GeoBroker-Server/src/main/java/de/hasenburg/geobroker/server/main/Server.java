@@ -1,6 +1,6 @@
 package de.hasenburg.geobroker.server.main;
 
-import de.hasenburg.geobroker.server.main.server.DisGBServerLogic;
+import de.hasenburg.geobroker.server.main.server.DisGBSubscriberMatchingServerLogic;
 import de.hasenburg.geobroker.server.main.server.IServerLogic;
 import de.hasenburg.geobroker.server.main.server.ServerLifecycle;
 import de.hasenburg.geobroker.server.main.server.SingleGeoBrokerServerLogic;
@@ -20,7 +20,7 @@ public class Server {
 			logic = new SingleGeoBrokerServerLogic();
 		} else {
 			logger.info("GeoBroker is configured to run geo-distributed");
-			logic = new DisGBServerLogic();
+			logic = new DisGBSubscriberMatchingServerLogic();
 		}
 
 		ServerLifecycle lifecycle = new ServerLifecycle(logic);
