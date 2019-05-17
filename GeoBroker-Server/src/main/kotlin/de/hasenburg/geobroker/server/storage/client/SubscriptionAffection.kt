@@ -17,7 +17,7 @@ private val logger = LogManager.getLogger()
  */
 class SubscriptionAffection {
 
-    val affections = ConcurrentHashMap<String, ConcurrentHashMap<ImmutablePair<String, Int>, List<BrokerInfo>>>()
+    private val affections = ConcurrentHashMap<String, ConcurrentHashMap<ImmutablePair<String, Int>, List<BrokerInfo>>>()
 
     fun updateAffections(subscriptionId: ImmutablePair<String, Int>,
                          otherAffectedBrokers: List<BrokerInfo>): List<BrokerInfo> {
@@ -46,6 +46,10 @@ class SubscriptionAffection {
         }
 
         return affectionSet
+    }
+
+    fun removeAffections(clientIdentifier: String) {
+        affections.remove(clientIdentifier)
     }
 
 }

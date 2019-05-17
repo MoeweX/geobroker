@@ -112,9 +112,9 @@ public abstract class AbstractPayload implements JSONable {
 	}
 
 	@JsonIgnore
-	public Optional<BrokerForwardPublishPayload> getBrokerForwardPublishPayload() {
-		if (this instanceof BrokerForwardPublishPayload) {
-			return Optional.of((BrokerForwardPublishPayload) this);
+	public Optional<BrokerForwardDisconnectPayload> getBrokerForwardDisconnectPayload() {
+		if (this instanceof BrokerForwardDisconnectPayload) {
+			return Optional.of((BrokerForwardDisconnectPayload) this);
 		} else {
 			return Optional.empty();
 		}
@@ -133,6 +133,15 @@ public abstract class AbstractPayload implements JSONable {
 	public Optional<BrokerForwardSubscribePayload> getBrokerForwardSubscribePayload() {
 		if (this instanceof BrokerForwardSubscribePayload) {
 			return Optional.of((BrokerForwardSubscribePayload) this);
+		} else {
+			return Optional.empty();
+		}
+	}
+
+	@JsonIgnore
+	public Optional<BrokerForwardPublishPayload> getBrokerForwardPublishPayload() {
+		if (this instanceof BrokerForwardPublishPayload) {
+			return Optional.of((BrokerForwardPublishPayload) this);
 		} else {
 			return Optional.empty();
 		}

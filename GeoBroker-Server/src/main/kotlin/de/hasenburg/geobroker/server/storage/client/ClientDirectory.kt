@@ -24,6 +24,10 @@ class ClientDirectory {
         return clients.containsKey(clientIdentifier)
     }
 
+    fun clientExistsAsRemoteClient(clientIdentifier: String): Boolean {
+        return clients[clientIdentifier]?.remote ?: false
+    }
+
     /**
      * Add a client to the directory, if it did not exist before.
      *

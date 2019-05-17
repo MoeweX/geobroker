@@ -25,7 +25,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
     override fun processCONNECT(message: InternalServerMessage, clients: Socket, brokers: Socket) {
         val payload = message.payload.connectPayload.get()
 
-        if (!handleResponsibility(message.clientIdentifier, payload.location, clients)) {
+        if (!handleResponsibility(message.clientIdentifier, payload.location, clients, brokers)) {
             return  // we are not responsible, client has been notified
         }
 
@@ -38,13 +38,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
     override fun processDISCONNECT(message: InternalServerMessage, clients: Socket, brokers: Socket) {
         val payload = message.payload.disconnectPayload.get()
 
-        val success = clientDirectory.removeClient(message.clientIdentifier)
-        if (!success) {
-            logger.trace("Client for {} did not exist", message.clientIdentifier)
-            return
-        }
-
-        // TODO send forward disconnect operation
+        doDisconnect(message.clientIdentifier, DISCONNECTPayload(ReasonCode.NormalDisconnection), clients, brokers)
 
         logger.debug("Disconnected client {}, code {}", message.clientIdentifier, payload.reasonCode)
     }
@@ -191,8 +185,31 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
      * Broker Forward Methods
      ****************************************************************/
 
+    /**
+     * Disconnects a (remote) client from this broker, i.e., the client is connected to another broker and got
+     * disconnected there.
+     *
+     * Actually checks whether the given client is a remote client before disconnecting.
+     */
     override fun processBrokerForwardDisconnect(message: InternalServerMessage, clients: Socket, brokers: Socket) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val payload = message.payload.brokerForwardDisconnectPayload.get()
+        var reasonCode = ReasonCode.WrongBroker // i.e., not a remote client
+
+        // the id is determined by ZeroMQ based on the first frame, so here it is the id of the forwarding broker
+        val otherBrokerId = message.clientIdentifier
+        logger.trace("Processing BrokerForwardSubscribe from broker {}", otherBrokerId)
+
+        if (clientDirectory.clientExistsAsRemoteClient(payload.clientIdentifier)) {
+            reasonCode = ReasonCode.Success
+            clientDirectory.removeClient(payload.clientIdentifier)
+        }
+
+        val response = InternalServerMessage(otherBrokerId, ControlPacketType.DISCONNECT, DISCONNECTPayload(reasonCode))
+
+        // acknowledge disconnect operation to other broker, he does not expect a particular message (needs to go via
+        // the clients socket as response has to go out of the ZMQProcess_Server
+        logger.trace("Sending disconnect response to broker $otherBrokerId with reason code $reasonCode")
+        response.zMsg.send(clients)
     }
 
     /**
@@ -285,12 +302,11 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
      * disconnect message and information about the responsible broker, if any exists. The client is also removed from
      * the client directory. Otherwise, does nothing.
      *
-     * TODO removing a client from the client directly requires notifying all remote brokers of the same matter
-     * TODO send forward disconnect operation
      *
      * @return true, if this broker is responsible, otherwise false
      */
-    private fun handleResponsibility(clientIdentifier: String, clientLocation: Location, clients: Socket): Boolean {
+    private fun handleResponsibility(clientIdentifier: String, clientLocation: Location, clients: Socket,
+                                     brokers: Socket): Boolean {
         if (!brokerAreaManager.checkIfOurAreaContainsLocation(clientLocation)) {
             // get responsible broker
             val repBroker = brokerAreaManager.getOtherBrokersContainingLocation(clientLocation)
@@ -305,10 +321,47 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
             // TODO F: migrate client data to other broker, right now he has to update the information himself
             logger.debug("Client had {} active subscriptions",
                     clientDirectory.getCurrentClientSubscriptions(clientIdentifier))
-            clientDirectory.removeClient(clientIdentifier)
+
+            // do disconnect and handle all with that related matters
+            doDisconnect(clientIdentifier, DISCONNECTPayload(ReasonCode.WrongBroker), clients, brokers)
+
             return false
         }
         return true
+    }
+
+    /**
+     * Does all things necessary for a client disconnect:
+     * - remove the client from [clientDirectory]
+     * - remove all subscriptions of the client from [subscriptionAffection]
+     * - sent forward disconnect to all formerly affected brokers of any of the client's subscriptions
+     * - TODO tell the client about disconnect (must also be added to all other MatchingLogics, add to [IMatchingLogic])
+     *
+     * @param clientIdentifier - identifier of disconnecting client
+     * @param payload - disconnect payload with corresponding [ReasonCode]
+     * @param clients - socket used for client communication
+     * @param brokers - socket used for broker communication
+     */
+    private fun doDisconnect(clientIdentifier: String, payload: DISCONNECTPayload?, clients: Socket, brokers: Socket) {
+
+        val success = clientDirectory.removeClient(clientIdentifier)
+        if (!success) {
+            logger.trace("Client for {} did not exist", clientIdentifier)
+            return
+        }
+
+        val formerlyAffectedBrokers = subscriptionAffection.getAffections(clientIdentifier)
+        subscriptionAffection.removeAffections(clientIdentifier)
+
+        for (formerlyAffectedBroker in formerlyAffectedBrokers) {
+            logger.trace("""|Broker area of ${formerlyAffectedBroker.brokerId} is notified about disconnect from client
+                            |$clientIdentifier""".trimMargin())
+            // send message to BrokerCommunicator who takes care of the rest
+            ZMQProcess_BrokerCommunicator.generatePULLSocketMessage(formerlyAffectedBroker.brokerId,
+                    InternalBrokerMessage(ControlPacketType.BrokerForwardDisconnect,
+                            BrokerForwardDisconnectPayload(clientIdentifier, payload))).send(brokers)
+        }
+
     }
 
 }
