@@ -2,10 +2,7 @@ package de.hasenburg.geobroker.server.matching
 
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType
 import de.hasenburg.geobroker.commons.model.message.ReasonCode
-import de.hasenburg.geobroker.commons.model.message.payloads.BrokerForwardSubscribePayload
-import de.hasenburg.geobroker.commons.model.message.payloads.DISCONNECTPayload
-import de.hasenburg.geobroker.commons.model.message.payloads.PUBACKPayload
-import de.hasenburg.geobroker.commons.model.message.payloads.SUBACKPayload
+import de.hasenburg.geobroker.commons.model.message.payloads.*
 import de.hasenburg.geobroker.commons.model.spatial.Location
 import de.hasenburg.geobroker.server.communication.InternalBrokerMessage
 import de.hasenburg.geobroker.server.communication.InternalServerMessage
@@ -53,7 +50,51 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
     }
 
     override fun processPINGREQ(message: InternalServerMessage, clients: Socket, brokers: Socket) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val payload = message.payload.pingreqPayload.get()
+        var reasonCode = ReasonCode.LocationUpdated
+
+        /* ***************************************************************
+         * Local location update
+         ****************************************************************/
+
+        val success = clientDirectory.updateClientLocation(message.clientIdentifier, payload.location)
+        if (success) {
+            logger.debug("Updated location of {} to {}", message.clientIdentifier, payload.location)
+        } else {
+            logger.debug("Client {} is not connected", message.clientIdentifier)
+            reasonCode = ReasonCode.NotConnected
+        }
+
+        /* ***************************************************************
+         * Forwarding to other brokers
+         ****************************************************************/
+
+        // only if we were able to update the location locally, the request should be forwarded
+        if (success) {
+            // determine other brokers that are affected by any of the clients subscriptions
+            val clientAffections = subscriptionAffection.getAffections(message.clientIdentifier)
+
+            // forward the location to these
+            // forward message to all now affected brokers
+            for (otherAffectedBroker in clientAffections) {
+                logger.trace("""|Broker area of ${otherAffectedBroker.brokerId} is affected by the location update
+                                |of client ${message.clientIdentifier}""".trimMargin())
+                // send message to BrokerCommunicator who takes care of the rest
+                ZMQProcess_BrokerCommunicator.generatePULLSocketMessage(otherAffectedBroker.brokerId,
+                        InternalBrokerMessage(ControlPacketType.BrokerForwardPingreq,
+                                BrokerForwardPingreqPayload(message.clientIdentifier, payload))).send(brokers)
+            }
+        }
+
+        /* ***************************************************************
+         * Response
+         ****************************************************************/
+
+        val response = InternalServerMessage(message.clientIdentifier,
+                ControlPacketType.PINGRESP,
+                PINGRESPPayload(reasonCode))
+        logger.trace("Sending response $response")
+        response.zMsg.send(clients)
     }
 
     override fun processSUBSCRIBE(message: InternalServerMessage, clients: Socket, brokers: Socket) {
@@ -75,45 +116,41 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
                 logger)
         val subscriptionId = clientDirectory.getSubscription(message.clientIdentifier, payload.topic)?.subscriptionId
 
-        // it is possible that someone has already unsubscribed again
-        if (subscriptionId == null) {
-            logger.warn("Subscription was deleted again before it could be send to other brokers")
-            return
-        }
-
         /* ***************************************************************
          * Remote Things
          ****************************************************************/
 
-        // calculate what brokers are affected by the subscription's geofence
-        val otherAffectedBrokers = brokerAreaManager.getOtherBrokersIntersectingWithGeofence(payload.geofence)
+        // only if a subscription was created/updated locally, it should be forwarded
+        if (subscriptionId != null) {
+            // calculate what brokers are affected by the subscription's geofence
+            val otherAffectedBrokers = brokerAreaManager.getOtherBrokersIntersectingWithGeofence(payload.geofence)
 
-        // forward message to all now affected brokers
-        for (otherAffectedBroker in otherAffectedBrokers) {
-            logger.trace("""|Broker area of ${otherAffectedBroker.brokerId} intersects with subscription to topic
+            // forward message to all now affected brokers
+            for (otherAffectedBroker in otherAffectedBrokers) {
+                logger.trace("""|Broker area of ${otherAffectedBroker.brokerId} intersects with subscription to topic
                             |${payload.topic}} from client ${message.clientIdentifier}""".trimMargin())
-            // send message to BrokerCommunicator who takes care of the rest
-            ZMQProcess_BrokerCommunicator.generatePULLSocketMessage(otherAffectedBroker.brokerId,
-                    InternalBrokerMessage(ControlPacketType.BrokerForwardSubscribe,
-                            BrokerForwardSubscribePayload(message.clientIdentifier, payload))).send(brokers)
-        }
+                // send message to BrokerCommunicator who takes care of the rest
+                ZMQProcess_BrokerCommunicator.generatePULLSocketMessage(otherAffectedBroker.brokerId,
+                        InternalBrokerMessage(ControlPacketType.BrokerForwardSubscribe,
+                                BrokerForwardSubscribePayload(message.clientIdentifier, payload))).send(brokers)
+            }
 
-        // update broker affection -> returns now not anymore affected brokers
-        val notAnymoreAffectedOtherBrokers = subscriptionAffection.updateAffections(subscriptionId,
-                otherAffectedBrokers)
+            // update broker affection -> returns now not anymore affected brokers
+            val notAnymoreAffectedOtherBrokers = subscriptionAffection.updateAffections(subscriptionId,
+                    otherAffectedBrokers)
 
-        // unsubscribe these now not anymore affected brokers
-        for (notAnymoreAffectedOtherBroker in notAnymoreAffectedOtherBrokers) {
-            logger.trace("""|Broker area of ${notAnymoreAffectedOtherBroker.brokerId} is not anymore affected by
+            // unsubscribe these now not anymore affected brokers
+            for (notAnymoreAffectedOtherBroker in notAnymoreAffectedOtherBrokers) {
+                logger.trace("""|Broker area of ${notAnymoreAffectedOtherBroker.brokerId} is not anymore affected by
                             |subscription to topic ${payload.topic}} from client ${message.clientIdentifier}""".trimMargin())
-            // TODO send forward unsubscribe operation
+                // TODO send forward unsubscribe operation
+            }
         }
 
         /* ***************************************************************
          * Response
          ****************************************************************/
 
-        // send response
         val response = InternalServerMessage(message.clientIdentifier,
                 ControlPacketType.SUBACK,
                 SUBACKPayload(reasonCode))
