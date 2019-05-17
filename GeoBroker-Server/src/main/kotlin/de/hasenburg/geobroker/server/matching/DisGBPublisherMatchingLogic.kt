@@ -195,8 +195,34 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
+    /**
+     * Updates the location and heartbeat of a client based on information forwarded by another broker.
+     * Before doing so, we need to make sure the client is present in the client directory (as a remote client).
+     */
     override fun processBrokerForwardPingreq(message: InternalServerMessage, clients: Socket, brokers: Socket) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val payload = message.payload.brokerForwardPingreqPayload.get()
+
+        // the id is determined by ZeroMQ based on the first frame, so here it is the id of the forwarding broker
+        val otherBrokerId = message.clientIdentifier
+        logger.trace("Processing BrokerForwardSubscribe from broker {}", otherBrokerId)
+
+        // make sure client exists as he did not send a connect
+        if (!clientDirectory.clientExists(payload.clientIdentifier)) {
+            // add client to directory as remote client
+            clientDirectory.addClient(payload.clientIdentifier, Location.undefined())
+        }
+
+        // now we can do local location update
+        val response = updateClientLocationAtLocalBroker(message.clientIdentifier,
+                payload.getPingreqPayload().location,
+                clientDirectory,
+                logger)
+
+        // acknowledge subscribe operation to other broker, he does not expect a particular message so we just reply
+        // with the response that we have generated anyways (needs to go via the clients socket as response has to
+        // go out of the ZMQProcess_Server
+        logger.trace("Sending pingresp response")
+        response.zMsg.send(clients)
     }
 
     /**
