@@ -3,19 +3,19 @@ package de.hasenburg.geobroker.commons.model.message.payloads;
 import java.util.Objects;
 
 @SuppressWarnings("WeakerAccess") // as fields are checked by AbstractPayload.nullField()
-public class BrokerForwardPingreqPayload extends AbstractPayload {
+public class BrokerForwardDisconnectPayload extends AbstractPayload {
 
 	String clientIdentifier;
-	PINGREQPayload pingreqPayload;
+	DISCONNECTPayload disconnectPayload;
 
-	public BrokerForwardPingreqPayload() {
+	public BrokerForwardDisconnectPayload() {
 
 	}
 
-	public BrokerForwardPingreqPayload(String clientIdentifier, PINGREQPayload pingreqPayload) {
+	public BrokerForwardDisconnectPayload(String clientIdentifier, DISCONNECTPayload disconnectPayload) {
 		super();
 		this.clientIdentifier = clientIdentifier;
-		this.pingreqPayload = pingreqPayload;
+		this.disconnectPayload = disconnectPayload;
 	}
 
 	/*****************************************************************
@@ -26,8 +26,8 @@ public class BrokerForwardPingreqPayload extends AbstractPayload {
 		return clientIdentifier;
 	}
 
-	public PINGREQPayload getPingreqPayload() {
-		return pingreqPayload;
+	public DISCONNECTPayload getPingreqPayload() {
+		return disconnectPayload;
 	}
 
 	/*****************************************************************
@@ -38,13 +38,13 @@ public class BrokerForwardPingreqPayload extends AbstractPayload {
 	public boolean equals(Object o) {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
-		BrokerForwardPingreqPayload that = (BrokerForwardPingreqPayload) o;
-		return Objects.equals(clientIdentifier, that.clientIdentifier) && Objects.equals(pingreqPayload,
-				that.pingreqPayload);
+		BrokerForwardDisconnectPayload that = (BrokerForwardDisconnectPayload) o;
+		return Objects.equals(clientIdentifier, that.clientIdentifier) && Objects.equals(disconnectPayload,
+				that.disconnectPayload);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(clientIdentifier, pingreqPayload);
+		return Objects.hash(clientIdentifier, disconnectPayload);
 	}
 }

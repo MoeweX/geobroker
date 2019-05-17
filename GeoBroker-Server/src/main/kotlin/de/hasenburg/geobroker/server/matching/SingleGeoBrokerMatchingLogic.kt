@@ -5,6 +5,7 @@ import de.hasenburg.geobroker.commons.model.message.ReasonCode
 import de.hasenburg.geobroker.commons.model.message.payloads.PUBACKPayload
 import de.hasenburg.geobroker.commons.model.message.payloads.SUBACKPayload
 import de.hasenburg.geobroker.commons.model.message.payloads.SUBSCRIBEPayload
+import de.hasenburg.geobroker.commons.model.spatial.Location
 import de.hasenburg.geobroker.server.communication.InternalServerMessage
 import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory
@@ -100,6 +101,27 @@ class SingleGeoBrokerMatchingLogic(private val clientDirectory: ClientDirectory,
                 ControlPacketType.PUBACK,
                 PUBACKPayload(reasonCode))
         response.zMsg.send(clients)
+    }
+
+
+    /*****************************************************************
+     * Broker Forward Methods
+     ****************************************************************/
+
+    override fun processBrokerForwardDisconnect(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+        logger.warn("Unsupported operation, message is discarded")
+    }
+
+    override fun processBrokerForwardPingreq(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+        logger.warn("Unsupported operation, message is discarded")
+    }
+
+    override fun processBrokerForwardSubscribe(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+        logger.warn("Unsupported operation, message is discarded")
+    }
+
+    override fun processBrokerForwardUnsubscribe(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+        logger.warn("Unsupported operation, message is discarded")
     }
 
     override fun processBrokerForwardPublish(message: InternalServerMessage, clients: Socket, brokers: Socket) {

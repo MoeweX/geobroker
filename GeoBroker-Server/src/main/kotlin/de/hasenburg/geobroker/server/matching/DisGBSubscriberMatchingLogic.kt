@@ -91,8 +91,6 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
     }
 
     override fun processPUBLISH(message: InternalServerMessage, clients: Socket, brokers: Socket) {
-        // TODO do local before remote, orient on structure of DisGBAtPublisherMatching code
-
         val reasonCode: ReasonCode
         val payload = message.payload.publishPayload.get()
         val publisherLocation = clientDirectory.getClientLocation(message.clientIdentifier)
@@ -145,6 +143,26 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
         logger.trace("Sending response with reason code $reasonCode")
         response.zMsg.send(clients)
 
+    }
+
+    /*****************************************************************
+     * Broker Forward Methods
+     ****************************************************************/
+
+    override fun processBrokerForwardDisconnect(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+        logger.warn("Unsupported operation, message is discarded")
+    }
+
+    override fun processBrokerForwardPingreq(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+        logger.warn("Unsupported operation, message is discarded")
+    }
+
+    override fun processBrokerForwardSubscribe(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+        logger.warn("Unsupported operation, message is discarded")
+    }
+
+    override fun processBrokerForwardUnsubscribe(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+        logger.warn("Unsupported operation, message is discarded")
     }
 
     /**

@@ -1,9 +1,11 @@
 package de.hasenburg.geobroker.server.matching
 
-import de.hasenburg.geobroker.client.communication.InternalClientMessage
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType
 import de.hasenburg.geobroker.commons.model.message.ReasonCode
-import de.hasenburg.geobroker.commons.model.message.payloads.*
+import de.hasenburg.geobroker.commons.model.message.payloads.BrokerForwardSubscribePayload
+import de.hasenburg.geobroker.commons.model.message.payloads.DISCONNECTPayload
+import de.hasenburg.geobroker.commons.model.message.payloads.PUBACKPayload
+import de.hasenburg.geobroker.commons.model.message.payloads.SUBACKPayload
 import de.hasenburg.geobroker.commons.model.spatial.Location
 import de.hasenburg.geobroker.server.communication.InternalBrokerMessage
 import de.hasenburg.geobroker.server.communication.InternalServerMessage
@@ -13,7 +15,7 @@ import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory
 import de.hasenburg.geobroker.server.storage.client.SubscriptionAffection
 import org.apache.logging.log4j.LogManager
-import org.zeromq.ZMQ
+import org.zeromq.ZMQ.Socket
 
 private val logger = LogManager.getLogger()
 
@@ -23,7 +25,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
 
     private val subscriptionAffection = SubscriptionAffection()
 
-    override fun processCONNECT(message: InternalServerMessage, clients: ZMQ.Socket, brokers: ZMQ.Socket) {
+    override fun processCONNECT(message: InternalServerMessage, clients: Socket, brokers: Socket) {
         val payload = message.payload.connectPayload.get()
 
         if (!handleResponsibility(message.clientIdentifier, payload.location, clients)) {
@@ -36,7 +38,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
         response.zMsg.send(clients)
     }
 
-    override fun processDISCONNECT(message: InternalServerMessage, clients: ZMQ.Socket, brokers: ZMQ.Socket) {
+    override fun processDISCONNECT(message: InternalServerMessage, clients: Socket, brokers: Socket) {
         val payload = message.payload.disconnectPayload.get()
 
         val success = clientDirectory.removeClient(message.clientIdentifier)
@@ -45,17 +47,19 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
             return
         }
 
+        // TODO send forward disconnect operation
+
         logger.debug("Disconnected client {}, code {}", message.clientIdentifier, payload.reasonCode)
     }
 
-    override fun processPINGREQ(message: InternalServerMessage, clients: ZMQ.Socket, brokers: ZMQ.Socket) {
+    override fun processPINGREQ(message: InternalServerMessage, clients: Socket, brokers: Socket) {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun processSUBSCRIBE(message: InternalServerMessage, clients: ZMQ.Socket, brokers: ZMQ.Socket) {
+    override fun processSUBSCRIBE(message: InternalServerMessage, clients: Socket, brokers: Socket) {
         val payload = message.payload.subscribePayload.get()
 
-        /*****************************************************************
+        /* ***************************************************************
          * Local Things
          * - done first to create subscription if did not exist
          * - we always create a subscription, even if not in area, so that the "main broker" knows about any
@@ -77,9 +81,9 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
             return
         }
 
-        /*****************************************************************
+        /* ***************************************************************
          * Remote Things
-         * ****************************************************************/
+         ****************************************************************/
 
         // calculate what brokers are affected by the subscription's geofence
         val otherAffectedBrokers = brokerAreaManager.getOtherBrokersIntersectingWithGeofence(payload.geofence)
@@ -105,7 +109,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
             // TODO send forward unsubscribe operation
         }
 
-        /*****************************************************************
+        /* ***************************************************************
          * Response
          ****************************************************************/
 
@@ -117,11 +121,11 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
         response.zMsg.send(clients)
     }
 
-    override fun processUNSUBSCRIBE(message: InternalServerMessage, clients: ZMQ.Socket, brokers: ZMQ.Socket) {
+    override fun processUNSUBSCRIBE(message: InternalServerMessage, clients: Socket, brokers: Socket) {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun processPUBLISH(message: InternalServerMessage, clients: ZMQ.Socket, brokers: ZMQ.Socket) {
+    override fun processPUBLISH(message: InternalServerMessage, clients: Socket, brokers: Socket) {
         val reasonCode: ReasonCode
         val payload = message.payload.publishPayload.get()
         val publisherLocation = clientDirectory.getClientLocation(message.clientIdentifier)
@@ -146,8 +150,16 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
         response.zMsg.send(clients)
     }
 
-    override fun processBrokerForwardPublish(message: InternalServerMessage, clients: ZMQ.Socket, brokers: ZMQ.Socket) {
-        logger.warn("Unsupported operation, message is discarded")
+    /*****************************************************************
+     * Broker Forward Methods
+     ****************************************************************/
+
+    override fun processBrokerForwardDisconnect(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun processBrokerForwardPingreq(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     /**
@@ -162,7 +174,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
      * inside the broker's area are communicating with this broker, all RasterEntries outside of the broker area are not
      * used anyways.
      */
-    fun processBrokerForwardSubscribe(message: InternalServerMessage, clients: ZMQ.Socket, brokers: ZMQ.Socket) {
+    override fun processBrokerForwardSubscribe(message: InternalServerMessage, clients: Socket, brokers: Socket) {
         val payload = message.payload.brokerForwardSubscribePayload.get()
 
         // the id is determined by ZeroMQ based on the first frame, so here it is the id of the forwarding broker
@@ -192,6 +204,15 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
         response.zMsg.send(clients)
     }
 
+    override fun processBrokerForwardUnsubscribe(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        // TODO before implementing this, an UNSUBSCRIBE (and forward) payload must be added
+    }
+
+    override fun processBrokerForwardPublish(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+        logger.warn("Unsupported operation, message is discarded")
+    }
+
     /*****************************************************************
      * Message Processing Helper
      ****************************************************************/
@@ -202,11 +223,11 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
      * the client directory. Otherwise, does nothing.
      *
      * TODO removing a client from the client directly requires notifying all remote brokers of the same matter
-     * (forwardDisconnect?)
+     * TODO send forward disconnect operation
      *
      * @return true, if this broker is responsible, otherwise false
      */
-    private fun handleResponsibility(clientIdentifier: String, clientLocation: Location, clients: ZMQ.Socket): Boolean {
+    private fun handleResponsibility(clientIdentifier: String, clientLocation: Location, clients: Socket): Boolean {
         if (!brokerAreaManager.checkIfOurAreaContainsLocation(clientLocation)) {
             // get responsible broker
             val repBroker = brokerAreaManager.getOtherBrokersContainingLocation(clientLocation)
