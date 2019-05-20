@@ -6,7 +6,7 @@ import de.hasenburg.geobroker.server.communication.ZMQProcessStarter;
 import de.hasenburg.geobroker.server.distribution.BrokerAreaManager;
 import de.hasenburg.geobroker.server.distribution.DisGBDistributionLogic;
 import de.hasenburg.geobroker.server.main.Configuration;
-import de.hasenburg.geobroker.server.matching.DisGBAtSubscriberMatchingLogic;
+import de.hasenburg.geobroker.server.matching.DisGBAtPublisherMatchingLogic;
 import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper;
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory;
 import org.apache.logging.log4j.LogManager;
@@ -14,13 +14,14 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class DisGBServerLogic implements IServerLogic {
+public class DisGBPublisherMatchingServerLogic implements IServerLogic {
 
 	private static final Logger logger = LogManager.getLogger();
 
 	private Configuration configuration;
-	BrokerAreaManager brokerAreaManager;
-	private DisGBAtSubscriberMatchingLogic matchingLogic;
+	private BrokerAreaManager brokerAreaManager;
+	private DisGBAtPublisherMatchingLogic matchingLogic;
+	// we are currently using the same distribution logic for publisher and subscriber matching
 	private DisGBDistributionLogic distributionLogic;
 	private ZMQProcessManager processManager;
 	private ClientDirectory clientDirectory;
@@ -38,7 +39,7 @@ public class DisGBServerLogic implements IServerLogic {
 		clientDirectory = new ClientDirectory();
 		TopicAndGeofenceMapper topicAndGeofenceMapper = new TopicAndGeofenceMapper(configuration);
 
-		matchingLogic = new DisGBAtSubscriberMatchingLogic(clientDirectory, topicAndGeofenceMapper, brokerAreaManager);
+		matchingLogic = new DisGBAtPublisherMatchingLogic(clientDirectory, topicAndGeofenceMapper, brokerAreaManager);
 		distributionLogic = new DisGBDistributionLogic();
 
 		processManager = new ZMQProcessManager();
@@ -51,7 +52,6 @@ public class DisGBServerLogic implements IServerLogic {
 				configuration.getPort(),
 				configuration.getBrokerId());
 
-		// TODO configure amount via configuration
 		for (int number = 1; number <= configuration.getBrokerCommunicators(); number++) {
 			ZMQProcessStarter.runZMQProcess_BrokerCommunicator(processManager,
 					configuration.getBrokerId(),

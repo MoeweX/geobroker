@@ -12,7 +12,7 @@ import de.hasenburg.geobroker.commons.model.spatial.Geofence;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
 import de.hasenburg.geobroker.server.distribution.BrokerArea;
 import de.hasenburg.geobroker.server.main.Configuration;
-import de.hasenburg.geobroker.server.main.server.DisGBServerLogic;
+import de.hasenburg.geobroker.server.main.server.DisGBSubscriberMatchingServerLogic;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.After;
@@ -31,7 +31,7 @@ public class ConnectAndDisconnectTest {
 
 	private static final Logger logger = LogManager.getLogger();
 
-	private DisGBServerLogic serverLogic;
+	private DisGBSubscriberMatchingServerLogic serverLogic;
 	private ZMQProcessManager clientProcessManager;
 
 	@SuppressWarnings("Duplicates")
@@ -39,7 +39,7 @@ public class ConnectAndDisconnectTest {
 	public void setUp() {
 		logger.info("Running test setUp");
 
-		serverLogic = new DisGBServerLogic();
+		serverLogic = new DisGBSubscriberMatchingServerLogic();
 		serverLogic.loadConfiguration(Configuration.readConfiguration("connect_and_disconnect.toml"));
 		serverLogic.initializeFields();
 		serverLogic.startServer();

@@ -2,21 +2,16 @@
 
 package de.hasenburg.geobroker.commons
 
-import de.hasenburg.geobroker.commons.model.JSONable
-import de.hasenburg.geobroker.commons.model.message.*
 import de.hasenburg.geobroker.commons.exceptions.CommunicatorException
+import de.hasenburg.geobroker.commons.model.JSONable
+import de.hasenburg.geobroker.commons.model.message.ControlPacketType
 import de.hasenburg.geobroker.commons.model.message.payloads.*
-import de.hasenburg.geobroker.commons.model.message.payloads.BrokerForwardPublishPayload
 import me.atrox.haikunator.Haikunator
 import org.apache.logging.log4j.Level
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.apache.logging.log4j.core.LoggerContext
-import org.apache.logging.log4j.core.config.Configuration
-import org.apache.logging.log4j.core.config.LoggerConfig
-
-import java.util.Random
-import java.util.function.Supplier
+import java.util.*
 
 private val logger = LogManager.getLogger()
 private val r = Random()
@@ -102,64 +97,115 @@ fun buildPayloadFromString(s: String, controlPacketType: ControlPacketType): Abs
 
     when (controlPacketType) {
         ControlPacketType.CONNACK -> {
-            val connackPayload = JSONable.fromJSON<CONNACKPayload>(s, CONNACKPayload::class.java).orElseGet({ CONNACKPayload() })
+            val connackPayload = JSONable.fromJSON<CONNACKPayload>(s, CONNACKPayload::class.java)
+                    .orElseGet { CONNACKPayload() }
             if (!connackPayload.nullField()) {
                 return connackPayload
             }
         }
         ControlPacketType.CONNECT -> {
-            val connectPayload = JSONable.fromJSON<CONNECTPayload>(s, CONNECTPayload::class.java).orElseGet({ CONNECTPayload() })
+            val connectPayload = JSONable.fromJSON<CONNECTPayload>(s, CONNECTPayload::class.java)
+                    .orElseGet { CONNECTPayload() }
             if (!connectPayload.nullField()) {
                 return connectPayload
             }
         }
         ControlPacketType.DISCONNECT -> {
-            val disconnectPayload = JSONable.fromJSON<DISCONNECTPayload>(s, DISCONNECTPayload::class.java).orElseGet({ DISCONNECTPayload() })
+            val disconnectPayload = JSONable.fromJSON<DISCONNECTPayload>(s, DISCONNECTPayload::class.java)
+                    .orElseGet { DISCONNECTPayload() }
             if (!disconnectPayload.nullField()) {
                 return disconnectPayload
             }
         }
         ControlPacketType.PINGREQ -> {
-            val pingreqPayload = JSONable.fromJSON<PINGREQPayload>(s, PINGREQPayload::class.java).orElseGet({ PINGREQPayload() })
+            val pingreqPayload = JSONable.fromJSON<PINGREQPayload>(s, PINGREQPayload::class.java)
+                    .orElseGet { PINGREQPayload() }
             if (!pingreqPayload.nullField()) {
                 return pingreqPayload
             }
         }
         ControlPacketType.PINGRESP -> {
-            val pingrespPayload = JSONable.fromJSON<PINGRESPPayload>(s, PINGRESPPayload::class.java).orElseGet({ PINGRESPPayload() })
+            val pingrespPayload = JSONable.fromJSON<PINGRESPPayload>(s, PINGRESPPayload::class.java)
+                    .orElseGet { PINGRESPPayload() }
             if (!pingrespPayload.nullField()) {
                 return pingrespPayload
             }
         }
         ControlPacketType.PUBACK -> {
-            val pubackPayload = JSONable.fromJSON<PUBACKPayload>(s, PUBACKPayload::class.java).orElseGet({ PUBACKPayload() })
+            val pubackPayload = JSONable.fromJSON<PUBACKPayload>(s, PUBACKPayload::class.java)
+                    .orElseGet { PUBACKPayload() }
             if (!pubackPayload.nullField()) {
                 return pubackPayload
             }
         }
         ControlPacketType.PUBLISH -> {
-            val publishPayload = JSONable.fromJSON<PUBLISHPayload>(s, PUBLISHPayload::class.java).orElseGet({ PUBLISHPayload() })
+            val publishPayload = JSONable.fromJSON<PUBLISHPayload>(s, PUBLISHPayload::class.java)
+                    .orElseGet { PUBLISHPayload() }
             if (!publishPayload.nullField()) {
                 return publishPayload
             }
         }
         ControlPacketType.SUBACK -> {
-            val subackPayload = JSONable.fromJSON<SUBACKPayload>(s, SUBACKPayload::class.java).orElseGet({ SUBACKPayload() })
+            val subackPayload = JSONable.fromJSON<SUBACKPayload>(s, SUBACKPayload::class.java)
+                    .orElseGet { SUBACKPayload() }
             if (!subackPayload.nullField()) {
                 return subackPayload
             }
         }
         ControlPacketType.SUBSCRIBE -> {
-            val subscribePayload = JSONable.fromJSON<SUBSCRIBEPayload>(s, SUBSCRIBEPayload::class.java).orElseGet({ SUBSCRIBEPayload() })
+            val subscribePayload = JSONable.fromJSON<SUBSCRIBEPayload>(s, SUBSCRIBEPayload::class.java)
+                    .orElseGet { SUBSCRIBEPayload() }
             if (!subscribePayload.nullField()) {
                 return subscribePayload
             }
         }
+        ControlPacketType.UNSUBSCRIBE -> {
+            val unsubscribePayload = JSONable.fromJSON<UNSUBSCRIBEPayload>(s, UNSUBSCRIBEPayload::class.java)
+                    .orElseGet { UNSUBSCRIBEPayload() }
+            if (!unsubscribePayload.nullField()) {
+                return unsubscribePayload
+            }
+        }
+        ControlPacketType.UNSUBACK -> {
+            val unsubackPayload = JSONable.fromJSON<UNSUBACKPayload>(s, UNSUBACKPayload::class.java)
+                    .orElseGet { UNSUBACKPayload() }
+            if (!unsubackPayload.nullField()) {
+                return unsubackPayload
+            }
+        }
+        ControlPacketType.BrokerForwardDisconnect -> {
+            val brokerForwardDisconnectPayload = JSONable.fromJSON<BrokerForwardDisconnectPayload>(s,
+                    BrokerForwardDisconnectPayload::class.java).orElseGet { BrokerForwardDisconnectPayload() }
+            if (!brokerForwardDisconnectPayload.nullField()) {
+                return brokerForwardDisconnectPayload
+            }
+        }
+        ControlPacketType.BrokerForwardPingreq -> {
+            val brokerForwardPublishPingreq = JSONable.fromJSON<BrokerForwardPingreqPayload>(s,
+                    BrokerForwardPingreqPayload::class.java).orElseGet { BrokerForwardPingreqPayload() }
+            if (!brokerForwardPublishPingreq.nullField()) {
+                return brokerForwardPublishPingreq
+            }
+        }
         ControlPacketType.BrokerForwardPublish -> {
-            val brokerForwardPublishPayload = JSONable
-                    .fromJSON<BrokerForwardPublishPayload>(s, BrokerForwardPublishPayload::class.java).orElseGet({ BrokerForwardPublishPayload() })
+            val brokerForwardPublishPayload = JSONable.fromJSON<BrokerForwardPublishPayload>(s,
+                    BrokerForwardPublishPayload::class.java).orElseGet { BrokerForwardPublishPayload() }
             if (!brokerForwardPublishPayload.nullField()) {
                 return brokerForwardPublishPayload
+            }
+        }
+        ControlPacketType.BrokerForwardSubscribe -> {
+            val brokerForwardSubscribePayload = JSONable.fromJSON<BrokerForwardSubscribePayload>(s,
+                    BrokerForwardSubscribePayload::class.java).orElseGet { BrokerForwardSubscribePayload() }
+            if (!brokerForwardSubscribePayload.nullField()) {
+                return brokerForwardSubscribePayload
+            }
+        }
+        ControlPacketType.BrokerForwardUnsubscribe -> {
+            val brokerForwardUnsubscribePayload = JSONable.fromJSON<BrokerForwardUnsubscribePayload>(s,
+                    BrokerForwardUnsubscribePayload::class.java).orElseGet { BrokerForwardUnsubscribePayload() }
+            if (!brokerForwardUnsubscribePayload.nullField()) {
+                return brokerForwardUnsubscribePayload
             }
         }
         else -> throw CommunicatorException("ControlPacketType ${controlPacketType.name} is not supported")

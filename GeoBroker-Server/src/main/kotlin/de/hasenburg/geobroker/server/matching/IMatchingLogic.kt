@@ -9,7 +9,9 @@ import de.hasenburg.geobroker.commons.model.spatial.Location
 import de.hasenburg.geobroker.server.communication.InternalServerMessage
 import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory
+import org.apache.commons.lang3.tuple.ImmutablePair
 import org.apache.logging.log4j.Logger
+import org.zeromq.ZMQ
 import org.zeromq.ZMQ.Socket
 
 /**
@@ -32,6 +34,14 @@ interface IMatchingLogic {
 
     fun processPUBLISH(message: InternalServerMessage, clients: Socket, brokers: Socket)
 
+    fun processBrokerForwardDisconnect(message: InternalServerMessage, clients: Socket, brokers: Socket)
+
+    fun processBrokerForwardPingreq(message: InternalServerMessage, clients: Socket, brokers: Socket)
+
+    fun processBrokerForwardSubscribe(message: InternalServerMessage, clients: Socket, brokers: Socket)
+
+    fun processBrokerForwardUnsubscribe(message: InternalServerMessage, clients: Socket, brokers: Socket)
+
     fun processBrokerForwardPublish(message: InternalServerMessage, clients: Socket, brokers: Socket)
 
 }
@@ -40,16 +50,14 @@ interface IMatchingLogic {
  * Common Matching Tasks
  ****************************************************************/
 
-fun connectClientAtLocalBroker(clientIdentifier: String, location: Location,
-                               clientDirectory: ClientDirectory, logger: Logger): InternalServerMessage {
+fun connectClientAtLocalBroker(clientIdentifier: String, location: Location, clientDirectory: ClientDirectory,
+                               logger: Logger): InternalServerMessage {
 
     val success = clientDirectory.addClient(clientIdentifier, location)
 
     if (success) {
         logger.debug("Created client {}, acknowledging.", clientIdentifier)
-        return InternalServerMessage(clientIdentifier,
-                ControlPacketType.CONNACK,
-                CONNACKPayload(ReasonCode.Success))
+        return InternalServerMessage(clientIdentifier, ControlPacketType.CONNACK, CONNACKPayload(ReasonCode.Success))
     } else {
         logger.debug("Client {} already exists, so protocol error. Disconnecting.", clientIdentifier)
         clientDirectory.removeClient(clientIdentifier)
@@ -59,8 +67,8 @@ fun connectClientAtLocalBroker(clientIdentifier: String, location: Location,
     }
 }
 
-fun updateClientLocationAtLocalBroker(clientIdentifier: String, location: Location,
-                                      clientDirectory: ClientDirectory, logger: Logger): InternalServerMessage {
+fun updateClientLocationAtLocalBroker(clientIdentifier: String, location: Location, clientDirectory: ClientDirectory,
+                                      logger: Logger): InternalServerMessage {
 
     val success = clientDirectory.updateClientLocation(clientIdentifier, location)
     if (success) {
@@ -79,43 +87,55 @@ fun updateClientLocationAtLocalBroker(clientIdentifier: String, location: Locati
 }
 
 fun subscribeAtLocalBroker(clientIdentifier: String, clientDirectory: ClientDirectory,
-                           topicAndGeofenceMapper: TopicAndGeofenceMapper, topic: Topic,
-                           geofence: Geofence, logger: Logger): InternalServerMessage {
-    val subscribed = clientDirectory.checkIfSubscribed(
+                           topicAndGeofenceMapper: TopicAndGeofenceMapper, topic: Topic, geofence: Geofence,
+                           logger: Logger): ReasonCode {
+
+    val subscribed: ImmutablePair<ImmutablePair<String, Int>, Geofence>? = clientDirectory.checkIfSubscribed(
             clientIdentifier,
             topic,
             geofence)
 
     // if already subscribed -> remove subscription id from now unrelated geofence parts
-    if (subscribed != null) {
-        topicAndGeofenceMapper.removeSubscriptionId(subscribed.left, topic, subscribed.right)
-    }
+    subscribed?.let { topicAndGeofenceMapper.removeSubscriptionId(subscribed.left, topic, subscribed.right) }
 
-    val subscriptionId = clientDirectory.putSubscription(clientIdentifier,
-            topic,
-            geofence)
+    val subscriptionId = clientDirectory.updateSubscription(clientIdentifier, topic, geofence)
 
     if (subscriptionId == null) {
         logger.debug("Client {} is not connected", clientIdentifier)
-        return InternalServerMessage(clientIdentifier,
-                ControlPacketType.SUBACK,
-                SUBACKPayload(ReasonCode.NotConnected))
+        return ReasonCode.NotConnected
     } else {
         topicAndGeofenceMapper.putSubscriptionId(subscriptionId, topic, geofence)
         logger.debug("Client {} subscribed to topic {} and geofence {}", clientIdentifier, topic, geofence)
-        return InternalServerMessage(clientIdentifier,
-                ControlPacketType.SUBACK,
-                SUBACKPayload(ReasonCode.GrantedQoS0))
+        return ReasonCode.GrantedQoS0
     }
+}
+
+fun unsubscribeAtLocalBroker(clientIdentifier: String, clientDirectory: ClientDirectory,
+                             topicAndGeofenceMapper: TopicAndGeofenceMapper, topic: Topic, geofence: Geofence,
+                             logger: Logger): ReasonCode {
+    var reasonCode = ReasonCode.Success
+
+    // unsubscribe from client directory -> get subscription id
+    val s = clientDirectory.removeSubscription(clientIdentifier, topic)
+
+    // remove from storage if existed
+    if (s != null) {
+        topicAndGeofenceMapper.removeSubscriptionId(s.subscriptionId, s.topic, s.geofence)
+        logger.debug("Client $clientIdentifier unsubscribed from $topic topic, subscription had the id ${s.subscriptionId}")
+    } else {
+        logger.debug("Client $clientIdentifier has no subscription with topic $topic, thus unable to unsubscribe")
+        reasonCode = ReasonCode.NoSubscriptionExisted
+    }
+
+    return reasonCode
 }
 
 /**
  * @param publisherLocation - the location of the publisher
  */
 fun publishMessageToLocalClients(publisherLocation: Location, publishPayload: PUBLISHPayload,
-                                 clientDirectory: ClientDirectory,
-                                 topicAndGeofenceMapper: TopicAndGeofenceMapper, clients: Socket,
-                                 logger: Logger): ReasonCode {
+                                 clientDirectory: ClientDirectory, topicAndGeofenceMapper: TopicAndGeofenceMapper,
+                                 clients: Socket, logger: Logger): ReasonCode {
 
     logger.debug("Publishing topic {} to all subscribers", publishPayload.topic)
 
@@ -124,17 +144,14 @@ fun publishMessageToLocalClients(publisherLocation: Location, publishPayload: PU
 
     // only keep subscription if subscriber location is insider message geofence
     subscriptionIds.removeIf { subId ->
-        !publishPayload.geofence
-                .contains(clientDirectory.getClientLocation(subId.left)!!)
+        !publishPayload.geofence.contains(clientDirectory.getClientLocation(subId.left)!!)
     }
 
     // publish message to remaining subscribers
     for (subscriptionId in subscriptionIds) {
         val subscriberClientIdentifier = subscriptionId.left
         logger.debug("Client {} is a subscriber", subscriberClientIdentifier)
-        val toPublish = InternalServerMessage(subscriberClientIdentifier,
-                ControlPacketType.PUBLISH,
-                publishPayload)
+        val toPublish = InternalServerMessage(subscriberClientIdentifier, ControlPacketType.PUBLISH, publishPayload)
         logger.trace("Publishing $toPublish")
         toPublish.zMsg.send(clients)
     }

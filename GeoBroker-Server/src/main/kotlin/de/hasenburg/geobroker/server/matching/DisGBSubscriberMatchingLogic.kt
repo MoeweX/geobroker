@@ -2,9 +2,7 @@ package de.hasenburg.geobroker.server.matching
 
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType
 import de.hasenburg.geobroker.commons.model.message.ReasonCode
-import de.hasenburg.geobroker.commons.model.message.payloads.BrokerForwardPublishPayload
-import de.hasenburg.geobroker.commons.model.message.payloads.DISCONNECTPayload
-import de.hasenburg.geobroker.commons.model.message.payloads.PUBACKPayload
+import de.hasenburg.geobroker.commons.model.message.payloads.*
 import de.hasenburg.geobroker.commons.model.spatial.Location
 import de.hasenburg.geobroker.server.communication.InternalBrokerMessage
 import de.hasenburg.geobroker.server.communication.InternalServerMessage
@@ -31,10 +29,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
             return  // we are not responsible, client has been notified
         }
 
-        val response = connectClientAtLocalBroker(message.clientIdentifier,
-                payload.location,
-                clientDirectory,
-                logger)
+        val response = connectClientAtLocalBroker(message.clientIdentifier, payload.location, clientDirectory, logger)
 
         logger.trace("Sending response $response")
         response.zMsg.send(clients)
@@ -50,7 +45,6 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
         }
 
         logger.debug("Disconnected client {}, code {}", message.clientIdentifier, payload.reasonCode)
-
     }
 
     override fun processPINGREQ(message: InternalServerMessage, clients: Socket, brokers: Socket) {
@@ -73,20 +67,37 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
     override fun processSUBSCRIBE(message: InternalServerMessage, clients: Socket, brokers: Socket) {
         val payload = message.payload.subscribePayload.get()
 
-        val response = subscribeAtLocalBroker(message.clientIdentifier,
+        val reasonCode = subscribeAtLocalBroker(message.clientIdentifier,
                 clientDirectory,
                 topicAndGeofenceMapper,
                 payload.topic,
                 payload.geofence,
                 logger)
 
+        val response = InternalServerMessage(message.clientIdentifier,
+                ControlPacketType.SUBACK,
+                SUBACKPayload(reasonCode))
+
         logger.trace("Sending response $response")
         response.zMsg.send(clients)
     }
 
     override fun processUNSUBSCRIBE(message: InternalServerMessage, clients: Socket, brokers: Socket) {
-        // TODO Implement
-        throw RuntimeException("Not yet implemented")
+        val payload = message.payload.unsubscribePayload.get()
+
+        val reasonCode = unsubscribeAtLocalBroker(message.clientIdentifier,
+                clientDirectory,
+                topicAndGeofenceMapper,
+                payload.topic,
+                payload.geofence,
+                logger)
+
+        val response = InternalServerMessage(message.clientIdentifier,
+                ControlPacketType.UNSUBACK,
+                UNSUBACKPayload(reasonCode))
+
+        logger.trace("Sending response $response")
+        response.zMsg.send(clients)
     }
 
     override fun processPUBLISH(message: InternalServerMessage, clients: Socket, brokers: Socket) {
@@ -100,7 +111,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
         } else {
 
             // find other brokers whose broker area intersects with the message geofence
-            val otherBrokers = brokerAreaManager.getOtherBrokersForMessageGeofence(payload.geofence)
+            val otherBrokers = brokerAreaManager.getOtherBrokersIntersectingWithGeofence(payload.geofence)
             for (otherBroker in otherBrokers) {
                 logger.trace("Broker area of {} intersects with message from client {}",
                         otherBroker.brokerId,
@@ -115,7 +126,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
 
             var ourReasonCode = ReasonCode.NoMatchingSubscribers
             // check if own broker area intersects with the message geofence
-            if (brokerAreaManager.checkOurAreaForMessageGeofence(payload.geofence)) {
+            if (brokerAreaManager.checkOurAreaForGeofenceIntersection(payload.geofence)) {
                 ourReasonCode = publishMessageToLocalClients(publisherLocation,
                         payload,
                         clientDirectory,
@@ -144,8 +155,33 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
 
     }
 
+    /*****************************************************************
+     * Broker Forward Methods
+     ****************************************************************/
+
+    override fun processBrokerForwardDisconnect(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+        logger.warn("Unsupported operation, message is discarded")
+    }
+
+    override fun processBrokerForwardPingreq(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+        logger.warn("Unsupported operation, message is discarded")
+    }
+
+    override fun processBrokerForwardSubscribe(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+        logger.warn("Unsupported operation, message is discarded")
+    }
+
+    override fun processBrokerForwardUnsubscribe(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+        logger.warn("Unsupported operation, message is discarded")
+    }
+
+    /**
+     * Publishes a message to local clients that originates from a client connected to another broker.
+     *
+     * As the other broker tells us about this message, we are responding to the other broker rather than responding
+     * to the original client.
+     */
     override fun processBrokerForwardPublish(message: InternalServerMessage, clients: Socket, brokers: Socket) {
-        // we received this because another broker knows that our area intersects and he knows the publishing client is connected
         val payload = message.payload.brokerForwardPublishPayload.get()
 
         // the id is determined by ZeroMQ based on the first frame, so here it is the id of the forwarding broker
@@ -159,9 +195,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
                 clients,
                 logger)
 
-        val response = InternalServerMessage(otherBrokerId,
-                ControlPacketType.PUBACK,
-                PUBACKPayload(reasonCode))
+        val response = InternalServerMessage(otherBrokerId, ControlPacketType.PUBACK, PUBACKPayload(reasonCode))
 
         // acknowledge publish operation to other broker, he does not expect a particular message so we just reply
         // with the response that we have generated anyways (needs to go via the clients socket as response has to
@@ -172,7 +206,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
 
     /*****************************************************************
      * Message Processing Helper
-     */
+     ****************************************************************/
 
     /**
      * Checks whether this particular broker is responsible for the client with the given location. If not, sends a
@@ -182,9 +216,9 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
      * @return true, if this broker is responsible, otherwise false
      */
     private fun handleResponsibility(clientIdentifier: String, clientLocation: Location, clients: Socket): Boolean {
-        if (!brokerAreaManager.checkIfResponsibleForClientLocation(clientLocation)) {
+        if (!brokerAreaManager.checkIfOurAreaContainsLocation(clientLocation)) {
             // get responsible broker
-            val repBroker = brokerAreaManager.getOtherBrokerForClientLocation(clientLocation)
+            val repBroker = brokerAreaManager.getOtherBrokersContainingLocation(clientLocation)
 
             val response = InternalServerMessage(clientIdentifier,
                     ControlPacketType.DISCONNECT,

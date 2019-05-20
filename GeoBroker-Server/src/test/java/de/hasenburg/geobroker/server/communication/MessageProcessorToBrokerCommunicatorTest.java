@@ -11,6 +11,7 @@ import de.hasenburg.geobroker.server.distribution.IDistributionLogic;
 import de.hasenburg.geobroker.server.matching.IMatchingLogic;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.zeromq.SocketType;
 import org.zeromq.ZMQ.Socket;
@@ -116,6 +117,30 @@ public class MessageProcessorToBrokerCommunicatorTest {
 
 		@Override
 		public void processBrokerForwardPublish(InternalServerMessage message, Socket clients, Socket brokers) {
+			processCONNECT(message, clients, brokers);
+		}
+
+		@Override
+		public void processBrokerForwardDisconnect(@NotNull InternalServerMessage message, @NotNull Socket clients,
+												   @NotNull Socket brokers) {
+			processCONNECT(message, clients, brokers);
+		}
+
+		@Override
+		public void processBrokerForwardPingreq(@NotNull InternalServerMessage message, @NotNull Socket clients,
+												@NotNull Socket brokers) {
+			processCONNECT(message, clients, brokers);
+		}
+
+		@Override
+		public void processBrokerForwardSubscribe(@NotNull InternalServerMessage message, @NotNull Socket clients,
+												  @NotNull Socket brokers) {
+			processCONNECT(message, clients, brokers);
+		}
+
+		@Override
+		public void processBrokerForwardUnsubscribe(@NotNull InternalServerMessage message, @NotNull Socket clients,
+													@NotNull Socket brokers) {
 			processCONNECT(message, clients, brokers);
 		}
 	}

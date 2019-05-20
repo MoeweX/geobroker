@@ -4,6 +4,7 @@ import de.hasenburg.geobroker.commons.model.JSONable;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.JSONArray;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -42,6 +43,19 @@ public class LocationTest {
 			assertEquals(location, JSONable.fromJSON(JSONable.toJSON(location), Location.class).orElse(null));
 		}
 		logger.info("Created and read {} JSONs in {}ms", N, System.currentTimeMillis() - time);
+	}
+
+	@Test
+	public void undefinedLocation() {
+		Location l = Location.random();
+		Location ul1 = Location.undefined();
+
+		assertEquals(-1.0, l.distanceKmTo(ul1), 0.1);
+
+		String json = JSONable.toJSON(ul1);
+		logger.info(json);
+		Location ul2 = JSONable.fromJSON(json, Location.class).get();
+		assertEquals(ul1, ul2);
 	}
 
 	@Test

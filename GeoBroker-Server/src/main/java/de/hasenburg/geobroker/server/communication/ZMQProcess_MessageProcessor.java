@@ -100,41 +100,42 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 
 		if (messageO.isPresent()) {
 			InternalServerMessage message = messageO.get();
+
+			Socket clientsSocket = sockets.get(PROCESSOR_INDEX);
+			Socket brokersSocket = sockets.get(BROKER_COMMUNICATOR_INDEX);
 			switch (message.getControlPacketType()) {
 				case CONNECT:
-					matchingLogic.processCONNECT(message,
-							sockets.get(PROCESSOR_INDEX),
-							sockets.get(BROKER_COMMUNICATOR_INDEX));
+					matchingLogic.processCONNECT(message, clientsSocket, brokersSocket);
 					break;
 				case DISCONNECT:
-					matchingLogic.processDISCONNECT(message,
-							sockets.get(PROCESSOR_INDEX),
-							sockets.get(BROKER_COMMUNICATOR_INDEX));
+					matchingLogic.processDISCONNECT(message, clientsSocket, brokersSocket);
 					break;
 				case PINGREQ:
-					matchingLogic.processPINGREQ(message,
-							sockets.get(PROCESSOR_INDEX),
-							sockets.get(BROKER_COMMUNICATOR_INDEX));
+					matchingLogic.processPINGREQ(message, clientsSocket, brokersSocket);
 					break;
 				case SUBSCRIBE:
-					matchingLogic.processSUBSCRIBE(message,
-							sockets.get(PROCESSOR_INDEX),
-							sockets.get(BROKER_COMMUNICATOR_INDEX));
+					matchingLogic.processSUBSCRIBE(message, clientsSocket, brokersSocket);
 					break;
 				case UNSUBSCRIBE:
-					matchingLogic.processUNSUBSCRIBE(message,
-							sockets.get(PROCESSOR_INDEX),
-							sockets.get(BROKER_COMMUNICATOR_INDEX));
+					matchingLogic.processUNSUBSCRIBE(message, clientsSocket, brokersSocket);
 					break;
 				case PUBLISH:
-					matchingLogic.processPUBLISH(message,
-							sockets.get(PROCESSOR_INDEX),
-							sockets.get(BROKER_COMMUNICATOR_INDEX));
+					matchingLogic.processPUBLISH(message, clientsSocket, brokersSocket);
+					break;
+				case BrokerForwardDisconnect:
+					matchingLogic.processBrokerForwardDisconnect(message, clientsSocket, brokersSocket);
+					break;
+				case BrokerForwardPingreq:
+					matchingLogic.processBrokerForwardPingreq(message, clientsSocket, brokersSocket);
+					break;
+				case BrokerForwardSubscribe:
+					matchingLogic.processBrokerForwardSubscribe(message, clientsSocket, brokersSocket);
+					break;
+				case BrokerForwardUnsubscribe:
+					matchingLogic.processBrokerForwardUnsubscribe(message, clientsSocket, brokersSocket);
 					break;
 				case BrokerForwardPublish:
-					matchingLogic.processBrokerForwardPublish(message,
-							sockets.get(PROCESSOR_INDEX),
-							sockets.get(BROKER_COMMUNICATOR_INDEX));
+					matchingLogic.processBrokerForwardPublish(message, clientsSocket, brokersSocket);
 					break;
 				default:
 					logger.warn("Cannot process message {}", message.toString());

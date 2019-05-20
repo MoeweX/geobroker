@@ -21,12 +21,12 @@ public class BrokerAreaManagerTest {
 		brokerAreaManager.readFromFile("defaultBrokerAreas.json");
 
 		// we are responsible
-		assertTrue(brokerAreaManager.checkIfResponsibleForClientLocation(location));
+		assertTrue(brokerAreaManager.checkIfOurAreaContainsLocation(location));
 		// for everything
-		assertTrue(brokerAreaManager.checkIfResponsibleForClientLocation(Location.random()));
+		assertTrue(brokerAreaManager.checkIfOurAreaContainsLocation(Location.random()));
 
 		// as the areas overlap in the default config, two brokers are responsible in theory.
-		BrokerInfo otherBroker = brokerAreaManager.getOtherBrokerForClientLocation(location);
+		BrokerInfo otherBroker = brokerAreaManager.getOtherBrokersContainingLocation(location);
 		assertNotNull(otherBroker);
 		assertEquals("notUsedBroker (but info must allow tcp socket connect)", otherBroker.getBrokerId());
 	}

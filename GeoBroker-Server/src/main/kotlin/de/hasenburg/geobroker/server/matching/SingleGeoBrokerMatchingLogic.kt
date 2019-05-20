@@ -3,6 +3,8 @@ package de.hasenburg.geobroker.server.matching
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType
 import de.hasenburg.geobroker.commons.model.message.ReasonCode
 import de.hasenburg.geobroker.commons.model.message.payloads.PUBACKPayload
+import de.hasenburg.geobroker.commons.model.message.payloads.SUBACKPayload
+import de.hasenburg.geobroker.commons.model.message.payloads.UNSUBACKPayload
 import de.hasenburg.geobroker.server.communication.InternalServerMessage
 import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory
@@ -20,10 +22,7 @@ class SingleGeoBrokerMatchingLogic(private val clientDirectory: ClientDirectory,
     override fun processCONNECT(message: InternalServerMessage, clients: Socket, brokers: Socket) {
         val payload = message.payload.connectPayload.get()
 
-        val response = connectClientAtLocalBroker(message.clientIdentifier,
-                payload.location,
-                clientDirectory,
-                logger)
+        val response = connectClientAtLocalBroker(message.clientIdentifier, payload.location, clientDirectory, logger)
 
         logger.trace("Sending response $response")
         response.zMsg.send(clients)
@@ -57,20 +56,37 @@ class SingleGeoBrokerMatchingLogic(private val clientDirectory: ClientDirectory,
     override fun processSUBSCRIBE(message: InternalServerMessage, clients: Socket, brokers: Socket) {
         val payload = message.payload.subscribePayload.get()
 
-        val response = subscribeAtLocalBroker(message.clientIdentifier,
+        val reasonCode = subscribeAtLocalBroker(message.clientIdentifier,
                 clientDirectory,
                 topicAndGeofenceMapper,
                 payload.topic,
                 payload.geofence,
                 logger)
 
+        val response = InternalServerMessage(message.clientIdentifier,
+                ControlPacketType.SUBACK,
+                SUBACKPayload(reasonCode))
+
         logger.trace("Sending response $response")
         response.zMsg.send(clients)
     }
 
     override fun processUNSUBSCRIBE(message: InternalServerMessage, clients: Socket, brokers: Socket) {
-        // TODO Implement
-        throw RuntimeException("Not yet implemented")
+        val payload = message.payload.unsubscribePayload.get()
+
+        val reasonCode = unsubscribeAtLocalBroker(message.clientIdentifier,
+                clientDirectory,
+                topicAndGeofenceMapper,
+                payload.topic,
+                payload.geofence,
+                logger)
+
+        val response = InternalServerMessage(message.clientIdentifier,
+                ControlPacketType.UNSUBACK,
+                UNSUBACKPayload(reasonCode))
+
+        logger.trace("Sending response $response")
+        response.zMsg.send(clients)
     }
 
     override fun processPUBLISH(message: InternalServerMessage, clients: Socket, brokers: Socket) {
@@ -96,6 +112,27 @@ class SingleGeoBrokerMatchingLogic(private val clientDirectory: ClientDirectory,
                 ControlPacketType.PUBACK,
                 PUBACKPayload(reasonCode))
         response.zMsg.send(clients)
+    }
+
+
+    /*****************************************************************
+     * Broker Forward Methods
+     ****************************************************************/
+
+    override fun processBrokerForwardDisconnect(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+        logger.warn("Unsupported operation, message is discarded")
+    }
+
+    override fun processBrokerForwardPingreq(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+        logger.warn("Unsupported operation, message is discarded")
+    }
+
+    override fun processBrokerForwardSubscribe(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+        logger.warn("Unsupported operation, message is discarded")
+    }
+
+    override fun processBrokerForwardUnsubscribe(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+        logger.warn("Unsupported operation, message is discarded")
     }
 
     override fun processBrokerForwardPublish(message: InternalServerMessage, clients: Socket, brokers: Socket) {
