@@ -212,6 +212,15 @@ fun buildPayloadFromString(s: String, controlPacketType: ControlPacketType): Abs
                 return brokerForwardSubscribePayload
             }
         }
+        ControlPacketType.BrokerForwardUnsubscribe -> {
+            val brokerForwardUnsubscribePayload = JSONable.fromJSON<BrokerForwardUnsubscribePayload>(s,
+                    BrokerForwardUnsubscribePayload::class.java).orElseGet({
+                BrokerForwardUnsubscribePayload()
+            })
+            if (!brokerForwardUnsubscribePayload.nullField()) {
+                return brokerForwardUnsubscribePayload
+            }
+        }
         else -> throw CommunicatorException("ControlPacketType ${controlPacketType.name} is not supported")
     }
 

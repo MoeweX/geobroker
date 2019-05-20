@@ -74,21 +74,13 @@ class SingleGeoBrokerMatchingLogic(private val clientDirectory: ClientDirectory,
 
     override fun processUNSUBSCRIBE(message: InternalServerMessage, clients: Socket, brokers: Socket) {
         val payload = message.payload.unsubscribePayload.get()
-        val clientIdentifier = message.clientIdentifier
-        val topic = payload.topic
-        var reasonCode = ReasonCode.Success
 
-        // unsubscribe from client directory -> get subscription id
-        val s = clientDirectory.removeSubscription(clientIdentifier, topic)
-
-        // remove from storage if existed
-        if (s != null) {
-            topicAndGeofenceMapper.removeSubscriptionId(s.subscriptionId, s.topic, s.geofence)
-            logger.debug("Client $clientIdentifier unsubscribed from $topic topic, subscription had the id ${s.subscriptionId}")
-        } else {
-            logger.debug("Client $clientIdentifier has no subscription with topic $topic, thus unable to unsubscribe")
-            reasonCode = ReasonCode.NoSubscriptionExisted
-        }
+        val reasonCode = unsubscribeAtLocalBroker(message.clientIdentifier,
+                clientDirectory,
+                topicAndGeofenceMapper,
+                payload.topic,
+                payload.geofence,
+                logger)
 
         val response = InternalServerMessage(message.clientIdentifier,
                 ControlPacketType.UNSUBACK,

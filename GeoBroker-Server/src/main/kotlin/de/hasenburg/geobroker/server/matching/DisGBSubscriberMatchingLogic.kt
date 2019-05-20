@@ -2,10 +2,7 @@ package de.hasenburg.geobroker.server.matching
 
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType
 import de.hasenburg.geobroker.commons.model.message.ReasonCode
-import de.hasenburg.geobroker.commons.model.message.payloads.BrokerForwardPublishPayload
-import de.hasenburg.geobroker.commons.model.message.payloads.DISCONNECTPayload
-import de.hasenburg.geobroker.commons.model.message.payloads.PUBACKPayload
-import de.hasenburg.geobroker.commons.model.message.payloads.SUBACKPayload
+import de.hasenburg.geobroker.commons.model.message.payloads.*
 import de.hasenburg.geobroker.commons.model.spatial.Location
 import de.hasenburg.geobroker.server.communication.InternalBrokerMessage
 import de.hasenburg.geobroker.server.communication.InternalServerMessage
@@ -86,8 +83,21 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
     }
 
     override fun processUNSUBSCRIBE(message: InternalServerMessage, clients: Socket, brokers: Socket) {
-        // TODO Implement
-        throw RuntimeException("Not yet implemented")
+        val payload = message.payload.unsubscribePayload.get()
+
+        val reasonCode = unsubscribeAtLocalBroker(message.clientIdentifier,
+                clientDirectory,
+                topicAndGeofenceMapper,
+                payload.topic,
+                payload.geofence,
+                logger)
+
+        val response = InternalServerMessage(message.clientIdentifier,
+                ControlPacketType.UNSUBACK,
+                UNSUBACKPayload(reasonCode))
+
+        logger.trace("Sending response $response")
+        response.zMsg.send(clients)
     }
 
     override fun processPUBLISH(message: InternalServerMessage, clients: Socket, brokers: Socket) {

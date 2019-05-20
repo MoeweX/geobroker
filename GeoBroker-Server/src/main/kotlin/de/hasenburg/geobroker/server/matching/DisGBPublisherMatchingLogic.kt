@@ -68,8 +68,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
             // determine other brokers that are affected by any of the clients subscriptions
             val clientAffections = subscriptionAffection.getAffections(message.clientIdentifier)
 
-            // forward the location to these
-            // forward message to all now affected brokers
+            // forward location to all affected brokers
             for (otherAffectedBroker in clientAffections) {
                 logger.trace("""|Broker area of ${otherAffectedBroker.brokerId} is affected by the location update
                                 |of client ${message.clientIdentifier}""".trimMargin())
@@ -136,8 +135,13 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
             // unsubscribe these now not anymore affected brokers
             for (notAnymoreAffectedOtherBroker in notAnymoreAffectedOtherBrokers) {
                 logger.trace("""|Broker area of ${notAnymoreAffectedOtherBroker.brokerId} is not anymore affected by
-                            |subscription to topic ${payload.topic}} from client ${message.clientIdentifier}""".trimMargin())
-                // TODO send forward unsubscribe operation
+                                |subscription to topic ${payload.topic}} from client
+                                |${message.clientIdentifier}""".trimMargin())
+                val unsubPayload = UNSUBSCRIBEPayload(payload.topic, payload.geofence)
+                // send message to BrokerCommunicator who takes care of the rest
+                ZMQProcess_BrokerCommunicator.generatePULLSocketMessage(notAnymoreAffectedOtherBroker.brokerId,
+                        InternalBrokerMessage(ControlPacketType.BrokerForwardUnsubscribe,
+                                BrokerForwardUnsubscribePayload(message.clientIdentifier, unsubPayload))).send(brokers)
             }
         }
 
@@ -153,7 +157,51 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
     }
 
     override fun processUNSUBSCRIBE(message: InternalServerMessage, clients: Socket, brokers: Socket) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val payload = message.payload.unsubscribePayload.get()
+
+        /* ***************************************************************
+         * Local unsubscribe
+         ****************************************************************/
+
+        val subscription = clientDirectory.getSubscription(message.clientIdentifier, payload.topic)
+        val reasonCode = unsubscribeAtLocalBroker(message.clientIdentifier,
+                clientDirectory,
+                topicAndGeofenceMapper,
+                payload.topic,
+                payload.geofence,
+                logger)
+
+
+        /* ***************************************************************
+         * Forwarding to other brokers
+         ****************************************************************/
+
+        // only if a subscription existed locally, the request should be forwarded
+        if (subscription != null) {
+            // determine other brokers that were affected by the subscription
+            val clientAffections = subscriptionAffection.getAffections(subscription.subscriptionId)
+
+            // forward unsubscribe
+            for (otherAffectedBroker in clientAffections) {
+                logger.trace("""|Broker area of ${otherAffectedBroker.brokerId} is affected by the unsubscribe from
+                                |topic $payload.topic of client ${message.clientIdentifier}""".trimMargin())
+                // send message to BrokerCommunicator who takes care of the rest
+                ZMQProcess_BrokerCommunicator.generatePULLSocketMessage(otherAffectedBroker.brokerId,
+                        InternalBrokerMessage(ControlPacketType.BrokerForwardUnsubscribe,
+                                BrokerForwardUnsubscribePayload(message.clientIdentifier, payload))).send(brokers)
+            }
+        }
+
+        /* ***************************************************************
+         * Response
+         ****************************************************************/
+
+        val response = InternalServerMessage(message.clientIdentifier,
+                ControlPacketType.UNSUBACK,
+                UNSUBACKPayload(reasonCode))
+        logger.trace("Sending response $response")
+        response.zMsg.send(clients)
+
     }
 
     override fun processPUBLISH(message: InternalServerMessage, clients: Socket, brokers: Socket) {
@@ -284,9 +332,30 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
         response.zMsg.send(clients)
     }
 
+    /**
+     * Removes a subscription for a client based on information forwarded by another a broker.
+     */
     override fun processBrokerForwardUnsubscribe(message: InternalServerMessage, clients: Socket, brokers: Socket) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-        // TODO before implementing this, an UNSUBSCRIBE (and forward) payload must be added
+        val payload = message.payload.brokerForwardUnsubscribePayload.get()
+
+        // the id is determined by ZeroMQ based on the first frame, so here it is the id of the forwarding broker
+        val otherBrokerId = message.clientIdentifier
+        logger.trace("Processing BrokerForwardSubscribe from broker {}", otherBrokerId)
+
+        val reasonCode = unsubscribeAtLocalBroker(payload.clientIdentifier,
+                clientDirectory,
+                topicAndGeofenceMapper,
+                payload.getUnsubscribePayload().topic,
+                payload.getUnsubscribePayload().geofence,
+                logger)
+
+        val response = InternalServerMessage(otherBrokerId, ControlPacketType.UNSUBACK, UNSUBACKPayload(reasonCode))
+
+        // acknowledge unsubscribe operation to other broker, he does not expect a particular message so we just reply
+        // with the response that we have generated anyways (needs to go via the clients socket as response has to
+        // go out of the ZMQProcess_Server
+        logger.trace("Sending response $response")
+        response.zMsg.send(clients)
     }
 
     override fun processBrokerForwardPublish(message: InternalServerMessage, clients: Socket, brokers: Socket) {

@@ -48,6 +48,11 @@ class SubscriptionAffection {
         return affectionSet
     }
 
+    fun getAffections(subscriptionId: ImmutablePair<String, Int>) : List<BrokerInfo> {
+        val affections = affections.get(subscriptionId.left)?.get(subscriptionId) ?: emptyList()
+        return affections
+    }
+
     fun removeAffections(clientIdentifier: String) {
         affections.remove(clientIdentifier)
     }

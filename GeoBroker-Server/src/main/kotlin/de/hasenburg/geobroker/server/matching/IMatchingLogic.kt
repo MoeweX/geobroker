@@ -37,7 +37,7 @@ interface IMatchingLogic {
     fun processBrokerForwardDisconnect(message: InternalServerMessage, clients: Socket, brokers: Socket)
 
     fun processBrokerForwardPingreq(message: InternalServerMessage, clients: Socket, brokers: Socket)
-    
+
     fun processBrokerForwardSubscribe(message: InternalServerMessage, clients: Socket, brokers: Socket)
 
     fun processBrokerForwardUnsubscribe(message: InternalServerMessage, clients: Socket, brokers: Socket)
@@ -108,6 +108,26 @@ fun subscribeAtLocalBroker(clientIdentifier: String, clientDirectory: ClientDire
         logger.debug("Client {} subscribed to topic {} and geofence {}", clientIdentifier, topic, geofence)
         return ReasonCode.GrantedQoS0
     }
+}
+
+fun unsubscribeAtLocalBroker(clientIdentifier: String, clientDirectory: ClientDirectory,
+                             topicAndGeofenceMapper: TopicAndGeofenceMapper, topic: Topic, geofence: Geofence,
+                             logger: Logger): ReasonCode {
+    var reasonCode = ReasonCode.Success
+
+    // unsubscribe from client directory -> get subscription id
+    val s = clientDirectory.removeSubscription(clientIdentifier, topic)
+
+    // remove from storage if existed
+    if (s != null) {
+        topicAndGeofenceMapper.removeSubscriptionId(s.subscriptionId, s.topic, s.geofence)
+        logger.debug("Client $clientIdentifier unsubscribed from $topic topic, subscription had the id ${s.subscriptionId}")
+    } else {
+        logger.debug("Client $clientIdentifier has no subscription with topic $topic, thus unable to unsubscribe")
+        reasonCode = ReasonCode.NoSubscriptionExisted
+    }
+
+    return reasonCode
 }
 
 /**
