@@ -10,7 +10,7 @@ messageProcessors = 1
 #    name = "single"
 
     [server.mode]
-    name = "disgb"
+    name = "disgb_subscriberMatching"
     brokerAreaFilePath = "defaultBrokerAreas.json"
     brokerCommunicators = 1
 

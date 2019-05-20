@@ -9,8 +9,13 @@ messageProcessors = 1
     [server.mode]
     name = "single"
 
-    [server.mode]
-#    name = "disgb"
+#   [server.mode]
+#    name = "disgb_subscriberMatching"
+#    brokerAreaFilePath = "defaultBrokerAreas.json"
+#    brokerCommunicators = 1
+
+#   [server.mode]
+#    name = "disgb_publisherMatching"
 #    brokerAreaFilePath = "defaultBrokerAreas.json"
 #    brokerCommunicators = 1
 
