@@ -76,6 +76,15 @@ public abstract class AbstractPayload implements JSONable {
 	}
 
 	@JsonIgnore
+	public Optional<PUBLISHPayload> getPUBLISHPayload() {
+		if (this instanceof PUBLISHPayload) {
+			return Optional.of((PUBLISHPayload) this);
+		} else {
+			return Optional.empty();
+		}
+	}
+
+	@JsonIgnore
 	public Optional<PUBACKPayload> getPUBACKPayload() {
 		if (this instanceof PUBACKPayload) {
 			return Optional.of((PUBACKPayload) this);
@@ -85,9 +94,9 @@ public abstract class AbstractPayload implements JSONable {
 	}
 
 	@JsonIgnore
-	public Optional<PUBLISHPayload> getPUBLISHPayload() {
-		if (this instanceof PUBLISHPayload) {
-			return Optional.of((PUBLISHPayload) this);
+	public Optional<SUBSCRIBEPayload> getSUBSCRIBEPayload() {
+		if (this instanceof SUBSCRIBEPayload) {
+			return Optional.of((SUBSCRIBEPayload) this);
 		} else {
 			return Optional.empty();
 		}
@@ -103,9 +112,18 @@ public abstract class AbstractPayload implements JSONable {
 	}
 
 	@JsonIgnore
-	public Optional<SUBSCRIBEPayload> getSUBSCRIBEPayload() {
-		if (this instanceof SUBSCRIBEPayload) {
-			return Optional.of((SUBSCRIBEPayload) this);
+	public Optional<UNSUBSCRIBEPayload> getUNSUBSCRIBEPayload() {
+		if (this instanceof UNSUBSCRIBEPayload) {
+			return Optional.of((UNSUBSCRIBEPayload) this);
+		} else {
+			return Optional.empty();
+		}
+	}
+
+	@JsonIgnore
+	public Optional<UNSUBACKPayload> getUNSUBACKPayload() {
+		if (this instanceof UNSUBACKPayload) {
+			return Optional.of((UNSUBACKPayload) this);
 		} else {
 			return Optional.empty();
 		}

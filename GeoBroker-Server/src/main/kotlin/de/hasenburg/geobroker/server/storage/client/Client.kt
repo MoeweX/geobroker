@@ -51,9 +51,9 @@ class Client(val clientIdentifier: String, location: Location, val remote: Boole
         return subscriptions[topic]
     }
 
-    fun removeSubscription(topic: Topic): ImmutablePair<String, Int>? {
-        val s = subscriptions[topic] ?: return null
-        return s.subscriptionId
+    fun removeSubscription(topic: Topic): Subscription? {
+        val s = subscriptions.remove(topic) ?: return null
+        return s
     }
 
     /*****************************************************************

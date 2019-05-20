@@ -144,9 +144,9 @@ class ClientDirectory {
      *
      * @param clientIdentifier - identifier of the [Client]
      * @param topic - topic of to be removed subscription
-     * @return the subscription id of the to be removed subscription or null, if none existed
+     * @return the removed [Subscription] or null, if none existed
      */
-    fun removeSubscription(clientIdentifier: String, topic: Topic): ImmutablePair<String, Int>? {
+    fun removeSubscription(clientIdentifier: String, topic: Topic): Subscription? {
         val c = clients[clientIdentifier] ?: return null
 
         return c.removeSubscription(topic)

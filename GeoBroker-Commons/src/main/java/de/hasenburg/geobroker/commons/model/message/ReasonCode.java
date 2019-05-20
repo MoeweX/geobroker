@@ -9,6 +9,7 @@ public enum ReasonCode {
 	GrantedQoS0,
 	Success,
 	NoMatchingSubscribers,
+	NoSubscriptionExisted,
 
 	// New Reason Codes
 	LocationUpdated,

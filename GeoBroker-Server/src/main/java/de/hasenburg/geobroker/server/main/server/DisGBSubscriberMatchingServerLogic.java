@@ -51,7 +51,6 @@ public class DisGBSubscriberMatchingServerLogic implements IServerLogic {
 				configuration.getPort(),
 				configuration.getBrokerId());
 
-		// TODO configure amount via configuration
 		for (int number = 1; number <= configuration.getBrokerCommunicators(); number++) {
 			ZMQProcessStarter.runZMQProcess_BrokerCommunicator(processManager,
 					configuration.getBrokerId(),

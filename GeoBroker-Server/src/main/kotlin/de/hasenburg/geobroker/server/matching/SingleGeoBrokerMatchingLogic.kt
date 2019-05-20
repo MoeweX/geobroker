@@ -4,8 +4,8 @@ import de.hasenburg.geobroker.commons.model.message.ControlPacketType
 import de.hasenburg.geobroker.commons.model.message.ReasonCode
 import de.hasenburg.geobroker.commons.model.message.payloads.PUBACKPayload
 import de.hasenburg.geobroker.commons.model.message.payloads.SUBACKPayload
-import de.hasenburg.geobroker.commons.model.message.payloads.SUBSCRIBEPayload
-import de.hasenburg.geobroker.commons.model.spatial.Location
+import de.hasenburg.geobroker.commons.model.message.payloads.UNSUBACKPayload
+import de.hasenburg.geobroker.commons.sleepNoLog
 import de.hasenburg.geobroker.server.communication.InternalServerMessage
 import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory
@@ -23,10 +23,7 @@ class SingleGeoBrokerMatchingLogic(private val clientDirectory: ClientDirectory,
     override fun processCONNECT(message: InternalServerMessage, clients: Socket, brokers: Socket) {
         val payload = message.payload.connectPayload.get()
 
-        val response = connectClientAtLocalBroker(message.clientIdentifier,
-                payload.location,
-                clientDirectory,
-                logger)
+        val response = connectClientAtLocalBroker(message.clientIdentifier, payload.location, clientDirectory, logger)
 
         logger.trace("Sending response $response")
         response.zMsg.send(clients)
@@ -67,15 +64,38 @@ class SingleGeoBrokerMatchingLogic(private val clientDirectory: ClientDirectory,
                 payload.geofence,
                 logger)
 
-        val response = InternalServerMessage(message.clientIdentifier, ControlPacketType.SUBACK, SUBACKPayload(reasonCode))
+        val response = InternalServerMessage(message.clientIdentifier,
+                ControlPacketType.SUBACK,
+                SUBACKPayload(reasonCode))
 
         logger.trace("Sending response $response")
         response.zMsg.send(clients)
     }
 
     override fun processUNSUBSCRIBE(message: InternalServerMessage, clients: Socket, brokers: Socket) {
-        // TODO Implement
-        throw RuntimeException("Not yet implemented")
+        val payload = message.payload.unsubscribePayload.get()
+        val clientIdentifier = message.clientIdentifier
+        val topic = payload.topic
+        var reasonCode = ReasonCode.Success
+
+        // unsubscribe from client directory -> get subscription id
+        val s = clientDirectory.removeSubscription(clientIdentifier, topic)
+
+        // remove from storage if existed
+        if (s != null) {
+            topicAndGeofenceMapper.removeSubscriptionId(s.subscriptionId, s.topic, s.geofence)
+            logger.debug("Client $clientIdentifier unsubscribed from $topic topic, subscription had the id ${s.subscriptionId}")
+        } else {
+            logger.debug("Client $clientIdentifier has no subscription with topic $topic, thus unable to unsubscribe")
+            reasonCode = ReasonCode.NoSubscriptionExisted
+        }
+
+        val response = InternalServerMessage(message.clientIdentifier,
+                ControlPacketType.UNSUBACK,
+                UNSUBACKPayload(reasonCode))
+
+        logger.trace("Sending response $response")
+        response.zMsg.send(clients)
     }
 
     override fun processPUBLISH(message: InternalServerMessage, clients: Socket, brokers: Socket) {
