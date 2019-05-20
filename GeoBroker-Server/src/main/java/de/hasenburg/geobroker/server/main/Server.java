@@ -15,12 +15,15 @@ public class Server {
 
 		Configuration configuration = Configuration.readConfiguration("configuration.toml");
 		IServerLogic logic;
-		if (Configuration.Mode.single.equals(configuration.getMode())) {
+		if (Configuration.Mode.disgb_subscriberMatching.equals(configuration.getMode())) {
+			logger.info("GeoBroker is configured to run geo-distributed (subscriber matching)");
+			logic = new DisGBSubscriberMatchingServerLogic();
+		} else if (Configuration.Mode.disgb_publisherMatching.equals(configuration.getMode())) {
+			logger.info("GeoBroker is configured to run geo-distributed (publisher matching)");
+			logic = new DisGBSubscriberMatchingServerLogic();
+		} else {
 			logger.info("GeoBroker is configured to run standalone");
 			logic = new SingleGeoBrokerServerLogic();
-		} else {
-			logger.info("GeoBroker is configured to run geo-distributed");
-			logic = new DisGBSubscriberMatchingServerLogic();
 		}
 
 		ServerLifecycle lifecycle = new ServerLifecycle(logic);

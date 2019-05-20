@@ -14,7 +14,7 @@ public class Configuration {
 	private static final Logger logger = LogManager.getLogger();
 
 	enum Mode {
-		single, disgb
+		single, disgb_subscriberMatching, disgb_publisherMatching
 	}
 
 	private final static String S3_BUCKET_NAME = "geobroker";

@@ -6,7 +6,7 @@ import de.hasenburg.geobroker.server.communication.ZMQProcessStarter;
 import de.hasenburg.geobroker.server.distribution.BrokerAreaManager;
 import de.hasenburg.geobroker.server.distribution.DisGBDistributionLogic;
 import de.hasenburg.geobroker.server.main.Configuration;
-import de.hasenburg.geobroker.server.matching.DisGBAtSubscriberMatchingLogic;
+import de.hasenburg.geobroker.server.matching.DisGBAtPublisherMatchingLogic;
 import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper;
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory;
 import org.apache.logging.log4j.LogManager;
@@ -14,13 +14,13 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class DisGBSubscriberMatchingServerLogic implements IServerLogic {
+public class DisGBPublisherMatchingServerLogic implements IServerLogic {
 
 	private static final Logger logger = LogManager.getLogger();
 
 	private Configuration configuration;
 	private BrokerAreaManager brokerAreaManager;
-	private DisGBAtSubscriberMatchingLogic matchingLogic;
+	private DisGBAtPublisherMatchingLogic matchingLogic;
 	// we are currently using the same distribution logic for publisher and subscriber matching
 	private DisGBDistributionLogic distributionLogic;
 	private ZMQProcessManager processManager;
@@ -39,7 +39,7 @@ public class DisGBSubscriberMatchingServerLogic implements IServerLogic {
 		clientDirectory = new ClientDirectory();
 		TopicAndGeofenceMapper topicAndGeofenceMapper = new TopicAndGeofenceMapper(configuration);
 
-		matchingLogic = new DisGBAtSubscriberMatchingLogic(clientDirectory, topicAndGeofenceMapper, brokerAreaManager);
+		matchingLogic = new DisGBAtPublisherMatchingLogic(clientDirectory, topicAndGeofenceMapper, brokerAreaManager);
 		distributionLogic = new DisGBDistributionLogic();
 
 		processManager = new ZMQProcessManager();
