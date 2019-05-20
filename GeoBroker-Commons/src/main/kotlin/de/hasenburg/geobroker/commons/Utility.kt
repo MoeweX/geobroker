@@ -62,6 +62,14 @@ fun randomInt(bound: Int): Int {
     return r.nextInt(bound)
 }
 
+/**
+ * @param - [upper] has to be larger than [lower]
+ * @return a random int between [lower] (inclusive) and [upper] (exclusive)
+ */
+fun randomDouble(lower: Double, upper: Double): Double {
+    return lower + (upper - lower) * r.nextDouble()
+}
+
 fun randomName(): String {
     return haikunator.haikunate()
 }

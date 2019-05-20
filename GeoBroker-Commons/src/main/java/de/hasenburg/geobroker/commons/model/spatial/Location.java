@@ -3,6 +3,7 @@ package de.hasenburg.geobroker.commons.model.spatial;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import de.hasenburg.geobroker.commons.Utility;
 import de.hasenburg.geobroker.commons.model.JSONable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,8 +49,8 @@ public class Location implements JSONable {
 	/**
 	 * Creates a location with the given lat/lon coordinates.
 	 *
-	 * @param lat - the latitude
-	 * @param lon - the longitude
+	 * @param lat - the latitude (Breitengrad)
+	 * @param lon - the longitude (Längengrad)
 	 */
 	public Location(double lat, double lon) {
 		point = GEO.getShapeFactory().pointLatLon(lat, lon);
@@ -71,6 +72,30 @@ public class Location implements JSONable {
 		// there have been rounding errors
 		return new Location(Math.min((random.nextDouble() * -180.0) + 90.0, 90),
 				Math.min((random.nextDouble() * -360.0) + 180.0, 180.0));
+	}
+
+	/**
+	 * Creates a random location that is inside the given Geofence.
+	 * @param geofence - may not be a geofence that crosses any datelines!!
+	 * @return a random location or null if the geofence crosses a dateline
+	 */
+	public static Location randomInGeofence(Geofence geofence) {
+		Location result = null;
+		int i = 0;
+		do {
+			// generate lat in bounding box
+			double lat = Utility.randomDouble(geofence.getBoundingBoxSouthWest().getLat(),
+					geofence.getBoundingBoxNorthEast().getLat());
+
+			// generate lon in bounding box
+			double lon = Utility.randomDouble(geofence.getBoundingBoxSouthWest().getLon(),
+					geofence.getBoundingBoxNorthEast().getLon());
+
+			// create location and hope it is in geofence
+			result = new Location(lat, lon);
+		} while (!geofence.contains(result) && ++i < 1000);
+		// location was in geofence, so let's return it
+		return result;
 	}
 
 	/**

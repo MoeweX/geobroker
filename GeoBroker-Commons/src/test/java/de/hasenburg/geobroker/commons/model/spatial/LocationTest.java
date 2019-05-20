@@ -74,4 +74,11 @@ public class LocationTest {
 		logger.info(berlin.distanceKmTo(hamburg));
 		assertEquals(253.375, berlin.distanceKmTo(hamburg), 0.5);
 	}
+
+	@Test
+	public void testRandomInGeofence() {
+		Geofence geofence = Geofence.circle(new Location(30, 30), 3.0);
+		Location l = Location.randomInGeofence(geofence);
+		assertTrue(geofence.contains(l));
+	}
 }

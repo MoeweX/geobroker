@@ -26,7 +26,7 @@ public class Geofence implements JSONable {
 	// TODO increase size a little bit so that we do not miss any due to rounding issues
 	// we need it most times anyways, so let's buffer it //
 	@JsonIgnore
-	private final Rectangle boundingBox;
+	final Rectangle boundingBox;
 
 	private Geofence(Shape shape) {
 		this.shape = shape;
@@ -163,5 +163,16 @@ public class Geofence implements JSONable {
 	public int hashCode() {
 
 		return Objects.hash(shape);
+	}
+
+	public static void main (String[] args) {
+		Location berlin = new Location(52.52, 13.40);
+		Location paris = new Location(48.86, 2.35);
+		Geofence berlinArea = Geofence.circle(berlin, 3.0);
+		Geofence parisArea = Geofence.circle(paris, 3.0);
+
+		logger.info("Berlin area = {}", berlinArea);
+		logger.info("Paris area = {}", parisArea);
+		logger.info("The areas intersect: {}", berlinArea.intersects(parisArea));
 	}
 }
