@@ -13,23 +13,23 @@ const val port = 1000
 
 class SubscriptionAffectionTest {
 
-    lateinit var subscriptionAffection: SubscriptionAffection
+    private lateinit var subscriptionAffection: SubscriptionAffection
 
     // client identifier
-    lateinit var cId1: String
-    lateinit var cId2: String
+    private lateinit var cId1: String
+    private lateinit var cId2: String
 
     // subscription identifier
-    lateinit var sub1_1: ImmutablePair<String, Int>
-    lateinit var sub1_2: ImmutablePair<String, Int>
-    lateinit var sub1_3: ImmutablePair<String, Int>
-    lateinit var sub2_1: ImmutablePair<String, Int>
-    lateinit var sub2_2: ImmutablePair<String, Int>
+    private lateinit var sub1_1: ImmutablePair<String, Int>
+    private lateinit var sub1_2: ImmutablePair<String, Int>
+    private lateinit var sub1_3: ImmutablePair<String, Int>
+    private lateinit var sub2_1: ImmutablePair<String, Int>
+    private lateinit var sub2_2: ImmutablePair<String, Int>
 
     // broker infos
-    lateinit var bi1: BrokerInfo
-    lateinit var bi2: BrokerInfo
-    lateinit var bi3: BrokerInfo
+    private lateinit var bi1: BrokerInfo
+    private lateinit var bi2: BrokerInfo
+    private lateinit var bi3: BrokerInfo
 
     @Before
     fun setUp() {
@@ -65,7 +65,7 @@ class SubscriptionAffectionTest {
 
         // test get
         assertEquals(setOf(bi1, bi2, bi3), subscriptionAffection.getAffections(cId1))
-        assertEquals(setOf(bi1, bi2), subscriptionAffection.getAffections((cId2)))
+        assertEquals(setOf(bi1, bi2), subscriptionAffection.getAffections(cId2))
 
         // overwrite
         assertEquals(listOf(bi1), subscriptionAffection.updateAffections(sub1_1, listOf(bi2, bi3)))
@@ -74,6 +74,6 @@ class SubscriptionAffectionTest {
 
         // test get
         assertEquals(setOf(bi2, bi3), subscriptionAffection.getAffections(cId1))
-        assertEquals(setOf(bi1, bi2), subscriptionAffection.getAffections((cId2)))
+        assertEquals(setOf(bi1, bi2), subscriptionAffection.getAffections(cId2))
     }
 }

@@ -1,6 +1,5 @@
 package de.hasenburg.geobroker.server.storage.client
 
-import com.sun.corba.se.pept.broker.Broker
 import de.hasenburg.geobroker.commons.model.BrokerInfo
 import de.hasenburg.geobroker.server.matching.DisGBAtPublisherMatchingLogic
 import org.apache.commons.lang3.tuple.ImmutablePair
@@ -22,17 +21,17 @@ class SubscriptionAffection {
     fun updateAffections(subscriptionId: ImmutablePair<String, Int>,
                          otherAffectedBrokers: List<BrokerInfo>): List<BrokerInfo> {
 
-        val clientAffections = affections.getOrPut(subscriptionId.left, { ConcurrentHashMap() })
+        val clientAffections = affections.getOrPut(subscriptionId.left) { ConcurrentHashMap() }
 
         val oldAffectedBrokers = clientAffections[subscriptionId]?.toMutableList() ?: mutableListOf()
 
         // brokers that are in the old but not in the new list
         val notAnymoreAffectedBrokers = oldAffectedBrokers.filter { bi -> !otherAffectedBrokers.contains(bi) }
-        if (notAnymoreAffectedBrokers.size > 0) {
+        if (notAnymoreAffectedBrokers.isNotEmpty()) {
             logger.debug("$notAnymoreAffectedBrokers are not affected anymore by subscription $subscriptionId")
         }
 
-        clientAffections.put(subscriptionId, otherAffectedBrokers)
+        clientAffections[subscriptionId] = otherAffectedBrokers
         return notAnymoreAffectedBrokers
     }
 
@@ -49,8 +48,7 @@ class SubscriptionAffection {
     }
 
     fun getAffections(subscriptionId: ImmutablePair<String, Int>) : List<BrokerInfo> {
-        val affections = affections.get(subscriptionId.left)?.get(subscriptionId) ?: emptyList()
-        return affections
+        return this.affections[subscriptionId.left]?.get(subscriptionId) ?: emptyList()
     }
 
     fun removeAffections(clientIdentifier: String) {
