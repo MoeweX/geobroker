@@ -30,7 +30,7 @@ class SubscriberMatchingRun {
     private val parisArea = Geofence.circle(Location(48.86, 2.35), 3.0)
     private val berlinArea = Geofence.circle(Location(52.52, 13.4), 3.0)
 
-    private val topics = arrayOf(Topic("data/sub1"), Topic("data/sub2"), Topic("data/sub3"))
+    private val topics = arrayOf(Topic("data/1"), Topic("data/2"), Topic("data/3"))
 
     // client locations for experiments
     private val cl_1 = Location(45.87, 2.3)
@@ -183,30 +183,71 @@ class SubscriberMatchingRun {
             sendSUBSCRIBE(clients[i], topics[2], sg_3)
         }
 
-        // validate whether brokers got correct subscriptions (we check only a sample)
+        // validate whether brokers got subscriptions (we check mostly the count, but one do we actually check)
         assertNotNull(paris.clientDirectory.getSubscription(getClientIdentifier(0), topics[0]))
         assertNull(berlin.clientDirectory.getSubscription(getClientIdentifier(0), topics[0]))
+        assertEquals(3, paris.clientDirectory.getCurrentClientSubscriptions(getClientIdentifier(0)))
+        assertEquals(3, paris.clientDirectory.getCurrentClientSubscriptions(getClientIdentifier(1)))
+        assertEquals(0, paris.clientDirectory.getCurrentClientSubscriptions(getClientIdentifier(2)))
+        assertEquals(0, berlin.clientDirectory.getCurrentClientSubscriptions(getClientIdentifier(0)))
+        assertEquals(0, berlin.clientDirectory.getCurrentClientSubscriptions(getClientIdentifier(1)))
+        assertEquals(3, berlin.clientDirectory.getCurrentClientSubscriptions(getClientIdentifier(2)))
+
 
         /* ***************************************************************
          * Publish message
          ****************************************************************/
 
         // we need to publish to every topic, as the subscriptions are generated per topic and we want to match against
-        // every subscription
-        val mgs = arrayOf(mg_1, mg_2, mg_3)
-        for (mg in mgs) {
-            for (i in 0..2) {
-                sendPUBLISH(clients[1], topics[i], mg, generateContent(1, topics[i]))
-            }
+        // every subscription (that's why i in 0..2)
+
+        // --------
+        // MG_1
+        // --------
+
+        for (i in 0..2) {
+            logger.info("Publishing with message geofence $mg_1 to topic ${topics[i]}")
+            sendPUBLISH(clients[1], topics[i], mg_1, generateContent(1, topics[i]))
         }
 
         // validate for each client the received messages
-        validateMessagesForClient1(clients[0])
-        // TODO validate for Client2
-        validateMessagesForClient3(clients[2])
+        validateReceivedMessagesForClient(clients[0], 0, 0)
+        validateReceivedMessagesForClient(clients[1], 3, 2)
+        validateReceivedMessagesForClient(clients[2], 0, 2)
 
+        // --------
+        // MG_2
+        // --------
 
-        sleepNoLog(3000, 0)
+        for (i in 0..2) {
+            logger.info("Publishing with message geofence $mg_2 to topic ${topics[i]}")
+            sendPUBLISH(clients[1], topics[i], mg_2, generateContent(1, topics[i]))
+        }
+
+        // validate for each client the received messages
+        validateReceivedMessagesForClient(clients[0], 0, 0)
+        validateReceivedMessagesForClient(clients[1], 3, 2)
+        validateReceivedMessagesForClient(clients[2], 0, 0)
+
+        // --------
+        // MG_3
+        // --------
+
+        for (i in 0..2) {
+            logger.info("Publishing with message geofence $mg_3 to topic ${topics[i]}")
+            sendPUBLISH(clients[1], topics[i], mg_3, generateContent(1, topics[i]))
+        }
+
+        // validate for each client the received messages
+        validateReceivedMessagesForClient(clients[0], 0, 0)
+        validateReceivedMessagesForClient(clients[1], 3, 0)
+        validateReceivedMessagesForClient(clients[2], 0, 2)
+
+        /* ***************************************************************
+         * Unsubscribe again
+         ****************************************************************/
+
+        // TODO
 
         logger.info("Finished scenario\n\n\n")
     }
@@ -215,7 +256,7 @@ class SubscriberMatchingRun {
         return "Client-${index + 1}"
     }
 
-    fun generateContent(index: Int, t: Topic) : String {
+    fun generateContent(index: Int, t: Topic): String {
         return "This message was published by client ${getClientIdentifier(index)} to topic $t"
     }
 
@@ -230,26 +271,22 @@ class SubscriberMatchingRun {
         return clients
     }
 
-    /**
-     * Receives all outstanding messages and checks whether they are as expected for Client1.
-     */
-    fun validateMessagesForClient1(client: SimpleClient) {
-        // this client should not have received any messages
-        assertNull(client.receiveInternalClientMessageWithTimeout(2000))
-    }
-
-    /**
-     * Receives all outstanding messages and checks whether they are as expected for Client1.
-     */
-    fun validateMessagesForClient3(client: SimpleClient) {
-        // this client should have received 4 publish messages
-        for (i in 1..4) {
-            val message = client.receiveInternalClientMessageWithTimeout(500)
-            assertEquals(ControlPacketType.PUBLISH, message!!.controlPacketType)
-            logger.info(message.payload.publishPayload.get())
-            // we could check more fields in here, but we currently do not do this
+    fun validateReceivedMessagesForClient(client: SimpleClient, pubacks: Int, publishs: Int) {
+        var left_publishs = publishs
+        var left_pubacks = pubacks
+        for (i in 1..(left_pubacks + left_publishs)) {
+            val message = client.receiveInternalClientMessageWithTimeout(1000)!!
+            if (ControlPacketType.PUBLISH.equals(message.controlPacketType)) {
+                left_publishs--
+                logger.info("Received a PUBLISH message from server: {}", message.payload.publishPayload.get())
+            } else if (ControlPacketType.PUBACK.equals(message.controlPacketType)) {
+                left_pubacks--
+                logger.info("Received a PUBACK message from server: {}", message.payload.pubackPayload.get())
+            }
         }
-        assertNull(client.receiveInternalClientMessageWithTimeout(0))
+        assertEquals(0, left_pubacks)
+        assertEquals(0, left_publishs)
+        assertNull(client.receiveInternalClientMessageWithTimeout(0)) // no more messages
     }
 
     fun sendCONNECT(client: SimpleClient, l: Location,
