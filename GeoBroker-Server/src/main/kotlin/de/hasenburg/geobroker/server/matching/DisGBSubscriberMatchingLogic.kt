@@ -113,7 +113,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
             // find other brokers whose broker area intersects with the message geofence
             val otherBrokers = brokerAreaManager.getOtherBrokersIntersectingWithGeofence(payload.geofence)
             for (otherBroker in otherBrokers) {
-                logger.trace("Broker area of {} intersects with message from client {}",
+                logger.debug("Broker area of {} intersects with message from client {}",
                         otherBroker.brokerId,
                         message.clientIdentifier)
                 // send message to BrokerCommunicator who takes care of the rest

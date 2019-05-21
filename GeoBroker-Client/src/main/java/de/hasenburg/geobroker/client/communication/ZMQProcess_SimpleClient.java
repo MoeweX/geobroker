@@ -19,7 +19,7 @@ import java.util.Optional;
 public class ZMQProcess_SimpleClient extends ZMQProcess {
 
 	public enum ORDERS {
-		SEND, RECEIVE, CONFIRM, FAIL
+		SEND, RECEIVE, RECEIVE_WITH_TIMEOUT, CONFIRM, FAIL, EMPTY
 	}
 
 	private static final Logger logger = LogManager.getLogger();
@@ -63,7 +63,8 @@ public class ZMQProcess_SimpleClient extends ZMQProcess {
 	}
 
 	@Override
-	protected void processZMQControlCommandOtherThanKill(ZMQControlUtility.ZMQControlCommand zmqControlCommand, ZMsg msg) {
+	protected void processZMQControlCommandOtherThanKill(ZMQControlUtility.ZMQControlCommand zmqControlCommand,
+														 ZMsg msg) {
 		// no other commands are of interest
 	}
 
@@ -92,15 +93,16 @@ public class ZMQProcess_SimpleClient extends ZMQProcess {
 				String orderType = msg.popString();
 
 				if (valid && ORDERS.RECEIVE.name().equals(orderType)) {
-					logger.trace("Received order to forward received message.");
+					logger.trace("ORDER = Receive from Broker");
 
 					if (receivedMessages.size() > 0) {
 						InternalClientMessage message = receivedMessages.remove(0);
 						message.getZMsg().send(sockets.get(ORDER_INDEX));
 					} else {
 						// nothing received yet, so let's wait
-						Optional<InternalClientMessage> messageO =
-								InternalClientMessage.buildMessage(ZMsg.recvMsg(sockets.get(SERVER_INDEX), true));
+						Optional<InternalClientMessage> messageO = InternalClientMessage.buildMessage(ZMsg.recvMsg(
+								sockets.get(SERVER_INDEX),
+								true));
 						if (messageO.isPresent()) {
 							messageO.get().getZMsg().send(sockets.get(ORDER_INDEX));
 						} else {
@@ -108,9 +110,43 @@ public class ZMQProcess_SimpleClient extends ZMQProcess {
 							valid = false;
 						}
 					}
+				} else if (valid && ORDERS.RECEIVE_WITH_TIMEOUT.name().equals(orderType)) {
+					int timeout = 0;
+					try {
+						timeout = Integer.parseInt(msg.popString());
+					} catch (NumberFormatException | NullPointerException e) {
+						logger.warn("Receive with timeout did not contain a proper timeout, setting to 0ms");
+					}
 
+					logger.trace("ORDER = Receive from Broker (with timeout {})", timeout);
+
+					// first check the buffer
+					if (receivedMessages.size() > 0) {
+						InternalClientMessage message = receivedMessages.remove(0);
+						message.getZMsg().send(sockets.get(ORDER_INDEX));
+						return;
+					} else {
+						// nothing received yet, so let's wait
+						poller.poll(timeout);
+
+						if (poller.pollin(SERVER_INDEX)) {
+							Optional<InternalClientMessage> messageO = InternalClientMessage.buildMessage(ZMsg.recvMsg(
+									sockets.get(SERVER_INDEX)));
+							messageO.ifPresent(internalClientMessage -> internalClientMessage.getZMsg()
+																							 .send(sockets.get(
+																									 ORDER_INDEX)));
+							return;
+						} else {
+							logger.debug(
+									"Did not receive a server response in time, or another order needs to be executed");
+						}
+					}
+
+					// send back an empty response
+					ZMsg.newStringMsg(ORDERS.EMPTY.name()).send(sockets.get(ORDER_INDEX));
+					return; // no need to do final valid check as we have already replied
 				} else if (valid && ORDERS.SEND.name().equals(orderType)) {
-					logger.trace("Received order to send message");
+					logger.trace("ORDER = Send to Broker");
 
 					//the zMsg should consist of an InternalClientMessage only, as other entries are popped
 					Optional<InternalClientMessage> clientMessageO = InternalClientMessage.buildMessage(msg);

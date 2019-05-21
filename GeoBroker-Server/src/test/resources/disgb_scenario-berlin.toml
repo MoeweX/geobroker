@@ -1,7 +1,7 @@
 # server information
 [server]
 brokerId = "Berlin"
-port = 5558
+port = 5559
 granularity = 5
 messageProcessors = 1
 

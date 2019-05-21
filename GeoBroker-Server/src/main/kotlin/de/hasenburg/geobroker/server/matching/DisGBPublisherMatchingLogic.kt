@@ -70,7 +70,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
 
             // forward location to all affected brokers
             for (otherAffectedBroker in clientAffections) {
-                logger.trace("""|Broker area of ${otherAffectedBroker.brokerId} is affected by the location update
+                logger.debug("""|Broker area of ${otherAffectedBroker.brokerId} is affected by the location update
                                 |of client ${message.clientIdentifier}""".trimMargin())
                 // send message to BrokerCommunicator who takes care of the rest
                 ZMQProcess_BrokerCommunicator.generatePULLSocketMessage(otherAffectedBroker.brokerId,
@@ -120,7 +120,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
 
             // forward message to all now affected brokers
             for (otherAffectedBroker in otherAffectedBrokers) {
-                logger.trace("""|Broker area of ${otherAffectedBroker.brokerId} intersects with subscription to topic
+                logger.debug("""|Broker area of ${otherAffectedBroker.brokerId} intersects with subscription to topic
                             |${payload.topic}} from client ${message.clientIdentifier}""".trimMargin())
                 // send message to BrokerCommunicator who takes care of the rest
                 ZMQProcess_BrokerCommunicator.generatePULLSocketMessage(otherAffectedBroker.brokerId,
@@ -134,7 +134,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
 
             // unsubscribe these now not anymore affected brokers
             for (notAnymoreAffectedOtherBroker in notAnymoreAffectedOtherBrokers) {
-                logger.trace("""|Broker area of ${notAnymoreAffectedOtherBroker.brokerId} is not anymore affected by
+                logger.debug("""|Broker area of ${notAnymoreAffectedOtherBroker.brokerId} is not anymore affected by
                                 |subscription to topic ${payload.topic}} from client
                                 |${message.clientIdentifier}""".trimMargin())
                 val unsubPayload = UNSUBSCRIBEPayload(payload.topic, payload.geofence)
@@ -183,7 +183,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
 
             // forward unsubscribe
             for (otherAffectedBroker in clientAffections) {
-                logger.trace("""|Broker area of ${otherAffectedBroker.brokerId} is affected by the unsubscribe from
+                logger.debug("""|Broker area of ${otherAffectedBroker.brokerId} is affected by the unsubscribe from
                                 |topic $payload.topic of client ${message.clientIdentifier}""".trimMargin())
                 // send message to BrokerCommunicator who takes care of the rest
                 ZMQProcess_BrokerCommunicator.generatePULLSocketMessage(otherAffectedBroker.brokerId,

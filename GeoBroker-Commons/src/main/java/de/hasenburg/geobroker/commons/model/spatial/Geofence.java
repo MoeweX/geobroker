@@ -61,6 +61,11 @@ public class Geofence implements JSONable {
 		return new Geofence(polygonBuilder.build());
 	}
 
+	public static Geofence rectangle(Location southWest, Location northEast) {
+		Rectangle r = GEO.getShapeFactory().rect(southWest.getPoint(), northEast.getPoint());
+		return new Geofence(r);
+	}
+
 	public static Geofence circle(Location location, double radiusDegree) {
 		Circle c = GEO.getShapeFactory().circle(location.getPoint(), radiusDegree);
 		return new Geofence(c);
@@ -120,8 +125,13 @@ public class Geofence implements JSONable {
 		return shape.relate(location.getPoint()).equals(SpatialRelation.CONTAINS);
 	}
 
+	/**
+	 * For us, intersects is an "intersection" but also something more specific such as "contains" or within.
+	 */
 	public boolean intersects(Geofence geofence) {
-		return shape.relate(geofence.shape).equals(SpatialRelation.INTERSECTS);
+		SpatialRelation sr = shape.relate(geofence.shape);
+		return sr.equals(SpatialRelation.INTERSECTS) || sr.equals(SpatialRelation.CONTAINS) ||
+				sr.equals(SpatialRelation.WITHIN);
 	}
 
 	public boolean disjoint(Geofence geofence) {
@@ -165,14 +175,17 @@ public class Geofence implements JSONable {
 		return Objects.hash(shape);
 	}
 
-	public static void main (String[] args) {
-		Location berlin = new Location(52.52, 13.40);
+	public static void main(String[] args) {
 		Location paris = new Location(48.86, 2.35);
-		Geofence berlinArea = Geofence.circle(berlin, 3.0);
+		Location berlin = new Location(52.52, 13.40);
 		Geofence parisArea = Geofence.circle(paris, 3.0);
+		Geofence berlinArea = Geofence.circle(berlin, 3.0);
 
-		logger.info("Berlin area = {}", berlinArea);
 		logger.info("Paris area = {}", parisArea);
+		logger.info("Berlin area = {}", berlinArea);
 		logger.info("The areas intersect: {}", berlinArea.intersects(parisArea));
+
+		Location justIn = new Location(45.87, 2.3);
+		logger.info(parisArea.contains(justIn));
 	}
 }

@@ -76,7 +76,6 @@ public class ZMQProcessManager {
 	}
 
 	public void sendCommandToZMQProcess(String targetProcessIdentity, ZMQControlUtility.ZMQControlCommand command) {
-		logger.trace("Sending {} command to {}, no message appended", command, targetProcessIdentity);
 		sendCommandToZMQProcess(targetProcessIdentity, command, null);
 	}
 

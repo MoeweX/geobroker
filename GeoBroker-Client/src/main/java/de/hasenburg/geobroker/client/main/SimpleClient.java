@@ -64,7 +64,7 @@ public class SimpleClient {
 		}
 
 		orderMessage.send(orderSocket);
-		return(ZMsg.recvMsg(orderSocket));
+		return (ZMsg.recvMsg(orderSocket));
 	}
 
 	public InternalClientMessage receiveInternalClientMessage() {
@@ -72,19 +72,39 @@ public class SimpleClient {
 
 		// send order
 		orderMessage.send(orderSocket);
-		final Optional<InternalClientMessage> clientMessageO =
-				InternalClientMessage.buildMessage(ZMsg.recvMsg(orderSocket));
+		final Optional<InternalClientMessage> clientMessageO = InternalClientMessage.buildMessage(ZMsg.recvMsg(
+				orderSocket));
 
 		return clientMessageO.orElse(null);
 	}
 
-	public static void main (String[] args) {
-		ZMQProcessManager processManager = new ZMQProcessManager();
-	    SimpleClient client = new SimpleClient(null, "localhost", 5559, processManager);
+	/**
+	 * @param - receive timeout in ms
+	 * @return a message from the server or null if server did not send a message
+	 */
+	public @Nullable InternalClientMessage receiveInternalClientMessageWithTimeout(int timeout) {
+		ZMsg orderMessage = ZMsg.newStringMsg(ZMQProcess_SimpleClient.ORDERS.RECEIVE_WITH_TIMEOUT.name(), timeout + "");
 
-	    // connect
-		InternalClientMessage clientMessage = new InternalClientMessage(ControlPacketType.CONNECT, new CONNECTPayload(
-				Location.random()));
+		// send order
+		orderMessage.send(orderSocket);
+		ZMsg response = ZMsg.recvMsg(orderSocket);
+		// check first frame as might be empty
+		if (ZMQProcess_SimpleClient.ORDERS.EMPTY.name().equals(response.getFirst().getString(ZMQ.CHARSET))) {
+			return null;
+		}
+
+		final Optional<InternalClientMessage> clientMessageO = InternalClientMessage.buildMessage(response);
+
+		return clientMessageO.orElse(null);
+	}
+
+	public static void main(String[] args) {
+		ZMQProcessManager processManager = new ZMQProcessManager();
+		SimpleClient client = new SimpleClient(null, "localhost", 5559, processManager);
+
+		// connect
+		InternalClientMessage clientMessage = new InternalClientMessage(ControlPacketType.CONNECT,
+				new CONNECTPayload(Location.random()));
 		client.sendInternalClientMessage(clientMessage);
 
 		// receive one message
@@ -95,19 +115,19 @@ public class SimpleClient {
 		Utility.sleepNoLog(5000, 0);
 
 		// disconnect
-		clientMessage = new InternalClientMessage(ControlPacketType.DISCONNECT, new DISCONNECTPayload(
-				ReasonCode.NormalDisconnection));
+		clientMessage = new InternalClientMessage(ControlPacketType.DISCONNECT,
+				new DISCONNECTPayload(ReasonCode.NormalDisconnection));
 		client.sendInternalClientMessage(clientMessage);
 
 		client.tearDownClient();
 		if (processManager.tearDown(3000)) {
 			logger.info("SimpleClient shut down properly.");
 		} else {
-			logger.fatal("ProcessManager reported that processes are still running: {}", processManager.getIncompleteZMQProcesses());
+			logger.fatal("ProcessManager reported that processes are still running: {}",
+					processManager.getIncompleteZMQProcesses());
 		}
 		System.exit(0);
 	}
-
 
 
 }

@@ -100,7 +100,7 @@ public class ZMQProcess_BrokerCommunicator extends ZMQProcess {
 
 		int dealerIndex = socketIndex - SOCKET_OFFSET;
 
-		if (otherBrokerInfos.size() - 1 < dealerIndex) {
+		if (otherBrokerInfos.size() - 1 >= dealerIndex) {
 			String otherBrokerId = otherBrokerInfos.get(dealerIndex).getBrokerId();
 			distributionLogic.processOtherBrokerAcknowledgement(msg, otherBrokerId);
 			return;
