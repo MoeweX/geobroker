@@ -78,7 +78,7 @@ public class SubscribeUnsubscribeTest {
 
 		// Unsubscribe
 		client.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.UNSUBSCRIBE,
-				new UNSUBSCRIBEPayload(t, g)));
+				new UNSUBSCRIBEPayload(t)));
 
 		message = client.receiveInternalClientMessage();
 		assertEquals(ControlPacketType.UNSUBACK, message.getControlPacketType());
@@ -99,7 +99,7 @@ public class SubscribeUnsubscribeTest {
 
 		// Unsubscribe
 		client.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.UNSUBSCRIBE,
-				new UNSUBSCRIBEPayload(t, g)));
+				new UNSUBSCRIBEPayload(t)));
 
 		InternalClientMessage message = client.receiveInternalClientMessage();
 		assertEquals(ControlPacketType.UNSUBACK, message.getControlPacketType());

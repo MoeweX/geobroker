@@ -111,7 +111,7 @@ fun subscribeAtLocalBroker(clientIdentifier: String, clientDirectory: ClientDire
 }
 
 fun unsubscribeAtLocalBroker(clientIdentifier: String, clientDirectory: ClientDirectory,
-                             topicAndGeofenceMapper: TopicAndGeofenceMapper, topic: Topic, geofence: Geofence,
+                             topicAndGeofenceMapper: TopicAndGeofenceMapper, topic: Topic,
                              logger: Logger): ReasonCode {
     var reasonCode = ReasonCode.Success
 

@@ -78,7 +78,6 @@ class SingleGeoBrokerMatchingLogic(private val clientDirectory: ClientDirectory,
                 clientDirectory,
                 topicAndGeofenceMapper,
                 payload.topic,
-                payload.geofence,
                 logger)
 
         val response = InternalServerMessage(message.clientIdentifier,

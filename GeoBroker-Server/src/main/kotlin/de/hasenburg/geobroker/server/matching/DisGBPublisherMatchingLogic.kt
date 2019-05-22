@@ -137,7 +137,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
                 logger.debug("""|Broker area of ${notAnymoreAffectedOtherBroker.brokerId} is not anymore affected by
                                 |subscription to topic ${payload.topic}} from client
                                 |${message.clientIdentifier}""".trimMargin())
-                val unsubPayload = UNSUBSCRIBEPayload(payload.topic, payload.geofence)
+                val unsubPayload = UNSUBSCRIBEPayload(payload.topic)
                 // send message to BrokerCommunicator who takes care of the rest
                 ZMQProcess_BrokerCommunicator.generatePULLSocketMessage(notAnymoreAffectedOtherBroker.brokerId,
                         InternalBrokerMessage(ControlPacketType.BrokerForwardUnsubscribe,
@@ -168,7 +168,6 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
                 clientDirectory,
                 topicAndGeofenceMapper,
                 payload.topic,
-                payload.geofence,
                 logger)
 
 
@@ -346,7 +345,6 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
                 clientDirectory,
                 topicAndGeofenceMapper,
                 payload.getUnsubscribePayload().topic,
-                payload.getUnsubscribePayload().geofence,
                 logger)
 
         val response = InternalServerMessage(otherBrokerId, ControlPacketType.UNSUBACK, UNSUBACKPayload(reasonCode))

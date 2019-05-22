@@ -89,7 +89,6 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
                 clientDirectory,
                 topicAndGeofenceMapper,
                 payload.topic,
-                payload.geofence,
                 logger)
 
         val response = InternalServerMessage(message.clientIdentifier,

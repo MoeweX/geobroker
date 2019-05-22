@@ -6,10 +6,7 @@ import de.hasenburg.geobroker.commons.communication.ZMQProcessManager
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType
 import de.hasenburg.geobroker.commons.model.message.ReasonCode
 import de.hasenburg.geobroker.commons.model.message.Topic
-import de.hasenburg.geobroker.commons.model.message.payloads.CONNECTPayload
-import de.hasenburg.geobroker.commons.model.message.payloads.PINGREQPayload
-import de.hasenburg.geobroker.commons.model.message.payloads.PUBLISHPayload
-import de.hasenburg.geobroker.commons.model.message.payloads.SUBSCRIBEPayload
+import de.hasenburg.geobroker.commons.model.message.payloads.*
 import de.hasenburg.geobroker.commons.model.spatial.Geofence
 import de.hasenburg.geobroker.commons.model.spatial.Location
 import de.hasenburg.geobroker.commons.sleepNoLog
@@ -74,16 +71,14 @@ class SubscriberMatchingRun {
 
     @After
     fun tearDown() {
+        for (client in clients) {
+            client.tearDownClient()
+        }
         clientProcessManager.tearDown(1000)
         berlin.cleanUp()
         paris.cleanUp()
         sleepNoLog(500, 0) // give zeromq some time
         logger.info("Teardown completed")
-    }
-
-    @Test
-    fun setUpTearDown() {
-        logger.info("Servers seem to be running")
     }
 
     @Test
@@ -247,7 +242,41 @@ class SubscriberMatchingRun {
          * Unsubscribe again
          ****************************************************************/
 
-        // TODO
+        for (i in 0..2) {
+            sendUNSUBSCRIBE(clients[i], topics[0])
+            sendUNSUBSCRIBE(clients[i], topics[1])
+            sendUNSUBSCRIBE(clients[i], topics[2])
+        }
+
+        // publish MG_1 again, but no one should get it
+
+        for (i in 0..2) {
+            logger.info("Publishing with message geofence $mg_1 to topic ${topics[i]}")
+            sendPUBLISH(clients[1], topics[i], mg_1, generateContent(1, topics[i]))
+        }
+
+        validateReceivedMessagesForClient(clients[0], 0, 0)
+        validateReceivedMessagesForClient(clients[1], 3, 0)
+        validateReceivedMessagesForClient(clients[2], 0, 0)
+
+        /* ***************************************************************
+         * Disconnect
+         ****************************************************************/
+
+        for (i in 0..2) {
+            sendDISCONNECT(clients[i])
+        }
+
+        sleepNoLog(100, 0) // wait until disconnected
+        assertEquals(0, paris.clientDirectory.numberOfClients)
+        assertEquals(0, berlin.clientDirectory.numberOfClients)
+
+        /* ***************************************************************
+         * Final checks
+         ****************************************************************/
+
+        assertEquals(0, paris.notAcknowledgedMessages());
+        assertEquals(0, berlin.notAcknowledgedMessages())
 
         logger.info("Finished scenario\n\n\n")
     }
@@ -309,6 +338,12 @@ class SubscriberMatchingRun {
 
     }
 
+    fun sendDISCONNECT(client: SimpleClient) {
+        client.sendInternalClientMessage(InternalClientMessage(ControlPacketType.DISCONNECT,
+                DISCONNECTPayload(ReasonCode.NormalDisconnection)))
+        // there is no reply to disconnect
+    }
+
     fun sendPINGREQ(client: SimpleClient, l: Location, expectedReasonCode: ReasonCode = ReasonCode.LocationUpdated) {
         client.sendInternalClientMessage(InternalClientMessage(ControlPacketType.PINGREQ, PINGREQPayload(l)))
         val internalClientMessage = client.receiveInternalClientMessage()
@@ -324,6 +359,14 @@ class SubscriberMatchingRun {
 
         assertEquals(ControlPacketType.SUBACK, internalClientMessage.controlPacketType)
         assertEquals(expectedReasonCode, internalClientMessage.payload.subackPayload.get().reasonCode)
+    }
+
+    fun sendUNSUBSCRIBE(client: SimpleClient, t: Topic, expectedReasonCode: ReasonCode = ReasonCode.Success) {
+        client.sendInternalClientMessage(InternalClientMessage(ControlPacketType.UNSUBSCRIBE, UNSUBSCRIBEPayload(t)))
+        val internalClientMessage = client.receiveInternalClientMessage()
+
+        assertEquals(ControlPacketType.UNSUBACK, internalClientMessage.controlPacketType)
+        assertEquals(expectedReasonCode, internalClientMessage.payload.unsubackPayload.get().reasonCode)
     }
 
     fun sendPUBLISH(client: SimpleClient, t: Topic, g: Geofence, c: String) {
