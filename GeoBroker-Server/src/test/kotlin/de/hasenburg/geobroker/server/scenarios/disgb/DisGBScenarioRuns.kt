@@ -20,7 +20,7 @@ import org.junit.Test
 
 private var logger = LogManager.getLogger()
 
-class SubscriberMatchingRun {
+class DisGBScenarioRuns {
 
     private val configurationFile = arrayOf("disgb_scenario-paris.toml", "disgb_scenario-berlin.toml")
     // areas must be compatible to disgb_scenario.json
@@ -30,30 +30,95 @@ class SubscriberMatchingRun {
     private val topics = arrayOf(Topic("data/1"), Topic("data/2"), Topic("data/3"))
 
     // client locations for experiments
-    private val cl_1 = Location(45.87, 2.3)
-    private val cl_2 = Location(48.0, 2.0)
-    private val cl_3 = Location(52.0, 13.0)
+    private val cl1 = Location(45.87, 2.3)
+    private val cl2 = Location(48.0, 2.0)
+    private val cl3 = Location(52.0, 13.0)
 
     // geofences for experiments
-    private val sg_1 = Geofence.rectangle(Location(46.5, 1.0), Location(54.0, 14.0))
-    private val sg_2 = Geofence.circle(Location(48.86, 2.35), 1.5)
-    private val sg_3 = Geofence.circle(Location(52.52, 13.4), 1.5)
+    private val sg1 = Geofence.rectangle(Location(46.5, 1.0), Location(54.0, 14.0))
+    private val sg2 = Geofence.circle(Location(48.86, 2.35), 1.5)
+    private val sg3 = Geofence.circle(Location(52.52, 13.4), 1.5)
 
-    private val mg_1 = Geofence.rectangle(Location(46.4, 0.9), Location(54.1, 14.1))
-    private val mg_2 = Geofence.circle(Location(48.86, 2.35), 1.6)
-    private val mg_3 = Geofence.circle(Location(52.52, 13.4), 1.6)
+    private val mg1 = Geofence.rectangle(Location(46.4, 0.9), Location(54.1, 14.1))
+    private val mg2 = Geofence.circle(Location(48.86, 2.35), 1.6)
+    private val mg3 = Geofence.circle(Location(52.52, 13.4), 1.6)
 
-    // other fields
-    private lateinit var paris: DisGBSubscriberMatchingServerLogic
-    private lateinit var berlin: DisGBSubscriberMatchingServerLogic
-
+    // client fields
     private lateinit var clientProcessManager: ZMQProcessManager
     private lateinit var clients: List<SimpleClient>
 
     @Before
     fun setUp() {
-        paris = DisGBSubscriberMatchingServerLogic()
-        berlin = DisGBSubscriberMatchingServerLogic()
+        clientProcessManager = ZMQProcessManager()
+        clients = setupLocalhostClients(listOf(5558, 5558, 5559))
+
+        logger.info("Client setup completed")
+    }
+
+    @After
+    fun tearDown() {
+        for (client in clients) {
+            client.tearDownClient()
+        }
+        clientProcessManager.tearDown(1000)
+        sleepNoLog(500, 0) // give zeromq some time
+        logger.info("Client teardown completed")
+    }
+
+    @Test
+    fun validateVariables() {
+        // broker areas
+        assertFalse(parisArea.intersects(berlinArea))
+        assertTrue(parisArea.contains(cl1))
+        assertTrue(parisArea.contains(cl2))
+        assertTrue(berlinArea.contains(cl3))
+
+        // check intersection of geofences with broker areas
+        assertTrue(parisArea.intersects(mg1))
+        assertTrue(parisArea.intersects(mg2))
+        assertFalse(parisArea.intersects(mg3))
+        assertTrue(berlinArea.intersects(mg1))
+        assertFalse(berlinArea.intersects(mg2))
+        assertTrue(berlinArea.intersects(mg3))
+
+        assertTrue(parisArea.intersects(sg1))
+        assertTrue(parisArea.intersects(sg2))
+        assertFalse(parisArea.intersects(sg3))
+        assertTrue(berlinArea.intersects(sg1))
+        assertFalse(berlinArea.intersects(sg2))
+        assertTrue(berlinArea.intersects(sg3))
+
+        // subscription geofences and client locations
+        assertFalse(sg1.contains(cl1))
+        assertTrue(sg1.contains(cl2))
+        assertTrue(sg1.contains(cl3))
+
+        assertFalse(sg2.contains(cl1))
+        assertTrue(sg2.contains(cl2))
+        assertFalse(sg2.contains(cl3))
+
+        assertFalse(sg3.contains(cl1))
+        assertFalse(sg3.contains(cl2))
+        assertTrue(sg3.contains(cl3))
+
+        // message geofences and client locations
+        assertFalse(mg1.contains(cl1))
+        assertTrue(mg1.contains(cl2))
+        assertTrue(mg1.contains(cl3))
+
+        assertFalse(mg2.contains(cl1))
+        assertTrue(mg2.contains(cl2))
+        assertFalse(mg2.contains(cl3))
+
+        assertFalse(mg3.contains(cl1))
+        assertFalse(mg3.contains(cl2))
+        assertTrue(mg3.contains(cl3))
+    }
+
+    @Test
+    fun subscriberMatchingScenario() {
+        val paris = DisGBSubscriberMatchingServerLogic()
+        val berlin = DisGBSubscriberMatchingServerLogic()
 
         for ((i, lifecycle) in listOf(paris, berlin).withIndex()) {
             val c = Configuration.readConfiguration(configurationFile[i])
@@ -63,77 +128,7 @@ class SubscriberMatchingRun {
             logger.info("Started server ${c.brokerId}")
         }
 
-        clientProcessManager = ZMQProcessManager()
-        clients = setupLocalhostClients(listOf(5558, 5558, 5559))
-
-        logger.info("Setup completed")
-    }
-
-    @After
-    fun tearDown() {
-        for (client in clients) {
-            client.tearDownClient()
-        }
-        clientProcessManager.tearDown(1000)
-        berlin.cleanUp()
-        paris.cleanUp()
-        sleepNoLog(500, 0) // give zeromq some time
-        logger.info("Teardown completed")
-    }
-
-    @Test
-    fun validateVariables() {
-        // broker areas
-        assertFalse(parisArea.intersects(berlinArea))
-        assertTrue(parisArea.contains(cl_1))
-        assertTrue(parisArea.contains(cl_2))
-        assertTrue(berlinArea.contains(cl_3))
-
-        // check intersection of geofences with broker areas
-        assertTrue(parisArea.intersects(mg_1))
-        assertTrue(parisArea.intersects(mg_2))
-        assertFalse(parisArea.intersects(mg_3))
-        assertTrue(berlinArea.intersects(mg_1))
-        assertFalse(berlinArea.intersects(mg_2))
-        assertTrue(berlinArea.intersects(mg_3))
-
-        assertTrue(parisArea.intersects(sg_1))
-        assertTrue(parisArea.intersects(sg_2))
-        assertFalse(parisArea.intersects(sg_3))
-        assertTrue(berlinArea.intersects(sg_1))
-        assertFalse(berlinArea.intersects(sg_2))
-        assertTrue(berlinArea.intersects(sg_3))
-
-        // subscription geofences and client locations
-        assertFalse(sg_1.contains(cl_1))
-        assertTrue(sg_1.contains(cl_2))
-        assertTrue(sg_1.contains(cl_3))
-
-        assertFalse(sg_2.contains(cl_1))
-        assertTrue(sg_2.contains(cl_2))
-        assertFalse(sg_2.contains(cl_3))
-
-        assertFalse(sg_3.contains(cl_1))
-        assertFalse(sg_3.contains(cl_2))
-        assertTrue(sg_3.contains(cl_3))
-
-        // message geofences and client locations
-        assertFalse(mg_1.contains(cl_1))
-        assertTrue(mg_1.contains(cl_2))
-        assertTrue(mg_1.contains(cl_3))
-
-        assertFalse(mg_2.contains(cl_1))
-        assertTrue(mg_2.contains(cl_2))
-        assertFalse(mg_2.contains(cl_3))
-
-        assertFalse(mg_3.contains(cl_1))
-        assertFalse(mg_3.contains(cl_2))
-        assertTrue(mg_3.contains(cl_3))
-    }
-
-    @Test
-    fun scenario() {
-        logger.info("Starting scenario\n\n\n")
+        logger.info("Starting subscriber matching run\n\n\n")
 
         /* ***************************************************************
          * Connect to respective broker
@@ -158,14 +153,14 @@ class SubscriberMatchingRun {
          * Update location to what is needed for the experiment
          ****************************************************************/
 
-        sendPINGREQ(clients[0], cl_1)
-        sendPINGREQ(clients[1], cl_2)
-        sendPINGREQ(clients[2], cl_3)
+        sendPINGREQ(clients[0], cl1)
+        sendPINGREQ(clients[1], cl2)
+        sendPINGREQ(clients[2], cl3)
 
         // validate whether brokers got locations
-        assertEquals(cl_1, paris.clientDirectory.getClientLocation(getClientIdentifier(0)))
-        assertEquals(cl_2, paris.clientDirectory.getClientLocation(getClientIdentifier(1)))
-        assertEquals(cl_3, berlin.clientDirectory.getClientLocation(getClientIdentifier(2)))
+        assertEquals(cl1, paris.clientDirectory.getClientLocation(getClientIdentifier(0)))
+        assertEquals(cl2, paris.clientDirectory.getClientLocation(getClientIdentifier(1)))
+        assertEquals(cl3, berlin.clientDirectory.getClientLocation(getClientIdentifier(2)))
 
         /* ***************************************************************
          * Create subscriptions
@@ -173,9 +168,9 @@ class SubscriberMatchingRun {
 
         // all clients create the same subscriptions
         for (i in 0..2) {
-            sendSUBSCRIBE(clients[i], topics[0], sg_1)
-            sendSUBSCRIBE(clients[i], topics[1], sg_2)
-            sendSUBSCRIBE(clients[i], topics[2], sg_3)
+            sendSUBSCRIBE(clients[i], topics[0], sg1)
+            sendSUBSCRIBE(clients[i], topics[1], sg2)
+            sendSUBSCRIBE(clients[i], topics[2], sg3)
         }
 
         // validate whether brokers got subscriptions (we check mostly the count, but one do we actually check)
@@ -197,12 +192,12 @@ class SubscriberMatchingRun {
         // every subscription (that's why i in 0..2)
 
         // --------
-        // MG_1
+        // MG1
         // --------
 
         for (i in 0..2) {
-            logger.info("Publishing with message geofence $mg_1 to topic ${topics[i]}")
-            sendPUBLISH(clients[1], topics[i], mg_1, generateContent(1, topics[i]))
+            logger.info("Publishing with message geofence $mg1 to topic ${topics[i]}")
+            sendPUBLISH(clients[1], topics[i], mg1, generateContent(1, topics[i]))
         }
 
         // validate for each client the received messages
@@ -211,12 +206,12 @@ class SubscriberMatchingRun {
         validateReceivedMessagesForClient(clients[2], 0, 2)
 
         // --------
-        // MG_2
+        // MG2
         // --------
 
         for (i in 0..2) {
-            logger.info("Publishing with message geofence $mg_2 to topic ${topics[i]}")
-            sendPUBLISH(clients[1], topics[i], mg_2, generateContent(1, topics[i]))
+            logger.info("Publishing with message geofence $mg2 to topic ${topics[i]}")
+            sendPUBLISH(clients[1], topics[i], mg2, generateContent(1, topics[i]))
         }
 
         // validate for each client the received messages
@@ -225,12 +220,12 @@ class SubscriberMatchingRun {
         validateReceivedMessagesForClient(clients[2], 0, 0)
 
         // --------
-        // MG_3
+        // MG3
         // --------
 
         for (i in 0..2) {
-            logger.info("Publishing with message geofence $mg_3 to topic ${topics[i]}")
-            sendPUBLISH(clients[1], topics[i], mg_3, generateContent(1, topics[i]))
+            logger.info("Publishing with message geofence $mg3 to topic ${topics[i]}")
+            sendPUBLISH(clients[1], topics[i], mg3, generateContent(1, topics[i]))
         }
 
         // validate for each client the received messages
@@ -251,8 +246,8 @@ class SubscriberMatchingRun {
         // publish MG_1 again, but no one should get it
 
         for (i in 0..2) {
-            logger.info("Publishing with message geofence $mg_1 to topic ${topics[i]}")
-            sendPUBLISH(clients[1], topics[i], mg_1, generateContent(1, topics[i]))
+            logger.info("Publishing with message geofence $mg1 to topic ${topics[i]}")
+            sendPUBLISH(clients[1], topics[i], mg1, generateContent(1, topics[i]))
         }
 
         validateReceivedMessagesForClient(clients[0], 0, 0)
@@ -275,24 +270,27 @@ class SubscriberMatchingRun {
          * Final checks
          ****************************************************************/
 
-        assertEquals(0, paris.notAcknowledgedMessages());
+        assertEquals(0, paris.notAcknowledgedMessages())
         assertEquals(0, berlin.notAcknowledgedMessages())
 
-        logger.info("Finished scenario\n\n\n")
+        logger.info("Finished subscriber matching run\n\n\n")
+
+        berlin.cleanUp()
+        paris.cleanUp()
     }
 
-    fun getClientIdentifier(index: Int): String {
+    private fun getClientIdentifier(index: Int): String {
         return "Client-${index + 1}"
     }
 
-    fun generateContent(index: Int, t: Topic): String {
+    private fun generateContent(index: Int, t: Topic): String {
         return "This message was published by client ${getClientIdentifier(index)} to topic $t"
     }
 
-    fun setupLocalhostClients(ports: List<Int>): List<SimpleClient> {
+    private fun setupLocalhostClients(ports: List<Int>): List<SimpleClient> {
         val clients = mutableListOf<SimpleClient>()
 
-        for (i in 0..ports.size - 1) {
+        for (i in 0 until ports.size) {
             val client = SimpleClient(getClientIdentifier(i), "localhost", ports[i], clientProcessManager)
             clients.add(client)
         }
@@ -300,27 +298,27 @@ class SubscriberMatchingRun {
         return clients
     }
 
-    fun validateReceivedMessagesForClient(client: SimpleClient, pubacks: Int, publishs: Int) {
-        var left_publishs = publishs
-        var left_pubacks = pubacks
-        for (i in 1..(left_pubacks + left_publishs)) {
+    private fun validateReceivedMessagesForClient(client: SimpleClient, pubacks: Int, publishs: Int) {
+        var remainingPublishs = publishs
+        var remainingPubacks = pubacks
+        for (i in 1..remainingPubacks + remainingPublishs) {
             val message = client.receiveInternalClientMessageWithTimeout(1000)!!
-            if (ControlPacketType.PUBLISH.equals(message.controlPacketType)) {
-                left_publishs--
+            if (ControlPacketType.PUBLISH == message.controlPacketType) {
+                remainingPublishs--
                 logger.info("Received a PUBLISH message from server: {}", message.payload.publishPayload.get())
-            } else if (ControlPacketType.PUBACK.equals(message.controlPacketType)) {
-                left_pubacks--
+            } else if (ControlPacketType.PUBACK == message.controlPacketType) {
+                remainingPubacks--
                 logger.info("Received a PUBACK message from server: {}", message.payload.pubackPayload.get())
             }
         }
-        assertEquals(0, left_pubacks)
-        assertEquals(0, left_publishs)
+        assertEquals(0, remainingPubacks)
+        assertEquals(0, remainingPublishs)
         assertNull(client.receiveInternalClientMessageWithTimeout(0)) // no more messages
     }
 
-    fun sendCONNECT(client: SimpleClient, l: Location,
-                    expectedControlPacketType: ControlPacketType = ControlPacketType.CONNACK,
-                    expectedReasonCode: ReasonCode = ReasonCode.Success) {
+    private fun sendCONNECT(client: SimpleClient, l: Location,
+                            expectedControlPacketType: ControlPacketType = ControlPacketType.CONNACK,
+                            expectedReasonCode: ReasonCode = ReasonCode.Success) {
         client.sendInternalClientMessage(InternalClientMessage(ControlPacketType.CONNECT, CONNECTPayload(l)))
         val internalClientMessage = client.receiveInternalClientMessage()
 
@@ -338,13 +336,13 @@ class SubscriberMatchingRun {
 
     }
 
-    fun sendDISCONNECT(client: SimpleClient) {
+    private fun sendDISCONNECT(client: SimpleClient) {
         client.sendInternalClientMessage(InternalClientMessage(ControlPacketType.DISCONNECT,
                 DISCONNECTPayload(ReasonCode.NormalDisconnection)))
         // there is no reply to disconnect
     }
 
-    fun sendPINGREQ(client: SimpleClient, l: Location, expectedReasonCode: ReasonCode = ReasonCode.LocationUpdated) {
+    private fun sendPINGREQ(client: SimpleClient, l: Location, expectedReasonCode: ReasonCode = ReasonCode.LocationUpdated) {
         client.sendInternalClientMessage(InternalClientMessage(ControlPacketType.PINGREQ, PINGREQPayload(l)))
         val internalClientMessage = client.receiveInternalClientMessage()
 
@@ -352,8 +350,8 @@ class SubscriberMatchingRun {
         assertEquals(expectedReasonCode, internalClientMessage.payload.pingrespPayload.get().reasonCode)
     }
 
-    fun sendSUBSCRIBE(client: SimpleClient, t: Topic, g: Geofence,
-                      expectedReasonCode: ReasonCode = ReasonCode.GrantedQoS0) {
+    private fun sendSUBSCRIBE(client: SimpleClient, t: Topic, g: Geofence,
+                              expectedReasonCode: ReasonCode = ReasonCode.GrantedQoS0) {
         client.sendInternalClientMessage(InternalClientMessage(ControlPacketType.SUBSCRIBE, SUBSCRIBEPayload(t, g)))
         val internalClientMessage = client.receiveInternalClientMessage()
 
@@ -361,7 +359,7 @@ class SubscriberMatchingRun {
         assertEquals(expectedReasonCode, internalClientMessage.payload.subackPayload.get().reasonCode)
     }
 
-    fun sendUNSUBSCRIBE(client: SimpleClient, t: Topic, expectedReasonCode: ReasonCode = ReasonCode.Success) {
+    private fun sendUNSUBSCRIBE(client: SimpleClient, t: Topic, expectedReasonCode: ReasonCode = ReasonCode.Success) {
         client.sendInternalClientMessage(InternalClientMessage(ControlPacketType.UNSUBSCRIBE, UNSUBSCRIBEPayload(t)))
         val internalClientMessage = client.receiveInternalClientMessage()
 
@@ -369,7 +367,7 @@ class SubscriberMatchingRun {
         assertEquals(expectedReasonCode, internalClientMessage.payload.unsubackPayload.get().reasonCode)
     }
 
-    fun sendPUBLISH(client: SimpleClient, t: Topic, g: Geofence, c: String) {
+    private fun sendPUBLISH(client: SimpleClient, t: Topic, g: Geofence, c: String) {
         client.sendInternalClientMessage(InternalClientMessage(ControlPacketType.PUBLISH, PUBLISHPayload(t, g, c)))
 
         // no sense in checking what messages we receive right now, as we receive publish and puback in possible
