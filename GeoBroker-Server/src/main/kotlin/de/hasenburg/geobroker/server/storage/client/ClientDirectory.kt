@@ -46,6 +46,10 @@ class ClientDirectory {
         return true
     }
 
+    fun getClient(clientIdentifier: String): Client? {
+        return clients[clientIdentifier]
+    }
+
     /**
      * Removes a client from the directory.
      * TODO B: the client's subscriptions should be removed from the TopicAndGeofenceMapper as well

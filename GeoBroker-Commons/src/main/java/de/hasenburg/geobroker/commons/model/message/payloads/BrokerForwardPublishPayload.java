@@ -8,7 +8,8 @@ import java.util.Objects;
 public class BrokerForwardPublishPayload extends AbstractPayload {
 
 	PUBLISHPayload publishPayload;
-	Location publisherLocation;
+	Location publisherLocation; // needed in case of matching at the subscriber
+	String subscriberClientIdentifier; // needed in case of matching at the publisher
 
 	public BrokerForwardPublishPayload() {
 
@@ -18,6 +19,14 @@ public class BrokerForwardPublishPayload extends AbstractPayload {
 		super();
 		this.publishPayload = publishPayload;
 		this.publisherLocation = publisherLocation;
+		this.subscriberClientIdentifier = "empty";
+	}
+
+	public BrokerForwardPublishPayload(PUBLISHPayload publishPayload, String subscriberClientIdentifier) {
+		super();
+		this.publishPayload = publishPayload;
+		this.publisherLocation = Location.undefined();
+		this.subscriberClientIdentifier = subscriberClientIdentifier;
 	}
 
 	/*****************************************************************
@@ -32,6 +41,10 @@ public class BrokerForwardPublishPayload extends AbstractPayload {
 		return publisherLocation;
 	}
 
+	public String getSubscriberClientIdentifier() {
+		return subscriberClientIdentifier;
+	}
+
 	/*****************************************************************
 	 * Generated Code
 	 ****************************************************************/
@@ -41,11 +54,12 @@ public class BrokerForwardPublishPayload extends AbstractPayload {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		BrokerForwardPublishPayload that = (BrokerForwardPublishPayload) o;
-		return publishPayload.equals(that.publishPayload) && publisherLocation.equals(that.publisherLocation);
+		return Objects.equals(publishPayload, that.publishPayload) && Objects.equals(publisherLocation,
+				that.publisherLocation) && Objects.equals(subscriberClientIdentifier, that.subscriberClientIdentifier);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(publishPayload, publisherLocation);
+		return Objects.hash(publishPayload, publisherLocation, subscriberClientIdentifier);
 	}
 }

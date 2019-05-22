@@ -56,7 +56,7 @@ public class BrokerAreaManager {
 		return ownArea.intersects(messageGeofence);
 	}
 
-	public @Nullable BrokerInfo getOtherBrokersContainingLocation(Location clientLocation) {
+	public @Nullable BrokerInfo getOtherBrokerContainingLocation(Location clientLocation) {
 		for (BrokerArea area : otherAreas) {
 			if (area.ContainsLocation(clientLocation)) {
 				return area.getResponsibleBroker();

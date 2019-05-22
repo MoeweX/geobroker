@@ -338,6 +338,10 @@ class DisGBScenarioRuns {
         assertEquals(2, berlin.clientDirectory.getCurrentClientSubscriptions(getClientIdentifier(1)))
         assertEquals(3, berlin.clientDirectory.getCurrentClientSubscriptions(getClientIdentifier(2)))
 
+        // the subscriptions should have lead to additional clients being created
+        assertEquals(3, paris.clientDirectory.numberOfClients)
+        assertEquals(3, berlin.clientDirectory.numberOfClients)
+
 
         /* ***************************************************************
          * Publish message

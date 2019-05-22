@@ -217,7 +217,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
     private fun handleResponsibility(clientIdentifier: String, clientLocation: Location, clients: Socket): Boolean {
         if (!brokerAreaManager.checkIfOurAreaContainsLocation(clientLocation)) {
             // get responsible broker
-            val repBroker = brokerAreaManager.getOtherBrokersContainingLocation(clientLocation)
+            val repBroker = brokerAreaManager.getOtherBrokerContainingLocation(clientLocation)
 
             val response = InternalServerMessage(clientIdentifier,
                     ControlPacketType.DISCONNECT,
