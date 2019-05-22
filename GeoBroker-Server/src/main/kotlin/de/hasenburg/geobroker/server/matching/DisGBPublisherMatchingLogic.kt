@@ -108,6 +108,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
                 payload.geofence,
                 logger)
         val subscriptionId = clientDirectory.getSubscription(message.clientIdentifier, payload.topic)?.subscriptionId
+        val clientLocation = clientDirectory.getClientLocation(message.clientIdentifier) // might be needed for remote
 
         /* ***************************************************************
          * Remote Things
@@ -118,7 +119,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
             // calculate what brokers are affected by the subscription's geofence
             val otherAffectedBrokers = brokerAreaManager.getOtherBrokersIntersectingWithGeofence(payload.geofence)
 
-            // forward message to all now affected brokers
+            // forward subscribe to all currently affected brokers
             for (otherAffectedBroker in otherAffectedBrokers) {
                 logger.debug("""|Broker area of ${otherAffectedBroker.brokerId} intersects with subscription to topic
                             |${payload.topic}} from client ${message.clientIdentifier}""".trimMargin())
@@ -126,6 +127,20 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
                 ZMQProcess_BrokerCommunicator.generatePULLSocketMessage(otherAffectedBroker.brokerId,
                         InternalBrokerMessage(ControlPacketType.BrokerForwardSubscribe,
                                 BrokerForwardSubscribePayload(message.clientIdentifier, payload))).send(brokers)
+            }
+
+            // all brokers that did not know the client before have to also receive the client location
+            val newlyAffectedBrokers = subscriptionAffection.determineAffectedBrokersThatDoNotKnowTheClient(
+                    subscriptionId,
+                    otherAffectedBrokers)
+            for (newlyAffectedBroker in newlyAffectedBrokers) {
+                logger.debug("""|Broker ${newlyAffectedBroker.brokerId} did not know client ${message.clientIdentifier}
+                                |before, so also sending its most up to date location""".trimMargin())
+                // send message to BrokerCommunicator who takes care of the rest
+                ZMQProcess_BrokerCommunicator.generatePULLSocketMessage(newlyAffectedBroker.brokerId,
+                        InternalBrokerMessage(ControlPacketType.BrokerForwardPingreq,
+                                BrokerForwardPingreqPayload(message.clientIdentifier, PINGREQPayload(clientLocation))))
+                        .send(brokers)
             }
 
             // update broker affection -> returns now not anymore affected brokers
@@ -277,7 +292,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
         }
 
         // now we can do local location update
-        val response = updateClientLocationAtLocalBroker(message.clientIdentifier,
+        val response = updateClientLocationAtLocalBroker(payload.clientIdentifier,
                 payload.getPingreqPayload().location,
                 clientDirectory,
                 logger)
