@@ -11,7 +11,9 @@ import de.hasenburg.geobroker.commons.model.spatial.Geofence
 import de.hasenburg.geobroker.commons.model.spatial.Location
 import de.hasenburg.geobroker.commons.sleepNoLog
 import de.hasenburg.geobroker.server.main.Configuration
+import de.hasenburg.geobroker.server.main.server.DisGBPublisherMatchingServerLogic
 import de.hasenburg.geobroker.server.main.server.DisGBSubscriberMatchingServerLogic
+import de.hasenburg.geobroker.server.main.server.IServerLogic
 import org.apache.logging.log4j.LogManager
 import org.junit.After
 import org.junit.Assert.*
@@ -22,7 +24,6 @@ private var logger = LogManager.getLogger()
 
 class DisGBScenarioRuns {
 
-    private val configurationFile = arrayOf("disgb_scenario-paris.toml", "disgb_scenario-berlin.toml")
     // areas must be compatible to disgb_scenario.json
     private val parisArea = Geofence.circle(Location(48.86, 2.35), 3.0)
     private val berlinArea = Geofence.circle(Location(52.52, 13.4), 3.0)
@@ -119,14 +120,7 @@ class DisGBScenarioRuns {
     fun subscriberMatchingScenario() {
         val paris = DisGBSubscriberMatchingServerLogic()
         val berlin = DisGBSubscriberMatchingServerLogic()
-
-        for ((i, lifecycle) in listOf(paris, berlin).withIndex()) {
-            val c = Configuration.readConfiguration(configurationFile[i])
-            lifecycle.loadConfiguration(c)
-            lifecycle.initializeFields()
-            lifecycle.startServer()
-            logger.info("Started server ${c.brokerId}")
-        }
+        startDisGBServers(paris, "disgb_SMscenario-paris.toml", berlin, "disgb_SMscenario-berlin.toml")
 
         logger.info("Starting subscriber matching run\n\n\n")
 
@@ -274,10 +268,180 @@ class DisGBScenarioRuns {
         assertEquals(0, berlin.notAcknowledgedMessages())
 
         logger.info("Finished subscriber matching run\n\n\n")
-
-        berlin.cleanUp()
-        paris.cleanUp()
+        stopDisGBServers(paris, berlin)
     }
+
+    // TODO Finish the test
+    @Test
+    fun publisherMatchingScenario() {
+        val paris = DisGBPublisherMatchingServerLogic()
+        val berlin = DisGBPublisherMatchingServerLogic()
+        startDisGBServers(paris, "disgb_PMscenario-paris.toml", berlin, "disgb_PMscenario-berlin.toml")
+
+        logger.info("Starting subscriber matching run\n\n\n")
+
+        /* ***************************************************************
+         * Connect to respective broker
+         ****************************************************************/
+
+        // forbidden connect
+        sendCONNECT(clients[0],
+                Location.randomInGeofence(berlinArea),
+                ControlPacketType.DISCONNECT,
+                ReasonCode.WrongBroker)
+
+        // correct connect
+        sendCONNECT(clients[0], Location.randomInGeofence(parisArea))
+        sendCONNECT(clients[1], Location.randomInGeofence(parisArea))
+        sendCONNECT(clients[2], Location.randomInGeofence(berlinArea))
+
+        // validate connects internally
+        assertEquals(2, paris.clientDirectory.numberOfClients)
+        assertEquals(1, berlin.clientDirectory.numberOfClients)
+
+        /* ***************************************************************
+         * Update location to what is needed for the experiment
+         ****************************************************************/
+
+        sendPINGREQ(clients[0], cl1)
+        sendPINGREQ(clients[1], cl2)
+        sendPINGREQ(clients[2], cl3)
+
+        // validate whether brokers got locations
+        assertEquals(cl1, paris.clientDirectory.getClientLocation(getClientIdentifier(0)))
+        assertEquals(cl2, paris.clientDirectory.getClientLocation(getClientIdentifier(1)))
+        assertEquals(cl3, berlin.clientDirectory.getClientLocation(getClientIdentifier(2)))
+
+        /* ***************************************************************
+         * Create subscriptions
+         ****************************************************************/
+
+        // all clients create the same subscriptions
+        for (i in 0..2) {
+            sendSUBSCRIBE(clients[i], topics[0], sg1)
+            sendSUBSCRIBE(clients[i], topics[1], sg2)
+            sendSUBSCRIBE(clients[i], topics[2], sg3)
+        }
+
+        // validate whether brokers got subscriptions (we check mostly the count, but two do we actually check)
+        // sub1 should be available at both brokers for client 1
+        assertNotNull(paris.clientDirectory.getSubscription(getClientIdentifier(0), topics[0]))
+        assertNotNull(berlin.clientDirectory.getSubscription(getClientIdentifier(0), topics[0]))
+        // sub2 should be available only in paris for client 1
+        assertNotNull(paris.clientDirectory.getSubscription(getClientIdentifier(0), topics[1]))
+        assertNull(berlin.clientDirectory.getSubscription(getClientIdentifier(0), topics[1]))
+
+        assertEquals(3, paris.clientDirectory.getCurrentClientSubscriptions(getClientIdentifier(0)))
+        assertEquals(3, paris.clientDirectory.getCurrentClientSubscriptions(getClientIdentifier(1)))
+        assertEquals(2, paris.clientDirectory.getCurrentClientSubscriptions(getClientIdentifier(2)))
+        assertEquals(2, berlin.clientDirectory.getCurrentClientSubscriptions(getClientIdentifier(0)))
+        assertEquals(2, berlin.clientDirectory.getCurrentClientSubscriptions(getClientIdentifier(1)))
+        assertEquals(3, berlin.clientDirectory.getCurrentClientSubscriptions(getClientIdentifier(2)))
+
+
+        /* ***************************************************************
+         * Publish message
+         ****************************************************************/
+
+        // we need to publish to every topic, as the subscriptions are generated per topic and we want to match against
+        // every subscription (that's why i in 0..2)
+
+        // --------
+        // MG1
+        // --------
+
+        for (i in 0..2) {
+            logger.info("Publishing with message geofence $mg1 to topic ${topics[i]}")
+            sendPUBLISH(clients[1], topics[i], mg1, generateContent(1, topics[i]))
+        }
+
+        // validate for each client the received messages
+        validateReceivedMessagesForClient(clients[0], 0, 0)
+        validateReceivedMessagesForClient(clients[1], 3, 2)
+        validateReceivedMessagesForClient(clients[2], 0, 2)
+
+        // --------
+        // MG2
+        // --------
+
+        for (i in 0..2) {
+            logger.info("Publishing with message geofence $mg2 to topic ${topics[i]}")
+            sendPUBLISH(clients[1], topics[i], mg2, generateContent(1, topics[i]))
+        }
+
+        // validate for each client the received messages
+        validateReceivedMessagesForClient(clients[0], 0, 0)
+        validateReceivedMessagesForClient(clients[1], 3, 2)
+        validateReceivedMessagesForClient(clients[2], 0, 0)
+
+        // --------
+        // MG3
+        // --------
+
+        for (i in 0..2) {
+            logger.info("Publishing with message geofence $mg3 to topic ${topics[i]}")
+            sendPUBLISH(clients[1], topics[i], mg3, generateContent(1, topics[i]))
+        }
+
+        // validate for each client the received messages
+        validateReceivedMessagesForClient(clients[0], 0, 0)
+        validateReceivedMessagesForClient(clients[1], 3, 0)
+        validateReceivedMessagesForClient(clients[2], 0, 2)
+
+        /*
+            TODO (do the checks by publishing to data/1)
+             1. update data/1 subscription to use sg2 (check whether this removes from berlin)
+             2. update data/1 subscription back to use sg1 (check whether this adds back  berlin
+             3. update data/1 subscription to use sg3 (check whether this removes from paris)
+         */
+
+        /* ***************************************************************
+         * Unsubscribe again
+         ****************************************************************/
+
+        for (i in 0..2) {
+            sendUNSUBSCRIBE(clients[i], topics[0])
+            sendUNSUBSCRIBE(clients[i], topics[1])
+            sendUNSUBSCRIBE(clients[i], topics[2])
+        }
+
+        // publish MG_1 again, but no one should get it
+
+        for (i in 0..2) {
+            logger.info("Publishing with message geofence $mg1 to topic ${topics[i]}")
+            sendPUBLISH(clients[1], topics[i], mg1, generateContent(1, topics[i]))
+        }
+
+        validateReceivedMessagesForClient(clients[0], 0, 0)
+        validateReceivedMessagesForClient(clients[1], 3, 0)
+        validateReceivedMessagesForClient(clients[2], 0, 0)
+
+        /* ***************************************************************
+         * Disconnect
+         ****************************************************************/
+
+        for (i in 0..2) {
+            sendDISCONNECT(clients[i])
+        }
+
+        sleepNoLog(100, 0) // wait until disconnected
+        assertEquals(0, paris.clientDirectory.numberOfClients)
+        assertEquals(0, berlin.clientDirectory.numberOfClients)
+
+        /* ***************************************************************
+         * Final checks
+         ****************************************************************/
+
+        assertEquals(0, paris.notAcknowledgedMessages())
+        assertEquals(0, berlin.notAcknowledgedMessages())
+
+        logger.info("Finished subscriber matching run\n\n\n")
+        stopDisGBServers(paris, berlin)
+    }
+
+    /*****************************************************************
+     * Helper Methods
+     ****************************************************************/
 
     private fun getClientIdentifier(index: Int): String {
         return "Client-${index + 1}"
@@ -285,6 +449,23 @@ class DisGBScenarioRuns {
 
     private fun generateContent(index: Int, t: Topic): String {
         return "This message was published by client ${getClientIdentifier(index)} to topic $t"
+    }
+
+    private fun startDisGBServers(paris: IServerLogic, parisConf: String, berlin: IServerLogic, berlinConf: String) {
+        val configurations = listOf(parisConf, berlinConf)
+
+        for ((i, lifecycle) in listOf(paris, berlin).withIndex()) {
+            val c = Configuration.readConfiguration(configurations[i])
+            lifecycle.loadConfiguration(c)
+            lifecycle.initializeFields()
+            lifecycle.startServer()
+            logger.info("Started server ${c.brokerId}")
+        }
+    }
+
+    private fun stopDisGBServers(paris: IServerLogic, berlin: IServerLogic) {
+        paris.cleanUp()
+        berlin.cleanUp()
     }
 
     private fun setupLocalhostClients(ports: List<Int>): List<SimpleClient> {
@@ -342,7 +523,8 @@ class DisGBScenarioRuns {
         // there is no reply to disconnect
     }
 
-    private fun sendPINGREQ(client: SimpleClient, l: Location, expectedReasonCode: ReasonCode = ReasonCode.LocationUpdated) {
+    private fun sendPINGREQ(client: SimpleClient, l: Location,
+                            expectedReasonCode: ReasonCode = ReasonCode.LocationUpdated) {
         client.sendInternalClientMessage(InternalClientMessage(ControlPacketType.PINGREQ, PINGREQPayload(l)))
         val internalClientMessage = client.receiveInternalClientMessage()
 

@@ -92,7 +92,6 @@ public class DisGBSubscriberMatchingServerLogic implements IServerLogic {
 		return distributionLogic.getNotAcknowledgedMessages().values().stream().mapToInt(AtomicInteger::get).sum();
 	}
 
-
 	/*****************************************************************
 	 * Generated methods
 	 ****************************************************************/

@@ -315,7 +315,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
         }
 
         // now we can do local subscribe
-        val reasonCode = subscribeAtLocalBroker(message.clientIdentifier,
+        val reasonCode = subscribeAtLocalBroker(payload.clientIdentifier,
                 clientDirectory,
                 topicAndGeofenceMapper,
                 payload.getSubscribePayload().topic,

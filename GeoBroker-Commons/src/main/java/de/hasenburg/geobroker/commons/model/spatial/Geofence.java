@@ -122,6 +122,9 @@ public class Geofence implements JSONable {
 	}
 
 	public boolean contains(Location location) {
+		if (location.isUndefined()) {
+			return false;
+		}
 		return shape.relate(location.getPoint()).equals(SpatialRelation.CONTAINS);
 	}
 
