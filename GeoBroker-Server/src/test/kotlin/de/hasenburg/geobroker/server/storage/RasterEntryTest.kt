@@ -152,7 +152,6 @@ class RasterEntryTest {
 
         var sum = 0
         for ((clientIdentifier, future) in futures) {
-
             // add to sum
             val idsFromThread = future.get(1, TimeUnit.SECONDS)
             sum += idsFromThread.size

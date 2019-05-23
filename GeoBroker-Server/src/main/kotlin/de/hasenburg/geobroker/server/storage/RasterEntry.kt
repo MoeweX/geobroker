@@ -36,6 +36,10 @@ class RasterEntry(val index: Location, degreeStep: Double) {
         ))
     }
 
+    override fun toString(): String {
+        return "RasterEntry{index=$index}"
+    }
+
     /*****************************************************************
      * Subscribe/Unsubscribe Operations
      ****************************************************************/
@@ -81,14 +85,6 @@ class RasterEntry(val index: Location, degreeStep: Double) {
     fun getSubscriptionIdsForClientIdentifier(clientId: String): Set<ImmutablePair<String, Int>> {
         // this builds on the assumptions that this is faster then the toSet() method
         return Collections.unmodifiableSet(existingSubscriptionIds[clientId])
-    }
-
-    /*****************************************************************
-     * Getters & toString
-     */
-
-    override fun toString(): String {
-        return "RasterEntry{index=$index}"
     }
 
 }
