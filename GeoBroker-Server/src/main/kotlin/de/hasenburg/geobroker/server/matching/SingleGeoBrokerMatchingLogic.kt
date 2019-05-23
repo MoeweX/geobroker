@@ -2,6 +2,7 @@ package de.hasenburg.geobroker.server.matching
 
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType
 import de.hasenburg.geobroker.commons.model.message.ReasonCode
+import de.hasenburg.geobroker.commons.model.message.payloads.PINGRESPPayload
 import de.hasenburg.geobroker.commons.model.message.payloads.PUBACKPayload
 import de.hasenburg.geobroker.commons.model.message.payloads.SUBACKPayload
 import de.hasenburg.geobroker.commons.model.message.payloads.UNSUBACKPayload
@@ -44,10 +45,14 @@ class SingleGeoBrokerMatchingLogic(private val clientDirectory: ClientDirectory,
     override fun processPINGREQ(message: InternalServerMessage, clients: Socket, brokers: Socket) {
         val payload = message.payload.pingreqPayload.get()
 
-        val response = updateClientLocationAtLocalBroker(message.clientIdentifier,
+        val reasonCode = updateClientLocationAtLocalBroker(message.clientIdentifier,
                 payload.location,
                 clientDirectory,
                 logger)
+
+        val response = InternalServerMessage(message.clientIdentifier,
+                ControlPacketType.PINGRESP,
+                PINGRESPPayload(reasonCode))
 
         logger.trace("Sending response $response")
         response.zMsg.send(clients)

@@ -55,10 +55,14 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
             return  // we are not responsible, client has been notified
         }
 
-        val response = updateClientLocationAtLocalBroker(message.clientIdentifier,
+        val reasonCode = updateClientLocationAtLocalBroker(message.clientIdentifier,
                 payload.location,
                 clientDirectory,
                 logger)
+
+        val response = InternalServerMessage(message.clientIdentifier,
+                ControlPacketType.PINGRESP,
+                PINGRESPPayload(reasonCode))
 
         logger.trace("Sending response $response")
         response.zMsg.send(clients)

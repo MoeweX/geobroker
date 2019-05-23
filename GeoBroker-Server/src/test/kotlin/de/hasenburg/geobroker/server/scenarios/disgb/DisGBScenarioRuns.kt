@@ -14,6 +14,7 @@ import de.hasenburg.geobroker.server.main.Configuration
 import de.hasenburg.geobroker.server.main.server.DisGBPublisherMatchingServerLogic
 import de.hasenburg.geobroker.server.main.server.DisGBSubscriberMatchingServerLogic
 import de.hasenburg.geobroker.server.main.server.IServerLogic
+import de.hasenburg.geobroker.server.storage.client.ClientDirectory
 import org.apache.logging.log4j.LogManager
 import org.junit.After
 import org.junit.Assert.*
@@ -62,7 +63,6 @@ class DisGBScenarioRuns {
             client.tearDownClient()
         }
         clientProcessManager.tearDown(1000)
-        sleepNoLog(500, 0) // give zeromq some time
         logger.info("Client teardown completed")
     }
 
@@ -128,17 +128,7 @@ class DisGBScenarioRuns {
          * Connect to respective broker
          ****************************************************************/
 
-        // forbidden connect
-        sendCONNECT(clients[0],
-                Location.randomInGeofence(berlinArea),
-                ControlPacketType.DISCONNECT,
-                ReasonCode.WrongBroker)
-
-        // correct connect
-        sendCONNECT(clients[0], Location.randomInGeofence(parisArea))
-        sendCONNECT(clients[1], Location.randomInGeofence(parisArea))
-        sendCONNECT(clients[2], Location.randomInGeofence(berlinArea))
-
+        doConnect(paris, berlin)
         // validate connects internally
         assertEquals(2, paris.clientDirectory.numberOfClients)
         assertEquals(1, berlin.clientDirectory.numberOfClients)
@@ -147,10 +137,7 @@ class DisGBScenarioRuns {
          * Update location to what is needed for the experiment
          ****************************************************************/
 
-        sendPINGREQ(clients[0], cl1)
-        sendPINGREQ(clients[1], cl2)
-        sendPINGREQ(clients[2], cl3)
-
+        doPing()
         // validate whether brokers got locations
         assertEquals(cl1, paris.clientDirectory.getClientLocation(getClientIdentifier(0)))
         assertEquals(cl2, paris.clientDirectory.getClientLocation(getClientIdentifier(1)))
@@ -160,13 +147,7 @@ class DisGBScenarioRuns {
          * Create subscriptions
          ****************************************************************/
 
-        // all clients create the same subscriptions
-        for (i in 0..2) {
-            sendSUBSCRIBE(clients[i], topics[0], sg1)
-            sendSUBSCRIBE(clients[i], topics[1], sg2)
-            sendSUBSCRIBE(clients[i], topics[2], sg3)
-        }
-
+        doSubscribe()
         // validate whether brokers got subscriptions (we check mostly the count, but one do we actually check)
         assertNotNull(paris.clientDirectory.getSubscription(getClientIdentifier(0), topics[0]))
         assertNull(berlin.clientDirectory.getSubscription(getClientIdentifier(0), topics[0]))
@@ -182,83 +163,25 @@ class DisGBScenarioRuns {
          * Publish message
          ****************************************************************/
 
-        // we need to publish to every topic, as the subscriptions are generated per topic and we want to match against
-        // every subscription (that's why i in 0..2)
+        doPublish()
 
-        // --------
-        // MG1
-        // --------
+        /* ***************************************************************
+         * Update subscription data/1 to only affect a single broker area
+         ****************************************************************/
 
-        for (i in 0..2) {
-            logger.info("Publishing with message geofence $mg1 to topic ${topics[i]}")
-            sendPUBLISH(clients[1], topics[i], mg1, generateContent(1, topics[i]))
-        }
-
-        // validate for each client the received messages
-        validateReceivedMessagesForClient(clients[0], 0, 0)
-        validateReceivedMessagesForClient(clients[1], 3, 2)
-        validateReceivedMessagesForClient(clients[2], 0, 2)
-
-        // --------
-        // MG2
-        // --------
-
-        for (i in 0..2) {
-            logger.info("Publishing with message geofence $mg2 to topic ${topics[i]}")
-            sendPUBLISH(clients[1], topics[i], mg2, generateContent(1, topics[i]))
-        }
-
-        // validate for each client the received messages
-        validateReceivedMessagesForClient(clients[0], 0, 0)
-        validateReceivedMessagesForClient(clients[1], 3, 2)
-        validateReceivedMessagesForClient(clients[2], 0, 0)
-
-        // --------
-        // MG3
-        // --------
-
-        for (i in 0..2) {
-            logger.info("Publishing with message geofence $mg3 to topic ${topics[i]}")
-            sendPUBLISH(clients[1], topics[i], mg3, generateContent(1, topics[i]))
-        }
-
-        // validate for each client the received messages
-        validateReceivedMessagesForClient(clients[0], 0, 0)
-        validateReceivedMessagesForClient(clients[1], 3, 0)
-        validateReceivedMessagesForClient(clients[2], 0, 2)
+        doOverwritingSubscribe(paris.clientDirectory)
 
         /* ***************************************************************
          * Unsubscribe again
          ****************************************************************/
 
-        for (i in 0..2) {
-            sendUNSUBSCRIBE(clients[i], topics[0])
-            sendUNSUBSCRIBE(clients[i], topics[1])
-            sendUNSUBSCRIBE(clients[i], topics[2])
-        }
-
-        // publish MG_1 again, but no one should get it
-
-        for (i in 0..2) {
-            logger.info("Publishing with message geofence $mg1 to topic ${topics[i]}")
-            sendPUBLISH(clients[1], topics[i], mg1, generateContent(1, topics[i]))
-        }
-
-        validateReceivedMessagesForClient(clients[0], 0, 0)
-        validateReceivedMessagesForClient(clients[1], 3, 0)
-        validateReceivedMessagesForClient(clients[2], 0, 0)
+        doUnsubscribe()
 
         /* ***************************************************************
          * Disconnect
          ****************************************************************/
 
-        for (i in 0..2) {
-            sendDISCONNECT(clients[i])
-        }
-
-        sleepNoLog(100, 0) // wait until disconnected
-        assertEquals(0, paris.clientDirectory.numberOfClients)
-        assertEquals(0, berlin.clientDirectory.numberOfClients)
+        doDisconnect(paris.clientDirectory, berlin.clientDirectory)
 
         /* ***************************************************************
          * Final checks
@@ -271,30 +194,29 @@ class DisGBScenarioRuns {
         stopDisGBServers(paris, berlin)
     }
 
-    // TODO Finish the test
+    private fun doDisconnect(parisCD: ClientDirectory, berlinCD: ClientDirectory) {
+        for (i in 0..2) {
+            sendDISCONNECT(clients[i])
+        }
+
+        sleepNoLog(100, 0) // wait until disconnected
+        assertEquals(0, parisCD.numberOfClients)
+        assertEquals(0, berlinCD.numberOfClients)
+    }
+
     @Test
     fun publisherMatchingScenario() {
         val paris = DisGBPublisherMatchingServerLogic()
         val berlin = DisGBPublisherMatchingServerLogic()
         startDisGBServers(paris, "disgb_PMscenario-paris.toml", berlin, "disgb_PMscenario-berlin.toml")
 
-        logger.info("Starting subscriber matching run\n\n\n")
+        logger.info("Starting publisher matching run\n\n\n")
 
         /* ***************************************************************
          * Connect to respective broker
          ****************************************************************/
 
-        // forbidden connect
-        sendCONNECT(clients[0],
-                Location.randomInGeofence(berlinArea),
-                ControlPacketType.DISCONNECT,
-                ReasonCode.WrongBroker)
-
-        // correct connect
-        sendCONNECT(clients[0], Location.randomInGeofence(parisArea))
-        sendCONNECT(clients[1], Location.randomInGeofence(parisArea))
-        sendCONNECT(clients[2], Location.randomInGeofence(berlinArea))
-
+        doConnect(paris, berlin)
         // validate connects internally
         assertEquals(2, paris.clientDirectory.numberOfClients)
         assertEquals(1, berlin.clientDirectory.numberOfClients)
@@ -303,10 +225,7 @@ class DisGBScenarioRuns {
          * Update location to what is needed for the experiment
          ****************************************************************/
 
-        sendPINGREQ(clients[0], cl1)
-        sendPINGREQ(clients[1], cl2)
-        sendPINGREQ(clients[2], cl3)
-
+        doPing()
         // validate whether brokers got locations
         assertEquals(cl1, paris.clientDirectory.getClientLocation(getClientIdentifier(0)))
         assertEquals(cl2, paris.clientDirectory.getClientLocation(getClientIdentifier(1)))
@@ -316,13 +235,7 @@ class DisGBScenarioRuns {
          * Create subscriptions
          ****************************************************************/
 
-        // all clients create the same subscriptions
-        for (i in 0..2) {
-            sendSUBSCRIBE(clients[i], topics[0], sg1)
-            sendSUBSCRIBE(clients[i], topics[1], sg2)
-            sendSUBSCRIBE(clients[i], topics[2], sg3)
-        }
-
+        doSubscribe()
         // validate whether brokers got subscriptions (we check mostly the count, but two do we actually check)
         // sub1 should be available at both brokers for client 1
         assertNotNull(paris.clientDirectory.getSubscription(getClientIdentifier(0), topics[0]))
@@ -330,6 +243,9 @@ class DisGBScenarioRuns {
         // sub2 should be available only in paris for client 1
         assertNotNull(paris.clientDirectory.getSubscription(getClientIdentifier(0), topics[1]))
         assertNull(berlin.clientDirectory.getSubscription(getClientIdentifier(0), topics[1]))
+
+        // we need to wait as subscription forwarding takes some time
+        sleepNoLog(100, 0)
 
         assertEquals(3, paris.clientDirectory.getCurrentClientSubscriptions(getClientIdentifier(0)))
         assertEquals(3, paris.clientDirectory.getCurrentClientSubscriptions(getClientIdentifier(1)))
@@ -342,11 +258,129 @@ class DisGBScenarioRuns {
         assertEquals(3, paris.clientDirectory.numberOfClients)
         assertEquals(3, berlin.clientDirectory.numberOfClients)
 
-
         /* ***************************************************************
          * Publish message
          ****************************************************************/
 
+        doPublish()
+
+        /* ***************************************************************
+         * Update subscription data/1 to only affect a single broker area
+         ****************************************************************/
+
+        doOverwritingSubscribe(paris.clientDirectory)
+        // validate that cl3 and data/1 subscription are back at paris
+        assertNotNull(paris.clientDirectory.getSubscription(getClientIdentifier(2), topics[0]))
+
+        /* ***************************************************************
+         * Unsubscribe again
+         ****************************************************************/
+
+        doUnsubscribe()
+
+        /* ***************************************************************
+         * Disconnect
+         ****************************************************************/
+
+        doDisconnect(paris.clientDirectory, berlin.clientDirectory)
+
+        /* ***************************************************************
+         * Final checks
+         ****************************************************************/
+
+        assertEquals(0, paris.notAcknowledgedMessages())
+        assertEquals(0, berlin.notAcknowledgedMessages())
+
+        logger.info("Finished publisher matching run\n\n\n")
+        stopDisGBServers(paris, berlin)
+    }
+
+    private fun doUnsubscribe() {
+        for (i in 0..2) {
+            sendUNSUBSCRIBE(clients[i], topics[0])
+            sendUNSUBSCRIBE(clients[i], topics[1])
+            sendUNSUBSCRIBE(clients[i], topics[2])
+        }
+
+        // publish MG_1 again, but no one should get it
+
+        for (i in 0..2) {
+            logger.info("Publishing with message geofence $mg1 to topic ${topics[i]}")
+            sendPUBLISH(clients[1], topics[i], mg1, generateContent(1, topics[i]))
+        }
+
+        validateReceivedMessagesForClient(clients[0], 0, 0)
+        validateReceivedMessagesForClient(clients[1], 3, 0)
+        validateReceivedMessagesForClient(clients[2], 0, 0)
+    }
+
+    private fun doOverwritingSubscribe(clientDirectory: ClientDirectory) {
+        // update data/1 subscription to use sg3
+        // --> when cl2 publishes to data/1 -> no one receives anything
+        // --> when cl3 publishes to data/1 -> cl2 and cl3 receive a single message
+        for (i in 0..2) {
+            sendSUBSCRIBE(clients[i], topics[0], sg3)
+        }
+        sendPUBLISH(clients[1], topics[0], mg1, generateContent(1, topics[0]))
+        validateReceivedMessagesForClient(clients[0], 0, 0)
+        validateReceivedMessagesForClient(clients[1], 1, 0)
+        validateReceivedMessagesForClient(clients[2], 0, 0)
+        sendPUBLISH(clients[2], topics[0], mg1, generateContent(2, topics[0]))
+        validateReceivedMessagesForClient(clients[0], 0, 0)
+        validateReceivedMessagesForClient(clients[1], 0, 1)
+        validateReceivedMessagesForClient(clients[2], 1, 1)
+        // paris should not have an active subscription for cl3 and data/1 anymore
+        assertNull(clientDirectory.getSubscription(getClientIdentifier(2), topics[0]))
+
+        // update data/1 subscription back to use sg1
+        // --> when cl2 publishes to data/1 -> cl2 and cl3 receive a single message
+        // --> when cl3 publishes to data/1 -> cl2 and cl3 receive a single message
+        for (i in 0..2) {
+            sendSUBSCRIBE(clients[i], topics[0], sg1)
+        }
+        sendPUBLISH(clients[1], topics[0], mg1, generateContent(1, topics[0]))
+        validateReceivedMessagesForClient(clients[0], 0, 0)
+        validateReceivedMessagesForClient(clients[1], 1, 1)
+        validateReceivedMessagesForClient(clients[2], 0, 1)
+        sendPUBLISH(clients[2], topics[0], mg1, generateContent(2, topics[0]))
+        validateReceivedMessagesForClient(clients[0], 0, 0)
+        validateReceivedMessagesForClient(clients[1], 0, 1)
+        validateReceivedMessagesForClient(clients[2], 1, 1)
+    }
+
+    /*****************************************************************
+     * Run Operation Helper
+     ****************************************************************/
+
+    private fun doConnect(paris: IServerLogic, berlin: IServerLogic) {
+        // forbidden connect
+        sendCONNECT(clients[0],
+                Location.randomInGeofence(berlinArea),
+                ControlPacketType.DISCONNECT,
+                ReasonCode.WrongBroker)
+
+        // correct connect
+        sendCONNECT(clients[0], Location.randomInGeofence(parisArea))
+        sendCONNECT(clients[1], Location.randomInGeofence(parisArea))
+        sendCONNECT(clients[2], Location.randomInGeofence(berlinArea))
+    }
+
+    private fun doPing() {
+        sendPINGREQ(clients[0], cl1)
+        sendPINGREQ(clients[1], cl2)
+        sendPINGREQ(clients[2], cl3)
+    }
+
+    private fun doSubscribe() {
+        // all clients create the same subscriptions
+        for (i in 0..2) {
+            sendSUBSCRIBE(clients[i], topics[0], sg1)
+            sendSUBSCRIBE(clients[i], topics[1], sg2)
+            sendSUBSCRIBE(clients[i], topics[2], sg3)
+        }
+    }
+
+    private fun doPublish() {
         // we need to publish to every topic, as the subscriptions are generated per topic and we want to match against
         // every subscription (that's why i in 0..2)
 
@@ -391,60 +425,10 @@ class DisGBScenarioRuns {
         validateReceivedMessagesForClient(clients[0], 0, 0)
         validateReceivedMessagesForClient(clients[1], 3, 0)
         validateReceivedMessagesForClient(clients[2], 0, 2)
-
-        /*
-            TODO (do the checks by publishing to data/1)
-             1. update data/1 subscription to use sg2 (check whether this removes from berlin)
-             2. update data/1 subscription back to use sg1 (check whether this adds back  berlin
-             3. update data/1 subscription to use sg3 (check whether this removes from paris)
-         */
-
-        /* ***************************************************************
-         * Unsubscribe again
-         ****************************************************************/
-
-        for (i in 0..2) {
-            sendUNSUBSCRIBE(clients[i], topics[0])
-            sendUNSUBSCRIBE(clients[i], topics[1])
-            sendUNSUBSCRIBE(clients[i], topics[2])
-        }
-
-        // publish MG_1 again, but no one should get it
-
-        for (i in 0..2) {
-            logger.info("Publishing with message geofence $mg1 to topic ${topics[i]}")
-            sendPUBLISH(clients[1], topics[i], mg1, generateContent(1, topics[i]))
-        }
-
-        validateReceivedMessagesForClient(clients[0], 0, 0)
-        validateReceivedMessagesForClient(clients[1], 3, 0)
-        validateReceivedMessagesForClient(clients[2], 0, 0)
-
-        /* ***************************************************************
-         * Disconnect
-         ****************************************************************/
-
-        for (i in 0..2) {
-            sendDISCONNECT(clients[i])
-        }
-
-        sleepNoLog(100, 0) // wait until disconnected
-        assertEquals(0, paris.clientDirectory.numberOfClients)
-        assertEquals(0, berlin.clientDirectory.numberOfClients)
-
-        /* ***************************************************************
-         * Final checks
-         ****************************************************************/
-
-        assertEquals(0, paris.notAcknowledgedMessages())
-        assertEquals(0, berlin.notAcknowledgedMessages())
-
-        logger.info("Finished subscriber matching run\n\n\n")
-        stopDisGBServers(paris, berlin)
     }
 
     /*****************************************************************
-     * Helper Methods
+     * Miscellaneous Helper
      ****************************************************************/
 
     private fun getClientIdentifier(index: Int): String {
@@ -500,6 +484,10 @@ class DisGBScenarioRuns {
         assertEquals(0, remainingPublishs)
         assertNull(client.receiveInternalClientMessageWithTimeout(0)) // no more messages
     }
+
+    /*****************************************************************
+     * Send helper
+     ****************************************************************/
 
     private fun sendCONNECT(client: SimpleClient, l: Location,
                             expectedControlPacketType: ControlPacketType = ControlPacketType.CONNACK,

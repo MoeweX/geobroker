@@ -239,12 +239,12 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
             // publish message to remaining subscribers
             for (subscriptionId in subscriptionIds) {
                 val subscriber = clientDirectory.getClient(subscriptionId.left)
-                logger.debug("Client {} is a subscriber", subscriptionId.left)
 
                 if (subscriber == null) {
                     // in very rare cases another thread removed it again already, so do nothing
-                    logger.warn("Subscriber disconnected before being able to publish an outstanding message")
+                    logger.warn("A Subscriber disconnected before being able to publish an outstanding message")
                 } else if (subscriber.remote) {
+                    logger.debug("Client {} is a remote subscriber", subscriber.clientIdentifier)
                     // remote client -> send to his broker
                     val otherBrokerId: String? = brokerAreaManager.getOtherBrokerContainingLocation(subscriber.location)
                             ?.brokerId
@@ -259,6 +259,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
                     }
                 } else {
                     // local client -> send directly
+                    logger.debug("Client {} is a local subscriber", subscriber.clientIdentifier)
                     val toPublish = InternalServerMessage(subscriber.clientIdentifier,
                             ControlPacketType.PUBLISH,
                             payload)
@@ -328,19 +329,23 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
         // make sure client exists as he did not send a connect
         if (!clientDirectory.clientExists(payload.clientIdentifier)) {
             // add client to directory as remote client
-            clientDirectory.addClient(payload.clientIdentifier, Location.undefined())
+            clientDirectory.addClient(payload.clientIdentifier, Location.undefined(), true)
         }
 
         // now we can do local location update
-        val response = updateClientLocationAtLocalBroker(payload.clientIdentifier,
+        val reasonCode = updateClientLocationAtLocalBroker(payload.clientIdentifier,
                 payload.getPingreqPayload().location,
                 clientDirectory,
                 logger)
 
+        val response = InternalServerMessage(message.clientIdentifier,
+                ControlPacketType.PINGRESP,
+                PINGRESPPayload(reasonCode))
+
         // acknowledge subscribe operation to other broker, he does not expect a particular message so we just reply
         // with the response that we have generated anyways (needs to go via the clients socket as response has to
         // go out of the ZMQProcess_Server
-        logger.trace("Sending pingresp response")
+        logger.trace("Sending ping response")
         response.zMsg.send(clients)
     }
 
@@ -366,7 +371,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
         // make sure client exists as he did not send a connect
         if (!clientDirectory.clientExists(payload.clientIdentifier)) {
             // add client to directory as remote client
-            clientDirectory.addClient(payload.clientIdentifier, Location.undefined())
+            clientDirectory.addClient(payload.clientIdentifier, Location.undefined(), true)
         }
 
         // now we can do local subscribe
