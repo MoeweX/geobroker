@@ -8,7 +8,11 @@ import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.Socket;
 import org.zeromq.ZMsg;
 
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * ZMQProcesses are submitted to the ZMQProcessManager by using {@link ZMQProcessManager#submitZMQProcess(String,
@@ -19,6 +23,10 @@ public abstract class ZMQProcess implements Runnable {
 	private static final Logger logger = LogManager.getLogger();
 	private static final int TIMEOUT_SECONDS = 10; // logs when not received in time, but repeats
 
+	// utilization measurements
+	private static final long measurementInterval = 10; // in seconds
+
+	// others
 	private ZContext context = null;
 
 	protected final String identity;
@@ -55,10 +63,21 @@ public abstract class ZMQProcess implements Runnable {
 		// add control socket
 		int zmqControlIndex = ZMQControlUtility.connectWithPoller(context, poller, identity);
 
+		long pollTime = 0; // in ns
+		long processingTime = 0; // in ns
+		long newTime;
+		long oldTime;
+
 		// poll all sockets
 		while (!Thread.currentThread().isInterrupted()) {
 			logger.trace("Waiting {}s for a message", TIMEOUT_SECONDS);
+			oldTime = System.nanoTime();
+
 			poller.poll(TIMEOUT_SECONDS * 1000);
+
+			newTime = System.nanoTime();
+			pollTime += newTime - oldTime;
+			oldTime = System.nanoTime();
 
 			if (poller.pollin(zmqControlIndex)) {
 				Pair<ZMQControlUtility.ZMQControlCommand, ZMsg> pair =
@@ -81,6 +100,16 @@ public abstract class ZMQProcess implements Runnable {
 						break;
 					}
 				}
+			}
+
+			newTime = System.nanoTime();
+			processingTime += newTime - oldTime;
+
+			// add utilization roughly every 10 seconds
+			if (pollTime + processingTime >= measurementInterval * 1000000000L) {
+				double utilization = processingTime / (processingTime + pollTime + 0.0);
+				utilization = Math.round(utilization*100.0)/100.0;
+				logger.info("Utilization is at {}%", utilization);
 			}
 		}
 

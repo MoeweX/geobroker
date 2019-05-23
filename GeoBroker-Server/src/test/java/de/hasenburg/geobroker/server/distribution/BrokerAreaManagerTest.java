@@ -18,7 +18,7 @@ public class BrokerAreaManagerTest {
 		Location location = new Location(0, 0);
 
 		BrokerAreaManager brokerAreaManager = new BrokerAreaManager("broker");
-		brokerAreaManager.readFromFile("defaultBrokerAreas.json");
+		brokerAreaManager.readFromFile("brokerAreas_template.json");
 
 		// we are responsible
 		assertTrue(brokerAreaManager.checkIfOurAreaContainsLocation(location));

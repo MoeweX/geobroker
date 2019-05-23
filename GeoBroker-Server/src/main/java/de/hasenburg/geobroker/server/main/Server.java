@@ -13,7 +13,7 @@ public class Server {
 
 	public static void main(String[] args) {
 
-		Configuration configuration = Configuration.readConfiguration("configuration.toml");
+		Configuration configuration = new Configuration(5, 2);
 		IServerLogic logic;
 		if (Configuration.Mode.disgb_subscriberMatching.equals(configuration.getMode())) {
 			logger.info("GeoBroker is configured to run geo-distributed (subscriber matching)");

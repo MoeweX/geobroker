@@ -11,11 +11,11 @@ messageProcessors = 1
 
 #   [server.mode]
 #    name = "disgb_subscriberMatching"
-#    brokerAreaFilePath = "defaultBrokerAreas.json"
+#    brokerAreaFilePath = "brokerAreas_template.json"
 #    brokerCommunicators = 1
 
 #   [server.mode]
 #    name = "disgb_publisherMatching"
-#    brokerAreaFilePath = "defaultBrokerAreas.json"
+#    brokerAreaFilePath = "brokerAreas_template.json"
 #    brokerCommunicators = 1
 
