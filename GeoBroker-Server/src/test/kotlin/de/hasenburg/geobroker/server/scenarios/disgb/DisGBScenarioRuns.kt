@@ -128,7 +128,7 @@ class DisGBScenarioRuns {
          * Connect to respective broker
          ****************************************************************/
 
-        doConnect(paris, berlin)
+        doConnect()
         // validate connects internally
         assertEquals(2, paris.clientDirectory.numberOfClients)
         assertEquals(1, berlin.clientDirectory.numberOfClients)
@@ -216,7 +216,7 @@ class DisGBScenarioRuns {
          * Connect to respective broker
          ****************************************************************/
 
-        doConnect(paris, berlin)
+        doConnect()
         // validate connects internally
         assertEquals(2, paris.clientDirectory.numberOfClients)
         assertEquals(1, berlin.clientDirectory.numberOfClients)
@@ -352,7 +352,7 @@ class DisGBScenarioRuns {
      * Run Operation Helper
      ****************************************************************/
 
-    private fun doConnect(paris: IServerLogic, berlin: IServerLogic) {
+    private fun doConnect() {
         // forbidden connect
         sendCONNECT(clients[0],
                 Location.randomInGeofence(berlinArea),
