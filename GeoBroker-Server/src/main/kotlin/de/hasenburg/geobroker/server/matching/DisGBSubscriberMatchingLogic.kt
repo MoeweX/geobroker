@@ -55,10 +55,14 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
             return  // we are not responsible, client has been notified
         }
 
-        val response = updateClientLocationAtLocalBroker(message.clientIdentifier,
+        val reasonCode = updateClientLocationAtLocalBroker(message.clientIdentifier,
                 payload.location,
                 clientDirectory,
                 logger)
+
+        val response = InternalServerMessage(message.clientIdentifier,
+                ControlPacketType.PINGRESP,
+                PINGRESPPayload(reasonCode))
 
         logger.trace("Sending response $response")
         response.zMsg.send(clients)
@@ -89,7 +93,6 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
                 clientDirectory,
                 topicAndGeofenceMapper,
                 payload.topic,
-                payload.geofence,
                 logger)
 
         val response = InternalServerMessage(message.clientIdentifier,
@@ -113,7 +116,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
             // find other brokers whose broker area intersects with the message geofence
             val otherBrokers = brokerAreaManager.getOtherBrokersIntersectingWithGeofence(payload.geofence)
             for (otherBroker in otherBrokers) {
-                logger.trace("Broker area of {} intersects with message from client {}",
+                logger.debug("Broker area of {} intersects with message from client {}",
                         otherBroker.brokerId,
                         message.clientIdentifier)
                 // send message to BrokerCommunicator who takes care of the rest
@@ -218,7 +221,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
     private fun handleResponsibility(clientIdentifier: String, clientLocation: Location, clients: Socket): Boolean {
         if (!brokerAreaManager.checkIfOurAreaContainsLocation(clientLocation)) {
             // get responsible broker
-            val repBroker = brokerAreaManager.getOtherBrokersContainingLocation(clientLocation)
+            val repBroker = brokerAreaManager.getOtherBrokerContainingLocation(clientLocation)
 
             val response = InternalServerMessage(clientIdentifier,
                     ControlPacketType.DISCONNECT,

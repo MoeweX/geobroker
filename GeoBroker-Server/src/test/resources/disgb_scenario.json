@@ -1,0 +1,22 @@
+[
+	{
+		"responsibleBroker": {
+			"brokerId": "Paris",
+			"ip": "localhost",
+			"port": 5558
+		},
+		"coveredArea": {
+			"WKT": "BUFFER (POINT (2.35 48.86), 3)"
+		}
+	},
+	{
+		"responsibleBroker": {
+			"brokerId": "Berlin",
+			"ip": "localhost",
+			"port": 5559
+		},
+		"coveredArea": {
+			"WKT": "BUFFER (POINT (13.4 52.52), 3)"
+		}
+	}
+]

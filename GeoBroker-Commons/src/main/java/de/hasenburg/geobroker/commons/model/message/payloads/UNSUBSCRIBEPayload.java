@@ -8,16 +8,14 @@ import java.util.Objects;
 public class UNSUBSCRIBEPayload extends AbstractPayload {
 
 	protected Topic topic;
-	protected Geofence geofence;
 
 	public UNSUBSCRIBEPayload() {
 
 	}
 
-	public UNSUBSCRIBEPayload(Topic topic, Geofence geofence) {
+	public UNSUBSCRIBEPayload(Topic topic) {
 		super();
 		this.topic = topic;
-		this.geofence = geofence;
 	}
 
 	/*****************************************************************
@@ -28,30 +26,20 @@ public class UNSUBSCRIBEPayload extends AbstractPayload {
 		return topic;
 	}
 
-	public Geofence getGeofence() {
-		return geofence;
-	}
-
 	/*****************************************************************
 	 * Generated Code
 	 ****************************************************************/
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (!(o instanceof UNSUBSCRIBEPayload)) {
-			return false;
-		}
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
 		UNSUBSCRIBEPayload that = (UNSUBSCRIBEPayload) o;
-		return Objects.equals(getTopic(), that.getTopic()) &&
-				Objects.equals(getGeofence(), that.getGeofence());
+		return Objects.equals(topic, that.topic);
 	}
 
 	@Override
 	public int hashCode() {
-
-		return Objects.hash(getTopic(), getGeofence());
+		return Objects.hash(topic);
 	}
 }

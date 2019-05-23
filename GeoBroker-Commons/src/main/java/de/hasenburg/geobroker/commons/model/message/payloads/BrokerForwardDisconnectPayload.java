@@ -26,7 +26,7 @@ public class BrokerForwardDisconnectPayload extends AbstractPayload {
 		return clientIdentifier;
 	}
 
-	public DISCONNECTPayload getPingreqPayload() {
+	public DISCONNECTPayload getDisconnectPayload() {
 		return disconnectPayload;
 	}
 

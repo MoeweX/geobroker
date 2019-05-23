@@ -22,6 +22,7 @@ public abstract class ZMQProcess implements Runnable {
 	private ZContext context = null;
 
 	protected final String identity;
+	protected ZMQ.Poller poller;
 	protected List<Socket> sockets;
 
 	public ZMQProcess(String identity) {
@@ -48,7 +49,7 @@ public abstract class ZMQProcess implements Runnable {
 		sockets = bindAndConnectSockets(context);
 
 		// register them at poller
-		ZMQ.Poller poller = context.createPoller(sockets.size() + 1); // +1 as we'll add the control later
+		poller = context.createPoller(sockets.size() + 1); // +1 as we'll add the control later
 		sockets.forEach(s -> poller.register(s, ZMQ.Poller.POLLIN)); // add sockets at poller index 0 to sockets.size()
 
 		// add control socket

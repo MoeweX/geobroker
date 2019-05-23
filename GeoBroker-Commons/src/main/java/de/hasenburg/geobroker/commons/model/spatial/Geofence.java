@@ -26,7 +26,7 @@ public class Geofence implements JSONable {
 	// TODO increase size a little bit so that we do not miss any due to rounding issues
 	// we need it most times anyways, so let's buffer it //
 	@JsonIgnore
-	private final Rectangle boundingBox;
+	final Rectangle boundingBox;
 
 	private Geofence(Shape shape) {
 		this.shape = shape;
@@ -59,6 +59,11 @@ public class Geofence implements JSONable {
 		// close polygon
 		polygonBuilder.pointLatLon(surroundingLocations.get(0).getLat(), surroundingLocations.get(0).getLon());
 		return new Geofence(polygonBuilder.build());
+	}
+
+	public static Geofence rectangle(Location southWest, Location northEast) {
+		Rectangle r = GEO.getShapeFactory().rect(southWest.getPoint(), northEast.getPoint());
+		return new Geofence(r);
 	}
 
 	public static Geofence circle(Location location, double radiusDegree) {
@@ -117,11 +122,19 @@ public class Geofence implements JSONable {
 	}
 
 	public boolean contains(Location location) {
+		if (location.isUndefined()) {
+			return false;
+		}
 		return shape.relate(location.getPoint()).equals(SpatialRelation.CONTAINS);
 	}
 
+	/**
+	 * For us, intersects is an "intersection" but also something more specific such as "contains" or within.
+	 */
 	public boolean intersects(Geofence geofence) {
-		return shape.relate(geofence.shape).equals(SpatialRelation.INTERSECTS);
+		SpatialRelation sr = shape.relate(geofence.shape);
+		return sr.equals(SpatialRelation.INTERSECTS) || sr.equals(SpatialRelation.CONTAINS) ||
+				sr.equals(SpatialRelation.WITHIN);
 	}
 
 	public boolean disjoint(Geofence geofence) {
@@ -163,5 +176,19 @@ public class Geofence implements JSONable {
 	public int hashCode() {
 
 		return Objects.hash(shape);
+	}
+
+	public static void main(String[] args) {
+		Location paris = new Location(48.86, 2.35);
+		Location berlin = new Location(52.52, 13.40);
+		Geofence parisArea = Geofence.circle(paris, 3.0);
+		Geofence berlinArea = Geofence.circle(berlin, 3.0);
+
+		logger.info("Paris area = {}", parisArea);
+		logger.info("Berlin area = {}", berlinArea);
+		logger.info("The areas intersect: {}", berlinArea.intersects(parisArea));
+
+		Location justIn = new Location(45.87, 2.3);
+		logger.info(parisArea.contains(justIn));
 	}
 }

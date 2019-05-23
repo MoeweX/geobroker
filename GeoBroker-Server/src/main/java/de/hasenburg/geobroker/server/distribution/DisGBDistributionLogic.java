@@ -11,8 +11,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * As any {@link AbstractPayload} does not have an id, this class simply counts outgoing and
- * ingoing (acknowledged) messages.
+ * As any {@link AbstractPayload} does not have an id, this class simply counts outgoing and ingoing (acknowledged)
+ * messages.
  *
  * An alternative to adding an ID to every payload would be to add an ID only to BrokerForward payloads, e.g., {@link
  * BrokerForwardPublishPayload}.
@@ -50,7 +50,7 @@ public class DisGBDistributionLogic implements IDistributionLogic {
 	public void processOtherBrokerAcknowledgement(ZMsg msg, String otherBrokerId) {
 		if (notAcknowledgedMessages.containsKey(otherBrokerId)) {
 			int n = notAcknowledgedMessages.get(otherBrokerId).decrementAndGet();
-			logger.trace("New message sent to other broker, now {} not acknowledged messages", n);
+			logger.trace("Other broker acknowledged a {} message, now {} not acknowledged messages", msg.getFirst(), n);
 		}
 	}
 

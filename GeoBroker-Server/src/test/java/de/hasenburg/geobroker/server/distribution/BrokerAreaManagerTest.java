@@ -26,7 +26,7 @@ public class BrokerAreaManagerTest {
 		assertTrue(brokerAreaManager.checkIfOurAreaContainsLocation(Location.random()));
 
 		// as the areas overlap in the default config, two brokers are responsible in theory.
-		BrokerInfo otherBroker = brokerAreaManager.getOtherBrokersContainingLocation(location);
+		BrokerInfo otherBroker = brokerAreaManager.getOtherBrokerContainingLocation(location);
 		assertNotNull(otherBroker);
 		assertEquals("notUsedBroker (but info must allow tcp socket connect)", otherBroker.getBrokerId());
 	}

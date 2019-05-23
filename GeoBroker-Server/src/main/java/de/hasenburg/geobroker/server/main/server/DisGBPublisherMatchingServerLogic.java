@@ -13,6 +13,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class DisGBPublisherMatchingServerLogic implements IServerLogic {
 
@@ -85,6 +86,10 @@ public class DisGBPublisherMatchingServerLogic implements IServerLogic {
 	public void cleanUp() {
 		processManager.tearDown(2000);
 		logger.info("Tear down completed");
+	}
+
+	public int notAcknowledgedMessages() {
+		return distributionLogic.getNotAcknowledgedMessages().values().stream().mapToInt(AtomicInteger::get).sum();
 	}
 
 	/*****************************************************************

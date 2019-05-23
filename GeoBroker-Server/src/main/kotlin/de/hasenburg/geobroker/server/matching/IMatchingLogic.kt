@@ -68,20 +68,16 @@ fun connectClientAtLocalBroker(clientIdentifier: String, location: Location, cli
 }
 
 fun updateClientLocationAtLocalBroker(clientIdentifier: String, location: Location, clientDirectory: ClientDirectory,
-                                      logger: Logger): InternalServerMessage {
+                                      logger: Logger): ReasonCode {
 
     val success = clientDirectory.updateClientLocation(clientIdentifier, location)
     if (success) {
         logger.debug("Updated location of {} to {}", clientIdentifier, location)
 
-        return InternalServerMessage(clientIdentifier,
-                ControlPacketType.PINGRESP,
-                PINGRESPPayload(ReasonCode.LocationUpdated))
+        return ReasonCode.LocationUpdated
     } else {
         logger.debug("Client {} is not connected", clientIdentifier)
-        return InternalServerMessage(clientIdentifier,
-                ControlPacketType.PINGRESP,
-                PINGRESPPayload(ReasonCode.NotConnected))
+        return ReasonCode.NotConnected
     }
 
 }
@@ -111,7 +107,7 @@ fun subscribeAtLocalBroker(clientIdentifier: String, clientDirectory: ClientDire
 }
 
 fun unsubscribeAtLocalBroker(clientIdentifier: String, clientDirectory: ClientDirectory,
-                             topicAndGeofenceMapper: TopicAndGeofenceMapper, topic: Topic, geofence: Geofence,
+                             topicAndGeofenceMapper: TopicAndGeofenceMapper, topic: Topic,
                              logger: Logger): ReasonCode {
     var reasonCode = ReasonCode.Success
 

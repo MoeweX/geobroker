@@ -1,0 +1,12 @@
+# server information
+[server]
+brokerId = "Paris"
+port = 5558
+granularity = 5
+messageProcessors = 1
+
+    [server.mode]
+    name = "disgb_publisherMatching"
+    brokerAreaFilePath = "disgb_scenario.json"
+    brokerCommunicators = 1
+
