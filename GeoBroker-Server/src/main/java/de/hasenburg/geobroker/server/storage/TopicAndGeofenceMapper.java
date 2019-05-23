@@ -93,12 +93,12 @@ public class TopicAndGeofenceMapper {
 				for (TopicLevel child : children) {
 
 					if (levelSpecifier.equals(child.getLevelSpecifier()) ||
-							TopicLevel.SINGLE_LEVEL_WILDCARD.equals(child.getLevelSpecifier())) {
+							TopicLevelKt.SINGLE_LEVEL_WILDCARD.equals(child.getLevelSpecifier())) {
 
 						// important for single level
 						nextLevelsInWhichChildrenHaveToBeChecked.add(child);
 
-					} else if (TopicLevel.MULTI_LEVEL_WILDCARD.equals(child.getLevelSpecifier())) {
+					} else if (TopicLevelKt.MULTI_LEVEL_WILDCARD.equals(child.getLevelSpecifier())) {
 
 						// important for multi level
 						multiLevelWildcardTopicLevels.add(child);
@@ -117,7 +117,7 @@ public class TopicAndGeofenceMapper {
 		for (TopicLevel topicLevel : currentLevelsInWhichChildrenHaveToBeChecked) {
 			Collection<TopicLevel> children = topicLevel.getAllDirectChildren();
 			for (TopicLevel child : children) {
-				if (TopicLevel.MULTI_LEVEL_WILDCARD.equals(child.getLevelSpecifier())) {
+				if (TopicLevelKt.MULTI_LEVEL_WILDCARD.equals(child.getLevelSpecifier())) {
 					multiLevelWildcardTopicLevels.add(child);
 				}
 			}
