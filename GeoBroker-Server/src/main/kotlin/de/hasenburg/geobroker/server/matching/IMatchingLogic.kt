@@ -3,7 +3,9 @@ package de.hasenburg.geobroker.server.matching
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType
 import de.hasenburg.geobroker.commons.model.message.ReasonCode
 import de.hasenburg.geobroker.commons.model.message.Topic
-import de.hasenburg.geobroker.commons.model.message.payloads.*
+import de.hasenburg.geobroker.commons.model.message.payloads.CONNACKPayload
+import de.hasenburg.geobroker.commons.model.message.payloads.DISCONNECTPayload
+import de.hasenburg.geobroker.commons.model.message.payloads.PUBLISHPayload
 import de.hasenburg.geobroker.commons.model.spatial.Geofence
 import de.hasenburg.geobroker.commons.model.spatial.Location
 import de.hasenburg.geobroker.server.communication.InternalServerMessage
@@ -11,7 +13,6 @@ import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory
 import org.apache.commons.lang3.tuple.ImmutablePair
 import org.apache.logging.log4j.Logger
-import org.zeromq.ZMQ
 import org.zeromq.ZMQ.Socket
 
 /**
@@ -107,8 +108,7 @@ fun subscribeAtLocalBroker(clientIdentifier: String, clientDirectory: ClientDire
 }
 
 fun unsubscribeAtLocalBroker(clientIdentifier: String, clientDirectory: ClientDirectory,
-                             topicAndGeofenceMapper: TopicAndGeofenceMapper, topic: Topic,
-                             logger: Logger): ReasonCode {
+                             topicAndGeofenceMapper: TopicAndGeofenceMapper, topic: Topic, logger: Logger): ReasonCode {
     var reasonCode = ReasonCode.Success
 
     // unsubscribe from client directory -> get subscription id
@@ -136,11 +136,11 @@ fun publishMessageToLocalClients(publisherLocation: Location, publishPayload: PU
     logger.debug("Publishing topic {} to all subscribers", publishPayload.topic)
 
     // get subscriptions that have a geofence containing the publisher location
-    val subscriptionIds = topicAndGeofenceMapper.getSubscriptionIds(publishPayload.topic, publisherLocation)
+    val subscriptionIdResults = topicAndGeofenceMapper.getSubscriptionIds(publishPayload.topic, publisherLocation)
 
     // only keep subscription if subscriber location is insider message geofence
-    subscriptionIds.removeIf { subId ->
-        !publishPayload.geofence.contains(clientDirectory.getClientLocation(subId.left)!!)
+    val subscriptionIds = subscriptionIdResults.filter { subId ->
+        publishPayload.geofence.contains(clientDirectory.getClientLocation(subId.left)!!)
     }
 
     // publish message to remaining subscribers
