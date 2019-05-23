@@ -108,8 +108,10 @@ public abstract class ZMQProcess implements Runnable {
 			// add utilization roughly every 10 seconds
 			if (pollTime + processingTime >= measurementInterval * 1000000000L) {
 				double utilization = processingTime / (processingTime + pollTime + 0.0);
-				utilization = Math.round(utilization*100.0)/100.0;
+				utilization = Math.round(utilization*1000.0) / 10.0;
 				logger.info("Utilization is at {}%", utilization);
+				pollTime = 0;
+				processingTime = 0;
 			}
 		}
 

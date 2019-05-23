@@ -60,11 +60,11 @@ public class LoadTest {
 		logger.info("RUNNING testOneLocations");
 
 		List<Thread> clients = new ArrayList<>();
-		int numberOfClients = 5;
+		int numberOfClients = 10;
 
 		// create clients
 		for (int i = 0; i < numberOfClients; i++) {
-			Thread client = new Thread(new SubscribeOwnTopicProcess("localhost", 5559, 200));
+			Thread client = new Thread(new SubscribeOwnTopicProcess("localhost", 5559, 50000));
 			clients.add(client);
 		}
 
@@ -102,7 +102,7 @@ public class LoadTest {
 			logger.info(simpleClient.receiveInternalClientMessage());
 		}
 
-		private void sendMessageAndProcessResponses(InternalClientMessage message, int expectedResponses) {
+		private void sendMessagesAndProcessResponses(InternalClientMessage message, int expectedResponses) {
 			simpleClient.sendInternalClientMessage(message);
 			for (int i = 0; i < expectedResponses; i++) {
 				InternalClientMessage response = simpleClient.receiveInternalClientMessage();
@@ -131,11 +131,11 @@ public class LoadTest {
 				}
 
 				long time = System.nanoTime();
-				sendMessageAndProcessResponses(new InternalClientMessage(ControlPacketType.PINGREQ,
+				sendMessagesAndProcessResponses(new InternalClientMessage(ControlPacketType.PINGREQ,
 						new PINGREQPayload(location)), 1);
 				BenchmarkHelper.addEntry("clientPINGREQ", System.nanoTime() - time);
 				time = System.nanoTime();
-				sendMessageAndProcessResponses(new InternalClientMessage(ControlPacketType.PUBLISH,
+				sendMessagesAndProcessResponses(new InternalClientMessage(ControlPacketType.PUBLISH,
 						new PUBLISHPayload(new Topic(simpleClient.getIdentity()),
 								Geofence.circle(location, 0.0),
 								"Some Test content that is being published.")), 2);
