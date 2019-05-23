@@ -321,6 +321,8 @@ class DisGBScenarioRuns {
         for (i in 0..2) {
             sendSUBSCRIBE(clients[i], topics[0], sg3)
         }
+        // we need to wait as subscription forwarding takes some time in case of publisher matching
+        sleepNoLog(100, 0)
         sendPUBLISH(clients[1], topics[0], mg1, generateContent(1, topics[0]))
         validateReceivedMessagesForClient(clients[0], 0, 0)
         validateReceivedMessagesForClient(clients[1], 1, 0)
@@ -338,6 +340,8 @@ class DisGBScenarioRuns {
         for (i in 0..2) {
             sendSUBSCRIBE(clients[i], topics[0], sg1)
         }
+        // we need to wait as subscription forwarding takes some time in case of publisher matching
+        sleepNoLog(100, 0)
         sendPUBLISH(clients[1], topics[0], mg1, generateContent(1, topics[0]))
         validateReceivedMessagesForClient(clients[0], 0, 0)
         validateReceivedMessagesForClient(clients[1], 1, 1)

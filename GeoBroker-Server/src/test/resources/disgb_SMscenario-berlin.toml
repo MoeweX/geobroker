@@ -3,10 +3,10 @@
 brokerId = "Berlin"
 port = 5559
 granularity = 5
-messageProcessors = 1
+messageProcessors = 2
 
     [server.mode]
     name = "disgb_subscriberMatching"
     brokerAreaFilePath = "disgb_scenario.json"
-    brokerCommunicators = 1
+    brokerCommunicators = 2
 

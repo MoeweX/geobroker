@@ -87,7 +87,7 @@ public class Configuration {
 
 			// disgb specific
 			c.brokerAreaFilePath = toml_server_mode.getString("brokerAreaFilePath", c.brokerAreaFilePath);
-			c.brokerCommunicators = Math.toIntExact(toml_server.getLong("brokerCommunicators",
+			c.brokerCommunicators = Math.toIntExact(toml_server_mode.getLong("brokerCommunicators",
 					c.brokerCommunicators.longValue()));
 		}
 
