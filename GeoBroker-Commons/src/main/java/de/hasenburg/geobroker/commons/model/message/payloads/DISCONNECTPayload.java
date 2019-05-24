@@ -1,11 +1,8 @@
 package de.hasenburg.geobroker.commons.model.message.payloads;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.sun.corba.se.pept.broker.Broker;
 import de.hasenburg.geobroker.commons.model.BrokerInfo;
 import de.hasenburg.geobroker.commons.model.message.ReasonCode;
 
-import java.lang.reflect.Field;
 import java.util.Objects;
 
 public class DISCONNECTPayload extends AbstractPayload {

@@ -3,6 +3,7 @@ package de.hasenburg.geobroker.client.main;
 import de.hasenburg.geobroker.commons.Utility;
 import de.hasenburg.geobroker.commons.communication.ZMQControlUtility;
 import de.hasenburg.geobroker.commons.communication.ZMQProcessManager;
+import de.hasenburg.geobroker.commons.model.KryoSerializer;
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
 import de.hasenburg.geobroker.client.communication.ZMQProcessStarter;
 import de.hasenburg.geobroker.client.communication.ZMQProcess_BenchmarkClient;
@@ -25,6 +26,7 @@ public class BenchmarkClient {
 	private ZMQProcessManager processManager;
 	private String identifier;
 	ZMQ.Socket orderSocket;
+	private KryoSerializer kryo = new KryoSerializer();
 
 
 	public BenchmarkClient(@Nullable String identifier, String address, int port, ZMQProcessManager processManager) {
@@ -55,7 +57,7 @@ public class BenchmarkClient {
 
 	public ZMsg sendInternalClientMessage(InternalClientMessage message) {
 		ZMsg orderMessage = ZMsg.newStringMsg(ZMQProcess_BenchmarkClient.ORDERS.SEND.name());
-		ZMsg internalClientMessage = message.getZMsg();
+		ZMsg internalClientMessage = message.getZMsg(kryo);
 		for (int i = 0; i <= internalClientMessage.size(); i++) {
 			orderMessage.add(internalClientMessage.pop());
 		}

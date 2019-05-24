@@ -50,6 +50,35 @@ public class PingTest {
 	}
 
 	@Test
+	public void compareSerial() {
+		double time1 = System.nanoTime();
+		// connect, ping, and disconnect
+		SimpleClient client = new SimpleClient(null, "localhost", 5559, clientProcessManager);
+		client.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.CONNECT,
+				new CONNECTPayload(Location.random())));
+		for (int i = 0; i < 100; i++) {
+			client.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.PINGREQ,
+					new PINGREQPayload(Location.random())));
+		}
+
+		client.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.DISCONNECT,
+				new DISCONNECTPayload(ReasonCode.NormalDisconnection)));
+
+		for (int i = 0; i < 101; i++) {
+			InternalClientMessage internalClientMessage = client.receiveInternalClientMessage();
+			if (i == 0) {
+				assertEquals(ControlPacketType.CONNACK, internalClientMessage.getControlPacketType());
+			} else {
+				assertEquals(ControlPacketType.PINGRESP, internalClientMessage.getControlPacketType());
+				assertEquals(ReasonCode.LocationUpdated,
+						internalClientMessage.getPayload().getPINGRESPPayload().get().getReasonCode());
+			}
+		}
+		double time2 = System.nanoTime();
+		System.out.println("TIME FOR SERIALISATION:  " + ((time2 - time1)/1000000000));
+	}
+
+	@Test
 	public void testPingWhileConnected() {
 		// connect, ping, and disconnect
 		SimpleClient client = new SimpleClient(null, "localhost", 5559, clientProcessManager);

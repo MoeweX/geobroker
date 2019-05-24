@@ -8,7 +8,7 @@ import java.util.Objects;
 /**
  * Stores information of a given broker: brokerId, publicly reachable server ip and server port.
  */
-public class BrokerInfo implements JSONable {
+public class BrokerInfo{
 
 	private final String brokerId;
 	// This is the public ip used by other brokers, so should be reachable via the internet
@@ -23,10 +23,6 @@ public class BrokerInfo implements JSONable {
 		this.port = port;
 	}
 
-	@Override
-	public String toString() {
-		return JSONable.toJSON(this);
-	}
 
 	/*****************************************************************
 	 * Generated methods

@@ -1,6 +1,7 @@
 package de.hasenburg.geobroker.client.communication;
 
 import de.hasenburg.geobroker.client.communication.InternalClientMessage;
+import de.hasenburg.geobroker.commons.model.KryoSerializer;
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
 import de.hasenburg.geobroker.commons.model.message.payloads.CONNECTPayload;
 import de.hasenburg.geobroker.commons.model.message.payloads.PINGREQPayload;
@@ -27,8 +28,8 @@ public class InternalClientMessageTest {
 		logger.info("RUNNING testPayloadConnect TEST");
 		InternalClientMessage message = new InternalClientMessage(ControlPacketType.CONNECT, new CONNECTPayload(Location.random()));
 		logger.debug(message);
-		ZMsg zmsg = message.getZMsg();
-		InternalClientMessage message2 = InternalClientMessage.buildMessage(zmsg).get();
+		ZMsg zmsg = message.getZMsg(new KryoSerializer());
+		InternalClientMessage message2 = InternalClientMessage.buildMessage(zmsg, new KryoSerializer()).get();
 		logger.debug(message2);
 		assertEquals("Messages should be equal", message, message2);
 		logger.info("FINISHED TEST");
@@ -39,8 +40,8 @@ public class InternalClientMessageTest {
 		logger.info("RUNNING testPayloadPINGREQ TEST");
 		InternalClientMessage message = new InternalClientMessage(ControlPacketType.PINGREQ, new PINGREQPayload(Location.random()));
 		logger.debug(message);
-		ZMsg zmsg = message.getZMsg();
-		InternalClientMessage message2 = InternalClientMessage.buildMessage(zmsg).get();
+		ZMsg zmsg = message.getZMsg(new KryoSerializer());
+		InternalClientMessage message2 = InternalClientMessage.buildMessage(zmsg, new KryoSerializer()).get();
 		logger.debug(message2);
 		assertEquals("Messages should be equal", message, message2);
 		logger.info("FINISHED TEST");
@@ -51,8 +52,8 @@ public class InternalClientMessageTest {
 		logger.info("RUNNING testPayloadPINGREQEmpty TEST");
 		InternalClientMessage message = new InternalClientMessage(ControlPacketType.PINGREQ, new PINGREQPayload());
 		logger.debug(message);
-		ZMsg zmsg = message.getZMsg();
-		assertFalse(InternalClientMessage.buildMessage(zmsg).isPresent());
+		ZMsg zmsg = message.getZMsg(new KryoSerializer());
+		assertFalse(InternalClientMessage.buildMessage(zmsg, new KryoSerializer()).isPresent());
 		logger.info("FINISHED TEST");
 	}
 

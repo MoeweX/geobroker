@@ -1,7 +1,11 @@
 package de.hasenburg.geobroker.server.distribution;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import de.hasenburg.geobroker.commons.model.BrokerInfo;
-import de.hasenburg.geobroker.commons.model.JSONable;
+import de.hasenburg.geobroker.commons.model.KryoSerializer;
 import de.hasenburg.geobroker.commons.model.spatial.Geofence;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
 import org.apache.logging.log4j.LogManager;
@@ -15,13 +19,38 @@ public class BrokerAreaTest {
 
 	private static final Logger logger = LogManager.getLogger();
 
-	@Test
+	/*@Test
 	public void testSerialize() {
 		BrokerInfo brokerInfo = new BrokerInfo("brokerId", "address", 1000);
 		BrokerArea brokerArea1 = new BrokerArea(brokerInfo, Geofence.circle(Location.random(), 10));
 		String json = JSONable.toJSON(brokerArea1);
 		logger.info(json);
 		BrokerArea brokerArea2 = JSONable.fromJSON(json, BrokerArea.class).get();
+		assertEquals(brokerArea1, brokerArea2);
+	}*/
+
+	@Test
+	public void testSerialize() {
+		BrokerInfo brokerInfo = new BrokerInfo("brokerId", "address", 1000);
+		BrokerArea brokerArea1 = new BrokerArea(brokerInfo, Geofence.circle(Location.random(), 10));
+		KryoSerializer kryo = new KryoSerializer();
+		kryo.getKryo().register(BrokerArea.class, new Serializer<BrokerArea>() {
+			@Override
+			public void write(Kryo kryo, Output output, BrokerArea object) {
+				kryo.writeObjectOrNull(output, object.getResponsibleBroker(), BrokerInfo.class);
+				kryo.writeObjectOrNull(output, object.getCoveredArea(), Geofence.class);
+			}
+
+			@Override
+			public BrokerArea read(Kryo kryo, Input input, Class<BrokerArea> type) {
+				BrokerInfo broker = kryo.readObjectOrNull(input, BrokerInfo.class);
+				Geofence geofence = kryo.readObjectOrNull(input, Geofence.class);
+				return new BrokerArea(broker, geofence);
+			}
+		});
+		byte[] arr = kryo.write(brokerArea1);
+		logger.info(arr);
+		BrokerArea brokerArea2 = kryo.read(arr, BrokerArea.class);
 		assertEquals(brokerArea1, brokerArea2);
 	}
 

@@ -6,6 +6,7 @@ import de.hasenburg.geobroker.commons.Utility;
 import de.hasenburg.geobroker.commons.communication.ZMQControlUtility;
 import de.hasenburg.geobroker.commons.communication.ZMQProcessManager;
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
+import de.hasenburg.geobroker.commons.model.KryoSerializer;
 import de.hasenburg.geobroker.commons.model.message.payloads.CONNECTPayload;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
 import org.apache.logging.log4j.LogManager;
@@ -20,6 +21,7 @@ public class StorageClient {
 
 	private static final Logger logger = LogManager.getLogger();
 
+	private KryoSerializer kryo = new KryoSerializer();
 	private ZMQProcessManager processManager;
 	private String identifier;
 
@@ -47,8 +49,8 @@ public class StorageClient {
 
 	public void sendInternalClientMessage(InternalClientMessage message) {
 		processManager.sendCommandToZMQProcess(getIdentity(),
-											   ZMQControlUtility.ZMQControlCommand.SEND_ZMsg,
-											   message.getZMsg());
+				ZMQControlUtility.ZMQControlCommand.SEND_ZMsg,
+				message.getZMsg(kryo));
 	}
 
 	public static void main(String[] args) throws IOException {
@@ -56,8 +58,8 @@ public class StorageClient {
 		StorageClient client = new StorageClient(null, "localhost", 5559, processManager);
 
 		// connect
-		InternalClientMessage clientMessage =
-				new InternalClientMessage(ControlPacketType.CONNECT, new CONNECTPayload(Location.random()));
+		InternalClientMessage clientMessage = new InternalClientMessage(ControlPacketType.CONNECT,
+				new CONNECTPayload(Location.random()));
 		client.sendInternalClientMessage(clientMessage);
 
 		// wait 2 seconds, we should receive a CONNACK and write it to file.
@@ -68,7 +70,7 @@ public class StorageClient {
 			logger.info("StorageClient shut down properly.");
 		} else {
 			logger.fatal("ProcessManager reported that processes are still running: {}",
-						 processManager.getIncompleteZMQProcesses());
+					processManager.getIncompleteZMQProcesses());
 		}
 		System.exit(0);
 	}

@@ -3,13 +3,12 @@ package de.hasenburg.geobroker.server.distribution;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.hasenburg.geobroker.commons.model.BrokerInfo;
-import de.hasenburg.geobroker.commons.model.JSONable;
 import de.hasenburg.geobroker.commons.model.spatial.Geofence;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
 
 import java.util.Objects;
 
-public class BrokerArea implements JSONable {
+public class BrokerArea {
 
 	@JsonProperty
 	private final BrokerInfo responsibleBroker;
@@ -27,6 +26,10 @@ public class BrokerArea implements JSONable {
 		return responsibleBroker;
 	}
 
+	Geofence getCoveredArea() {
+		return coveredArea;
+	}
+
 	boolean CheckResponsibleBroker(String brokerId) {
 		return responsibleBroker.getBrokerId().equals(brokerId);
 	}
@@ -37,11 +40,6 @@ public class BrokerArea implements JSONable {
 
 	boolean intersects(Geofence messageGeofence) {
 		return coveredArea.intersects(messageGeofence);
-	}
-
-	@Override
-	public String toString() {
-		return JSONable.toJSON(this);
 	}
 
 	/*****************************************************************

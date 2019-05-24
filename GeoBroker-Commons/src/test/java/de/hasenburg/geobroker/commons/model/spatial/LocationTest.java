@@ -1,10 +1,8 @@
 package de.hasenburg.geobroker.commons.model.spatial;
 
-import de.hasenburg.geobroker.commons.model.JSONable;
-import de.hasenburg.geobroker.commons.model.spatial.Location;
+import de.hasenburg.geobroker.commons.model.KryoSerializer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.json.JSONArray;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -30,32 +28,15 @@ public class LocationTest {
 	}
 
 	@Test
-	public void toAndFromJson() {
-		String json = JSONable.toJSON(location);
-		logger.info("Location JSON: {}", json);
-		assertEquals(location, JSONable.fromJSON(json, Location.class).orElse(null));
-	}
+	public void toAndFromByte() {
+		KryoSerializer kryo = new KryoSerializer();
+		// point set
+		byte[] bytes = kryo.write(location);
+		assertEquals(location, kryo.read(bytes, Location.class));
 
-	@Test
-	public void toAndFromJsonN() {
-		long time = System.currentTimeMillis();
-		for (int i = 0; i < N; i++) {
-			assertEquals(location, JSONable.fromJSON(JSONable.toJSON(location), Location.class).orElse(null));
-		}
-		logger.info("Created and read {} JSONs in {}ms", N, System.currentTimeMillis() - time);
-	}
-
-	@Test
-	public void undefinedLocation() {
-		Location l = Location.random();
-		Location ul1 = Location.undefined();
-
-		assertEquals(-1.0, l.distanceKmTo(ul1), 0.1);
-
-		String json = JSONable.toJSON(ul1);
-		logger.info(json);
-		Location ul2 = JSONable.fromJSON(json, Location.class).get();
-		assertEquals(ul1, ul2);
+		// undefined
+		bytes = kryo.write(Location.undefined());
+		assertEquals(Location.undefined(), kryo.read(bytes, Location.class));
 	}
 
 	@Test

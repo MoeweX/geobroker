@@ -1,19 +1,21 @@
 package de.hasenburg.geobroker.server.distribution;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.hasenburg.geobroker.commons.model.BrokerInfo;
-import de.hasenburg.geobroker.commons.model.JSONable;
 import de.hasenburg.geobroker.commons.model.spatial.Geofence;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -94,15 +96,24 @@ public class BrokerAreaManager {
 	void createFromJson(String json) {
 		JSONArray jsonArray = new JSONArray(json);
 		for (int i = 0; i < jsonArray.length(); i++) {
-			JSONObject object = jsonArray.getJSONObject(i);
-			Optional<BrokerArea> areaO = JSONable.fromJSON(object.toString(), BrokerArea.class);
-			areaO.ifPresent(area -> {
+			try {
+				JSONObject object = jsonArray.getJSONObject(i);
+				JSONObject responsibleBroker = object.getJSONObject("responsibleBroker");
+				JSONObject coveredArea = object.getJSONObject("coveredArea");
+				String ip = responsibleBroker.getString("ip");
+				String brokerId = responsibleBroker.getString("brokerId");
+				int port = responsibleBroker.getInt("port");
+				String WKT = coveredArea.getString("WKT");
+				BrokerArea area = new BrokerArea(new BrokerInfo(brokerId, ip, port), new Geofence(WKT));
 				if (area.CheckResponsibleBroker(ownBrokerId)) {
 					ownArea = area;
 				} else {
 					otherAreas.add(area);
 				}
-			});
+			} catch (JSONException | ParseException ex) {
+				logger.fatal("Couldn't parse the BrokerInfo", ex);
+				System.exit(1);
+			}
 		}
 	}
 

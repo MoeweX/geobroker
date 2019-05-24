@@ -48,7 +48,6 @@ public class ZMQControlUtility {
 				toSend.add(msg.pop());
 			}
 		}
-
 		toSend.send(zmqController);
 	}
 

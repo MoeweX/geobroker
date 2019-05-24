@@ -1,8 +1,10 @@
 package de.hasenburg.geobroker.client.communication;
 
+import com.esotericsoftware.kryo.Kryo;
 import de.hasenburg.geobroker.commons.Utility;
 import de.hasenburg.geobroker.commons.communication.ZMQControlUtility;
 import de.hasenburg.geobroker.commons.communication.ZMQProcess;
+import de.hasenburg.geobroker.commons.model.KryoSerializer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.SocketType;
@@ -30,6 +32,7 @@ public class ZMQProcess_SimpleClient extends ZMQProcess {
 	// Address and port of the server the client connects to
 	private String address;
 	private int port;
+	public KryoSerializer kryo = new KryoSerializer();
 
 	// socket indices
 	private final int ORDER_INDEX = 0;
@@ -75,7 +78,7 @@ public class ZMQProcess_SimpleClient extends ZMQProcess {
 			case SERVER_INDEX: // got a reply from the server
 
 				logger.trace("Received message from server.");
-				Optional<InternalClientMessage> serverMessage = InternalClientMessage.buildMessage(msg);
+				Optional<InternalClientMessage> serverMessage = InternalClientMessage.buildMessage(msg, kryo);
 				if (serverMessage.isPresent()) {
 					receivedMessages.add(serverMessage.get());
 				} else {
@@ -97,14 +100,14 @@ public class ZMQProcess_SimpleClient extends ZMQProcess {
 
 					if (receivedMessages.size() > 0) {
 						InternalClientMessage message = receivedMessages.remove(0);
-						message.getZMsg().send(sockets.get(ORDER_INDEX));
+						message.getZMsg(kryo).send(sockets.get(ORDER_INDEX));
 					} else {
 						// nothing received yet, so let's wait
 						Optional<InternalClientMessage> messageO = InternalClientMessage.buildMessage(ZMsg.recvMsg(
 								sockets.get(SERVER_INDEX),
-								true));
+								true), kryo);
 						if (messageO.isPresent()) {
-							messageO.get().getZMsg().send(sockets.get(ORDER_INDEX));
+							messageO.get().getZMsg(kryo).send(sockets.get(ORDER_INDEX));
 						} else {
 							logger.warn("Server message malformed or empty");
 							valid = false;
@@ -123,7 +126,7 @@ public class ZMQProcess_SimpleClient extends ZMQProcess {
 					// first check the buffer
 					if (receivedMessages.size() > 0) {
 						InternalClientMessage message = receivedMessages.remove(0);
-						message.getZMsg().send(sockets.get(ORDER_INDEX));
+						message.getZMsg(kryo).send(sockets.get(ORDER_INDEX));
 						return;
 					} else {
 						// nothing received yet, so let's wait
@@ -131,8 +134,8 @@ public class ZMQProcess_SimpleClient extends ZMQProcess {
 
 						if (poller.pollin(SERVER_INDEX)) {
 							Optional<InternalClientMessage> messageO = InternalClientMessage.buildMessage(ZMsg.recvMsg(
-									sockets.get(SERVER_INDEX)));
-							messageO.ifPresent(internalClientMessage -> internalClientMessage.getZMsg()
+									sockets.get(SERVER_INDEX)), kryo);
+							messageO.ifPresent(internalClientMessage -> internalClientMessage.getZMsg(kryo)
 																							 .send(sockets.get(
 																									 ORDER_INDEX)));
 							return;
@@ -149,10 +152,10 @@ public class ZMQProcess_SimpleClient extends ZMQProcess {
 					logger.trace("ORDER = Send to Broker");
 
 					//the zMsg should consist of an InternalClientMessage only, as other entries are popped
-					Optional<InternalClientMessage> clientMessageO = InternalClientMessage.buildMessage(msg);
+					Optional<InternalClientMessage> clientMessageO = InternalClientMessage.buildMessage(msg, kryo);
 
 					if (clientMessageO.isPresent()) {
-						clientMessageO.get().getZMsg().send(sockets.get(SERVER_INDEX));
+						clientMessageO.get().getZMsg(kryo).send(sockets.get(SERVER_INDEX));
 						ZMsg.newStringMsg(ORDERS.CONFIRM.name()).send(sockets.get(ORDER_INDEX));
 					} else {
 						logger.warn("Cannot run send as given message is incompatible");

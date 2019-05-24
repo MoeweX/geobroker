@@ -1,19 +1,10 @@
 package de.hasenburg.geobroker.server.communication;
 
+import com.esotericsoftware.kryo.Kryo;
 import de.hasenburg.geobroker.commons.communication.ZMQControlUtility;
 import de.hasenburg.geobroker.commons.communication.ZMQProcess;
-import de.hasenburg.geobroker.commons.model.BrokerInfo;
-import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
-import de.hasenburg.geobroker.commons.model.message.ReasonCode;
-import de.hasenburg.geobroker.commons.model.message.payloads.*;
-import de.hasenburg.geobroker.commons.model.spatial.Geofence;
-import de.hasenburg.geobroker.commons.model.spatial.Location;
-import de.hasenburg.geobroker.server.distribution.BrokerAreaManager;
-import de.hasenburg.geobroker.server.main.server.ServerLifecycle;
+import de.hasenburg.geobroker.commons.model.KryoSerializer;
 import de.hasenburg.geobroker.server.matching.IMatchingLogic;
-import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper;
-import de.hasenburg.geobroker.server.storage.client.ClientDirectory;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.SocketType;
@@ -33,6 +24,7 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 	private final int numberOfBrokerCommunicators;
 
 	private int numberOfProcessedMessages = 0;
+	public KryoSerializer kryo = new KryoSerializer();
 
 	// socket index
 	private final int PROCESSOR_INDEX = 0;
@@ -93,7 +85,7 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 		// start processing the message
 		numberOfProcessedMessages++;
 
-		Optional<InternalServerMessage> messageO = InternalServerMessage.buildMessage(msg);
+		Optional<InternalServerMessage> messageO = InternalServerMessage.buildMessage(msg, kryo);
 		logger.trace("ZMQProcess_MessageProcessor {} processing message number {}",
 				identity,
 				numberOfProcessedMessages);
@@ -105,37 +97,37 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 			Socket brokersSocket = sockets.get(BROKER_COMMUNICATOR_INDEX);
 			switch (message.getControlPacketType()) {
 				case CONNECT:
-					matchingLogic.processCONNECT(message, clientsSocket, brokersSocket);
+					matchingLogic.processCONNECT(message, clientsSocket, brokersSocket, kryo);
 					break;
 				case DISCONNECT:
-					matchingLogic.processDISCONNECT(message, clientsSocket, brokersSocket);
+					matchingLogic.processDISCONNECT(message, clientsSocket, brokersSocket, kryo);
 					break;
 				case PINGREQ:
-					matchingLogic.processPINGREQ(message, clientsSocket, brokersSocket);
+					matchingLogic.processPINGREQ(message, clientsSocket, brokersSocket, kryo);
 					break;
 				case SUBSCRIBE:
-					matchingLogic.processSUBSCRIBE(message, clientsSocket, brokersSocket);
+					matchingLogic.processSUBSCRIBE(message, clientsSocket, brokersSocket, kryo);
 					break;
 				case UNSUBSCRIBE:
-					matchingLogic.processUNSUBSCRIBE(message, clientsSocket, brokersSocket);
+					matchingLogic.processUNSUBSCRIBE(message, clientsSocket, brokersSocket, kryo);
 					break;
 				case PUBLISH:
-					matchingLogic.processPUBLISH(message, clientsSocket, brokersSocket);
+					matchingLogic.processPUBLISH(message, clientsSocket, brokersSocket, kryo);
 					break;
 				case BrokerForwardDisconnect:
-					matchingLogic.processBrokerForwardDisconnect(message, clientsSocket, brokersSocket);
+					matchingLogic.processBrokerForwardDisconnect(message, clientsSocket, brokersSocket, kryo);
 					break;
 				case BrokerForwardPingreq:
-					matchingLogic.processBrokerForwardPingreq(message, clientsSocket, brokersSocket);
+					matchingLogic.processBrokerForwardPingreq(message, clientsSocket, brokersSocket, kryo);
 					break;
 				case BrokerForwardSubscribe:
-					matchingLogic.processBrokerForwardSubscribe(message, clientsSocket, brokersSocket);
+					matchingLogic.processBrokerForwardSubscribe(message, clientsSocket, brokersSocket, kryo);
 					break;
 				case BrokerForwardUnsubscribe:
-					matchingLogic.processBrokerForwardUnsubscribe(message, clientsSocket, brokersSocket);
+					matchingLogic.processBrokerForwardUnsubscribe(message, clientsSocket, brokersSocket, kryo);
 					break;
 				case BrokerForwardPublish:
-					matchingLogic.processBrokerForwardPublish(message, clientsSocket, brokersSocket);
+					matchingLogic.processBrokerForwardPublish(message, clientsSocket, brokersSocket, kryo);
 					break;
 				default:
 					logger.warn("Cannot process message {}", message.toString());
@@ -149,6 +141,10 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 	@Override
 	protected void shutdownCompleted() {
 		logger.info("Shut down ZMQProcess_MessageProcessor {}", getMessageProcessorIdentity(identity, number));
+	}
+
+	public KryoSerializer getKryo() {
+		return kryo;
 	}
 
 	int getNumberOfProcessedMessages() {

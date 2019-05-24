@@ -1,6 +1,7 @@
 package de.hasenburg.geobroker.server.matching
 
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType
+import de.hasenburg.geobroker.commons.model.KryoSerializer
 import de.hasenburg.geobroker.commons.model.message.ReasonCode
 import de.hasenburg.geobroker.commons.model.message.payloads.PINGRESPPayload
 import de.hasenburg.geobroker.commons.model.message.payloads.PUBACKPayload
@@ -20,16 +21,17 @@ private val logger = LogManager.getLogger()
 class SingleGeoBrokerMatchingLogic(private val clientDirectory: ClientDirectory,
                                    private val topicAndGeofenceMapper: TopicAndGeofenceMapper) : IMatchingLogic {
 
-    override fun processCONNECT(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+    override fun processCONNECT(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer) {
         val payload = message.payload.connectPayload.get()
 
-        val response = connectClientAtLocalBroker(message.clientIdentifier, payload.location, clientDirectory, logger)
+        val response = connectClientAtLocalBroker(message.clientIdentifier, payload.location, clientDirectory,
+                logger, kryo)
 
         logger.trace("Sending response $response")
-        response.zMsg.send(clients)
+        response.getZMsg(kryo).send(clients)
     }
 
-    override fun processDISCONNECT(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+    override fun processDISCONNECT(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer) {
         val payload = message.payload.disconnectPayload.get()
 
         val success = clientDirectory.removeClient(message.clientIdentifier)
@@ -42,23 +44,24 @@ class SingleGeoBrokerMatchingLogic(private val clientDirectory: ClientDirectory,
 
     }
 
-    override fun processPINGREQ(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+    override fun processPINGREQ(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer) {
         val payload = message.payload.pingreqPayload.get()
 
         val reasonCode = updateClientLocationAtLocalBroker(message.clientIdentifier,
                 payload.location,
                 clientDirectory,
-                logger)
+                logger,
+                kryo)
 
         val response = InternalServerMessage(message.clientIdentifier,
                 ControlPacketType.PINGRESP,
                 PINGRESPPayload(reasonCode))
 
         logger.trace("Sending response $response")
-        response.zMsg.send(clients)
+        response.getZMsg(kryo).send(clients)
     }
 
-    override fun processSUBSCRIBE(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+    override fun processSUBSCRIBE(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer) {
         val payload = message.payload.subscribePayload.get()
 
         val reasonCode = subscribeAtLocalBroker(message.clientIdentifier,
@@ -66,34 +69,36 @@ class SingleGeoBrokerMatchingLogic(private val clientDirectory: ClientDirectory,
                 topicAndGeofenceMapper,
                 payload.topic,
                 payload.geofence,
-                logger)
+                logger,
+                kryo)
 
         val response = InternalServerMessage(message.clientIdentifier,
                 ControlPacketType.SUBACK,
                 SUBACKPayload(reasonCode))
 
         logger.trace("Sending response $response")
-        response.zMsg.send(clients)
+        response.getZMsg(kryo).send(clients)
     }
 
-    override fun processUNSUBSCRIBE(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+    override fun processUNSUBSCRIBE(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer) {
         val payload = message.payload.unsubscribePayload.get()
 
         val reasonCode = unsubscribeAtLocalBroker(message.clientIdentifier,
                 clientDirectory,
                 topicAndGeofenceMapper,
                 payload.topic,
-                logger)
+                logger,
+                kryo)
 
         val response = InternalServerMessage(message.clientIdentifier,
                 ControlPacketType.UNSUBACK,
                 UNSUBACKPayload(reasonCode))
 
         logger.trace("Sending response $response")
-        response.zMsg.send(clients)
+        response.getZMsg(kryo).send(clients)
     }
 
-    override fun processPUBLISH(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+    override fun processPUBLISH(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer) {
         val reasonCode: ReasonCode
         val payload = message.payload.publishPayload.get()
         val publisherLocation = clientDirectory.getClientLocation(message.clientIdentifier)
@@ -107,7 +112,8 @@ class SingleGeoBrokerMatchingLogic(private val clientDirectory: ClientDirectory,
                     clientDirectory,
                     topicAndGeofenceMapper,
                     clients,
-                    logger)
+                    logger,
+                    kryo)
         }
 
         // send response to publisher
@@ -115,7 +121,7 @@ class SingleGeoBrokerMatchingLogic(private val clientDirectory: ClientDirectory,
         val response = InternalServerMessage(message.clientIdentifier,
                 ControlPacketType.PUBACK,
                 PUBACKPayload(reasonCode))
-        response.zMsg.send(clients)
+        response.getZMsg(kryo).send(clients)
     }
 
 
@@ -123,23 +129,23 @@ class SingleGeoBrokerMatchingLogic(private val clientDirectory: ClientDirectory,
      * Broker Forward Methods
      ****************************************************************/
 
-    override fun processBrokerForwardDisconnect(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+    override fun processBrokerForwardDisconnect(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer) {
         logger.warn("Unsupported operation, message is discarded")
     }
 
-    override fun processBrokerForwardPingreq(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+    override fun processBrokerForwardPingreq(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer) {
         logger.warn("Unsupported operation, message is discarded")
     }
 
-    override fun processBrokerForwardSubscribe(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+    override fun processBrokerForwardSubscribe(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer) {
         logger.warn("Unsupported operation, message is discarded")
     }
 
-    override fun processBrokerForwardUnsubscribe(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+    override fun processBrokerForwardUnsubscribe(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer) {
         logger.warn("Unsupported operation, message is discarded")
     }
 
-    override fun processBrokerForwardPublish(message: InternalServerMessage, clients: Socket, brokers: Socket) {
+    override fun processBrokerForwardPublish(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer) {
         logger.warn("Unsupported operation, message is discarded")
     }
 

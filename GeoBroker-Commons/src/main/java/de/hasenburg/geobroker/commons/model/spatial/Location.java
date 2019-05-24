@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.hasenburg.geobroker.commons.Utility;
-import de.hasenburg.geobroker.commons.model.JSONable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -18,7 +17,7 @@ import java.util.Random;
 import static de.hasenburg.geobroker.commons.model.spatial.SpatialContext.GEO;
 import static org.locationtech.spatial4j.distance.DistanceUtils.DEG_TO_KM;
 
-public class Location implements JSONable {
+public class Location{
 
 	private static final Logger logger = LogManager.getLogger();
 
@@ -30,20 +29,9 @@ public class Location implements JSONable {
 		this.point = point;
 	}
 
-	private Location(boolean undefined) {
+	public Location(boolean undefined) {
 		this.undefined = undefined;
 		this.point = null;
-	}
-
-	@JsonCreator
-	private Location(@JsonProperty("WKT") String wkt) throws ParseException {
-		if ("{ undefined }".equals(wkt)) {
-			this.point = null;
-			this.undefined = true;
-		} else {
-			WKTReader reader = (WKTReader) GEO.getFormats().getWktReader();
-			this.point = (Point) reader.parse(wkt);
-		}
 	}
 
 	/**

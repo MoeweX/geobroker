@@ -1,8 +1,10 @@
 package de.hasenburg.geobroker.client.communication;
 
+import com.esotericsoftware.kryo.Kryo;
 import de.hasenburg.geobroker.commons.Utility;
 import de.hasenburg.geobroker.commons.communication.ZMQControlUtility;
 import de.hasenburg.geobroker.commons.communication.ZMQProcess;
+import de.hasenburg.geobroker.commons.model.KryoSerializer;
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
 import de.hasenburg.geobroker.commons.model.message.payloads.PUBLISHPayload;
 import org.apache.logging.log4j.LogManager;
@@ -46,6 +48,7 @@ public class ZMQProcess_BenchmarkClient extends ZMQProcess {
 
 	// Client processing backend, accepts REQ and answers with REP
 	private final String CLIENT_ORDER_BACKEND;
+	public KryoSerializer kryo = new KryoSerializer();
 
 	// Address and port of the server the client connects to
 	private String address;
@@ -107,7 +110,7 @@ public class ZMQProcess_BenchmarkClient extends ZMQProcess {
 		switch (socketIndex) {
 			case SERVER_INDEX: // got a reply from the server
 
-				Optional<InternalClientMessage> serverMessage = InternalClientMessage.buildMessage(msg);
+				Optional<InternalClientMessage> serverMessage = InternalClientMessage.buildMessage(msg, kryo);
 				logger.trace("Received message {}, storing timestamp", serverMessage);
 				if (serverMessage.isPresent()) {
 					if (ControlPacketType.PUBLISH.equals(serverMessage.get().getControlPacketType())) {
@@ -146,7 +149,7 @@ public class ZMQProcess_BenchmarkClient extends ZMQProcess {
 					logger.trace("Sending message to server");
 
 					//the zMsg should consist of an InternalClientMessage only, as other entries are popped
-					Optional<InternalClientMessage> clientMessageO = InternalClientMessage.buildMessage(msg);
+					Optional<InternalClientMessage> clientMessageO = InternalClientMessage.buildMessage(msg, kryo);
 
 					if (clientMessageO.isPresent()) {
 						List<Long> longs = timestamps.get(clientMessageO.get().getControlPacketType().ordinal());
@@ -154,7 +157,7 @@ public class ZMQProcess_BenchmarkClient extends ZMQProcess {
 						if (longs != null) {
 							longs.add(timestamp);
 						}
-						clientMessageO.get().getZMsg().send(sockets.get(SERVER_INDEX));
+						clientMessageO.get().getZMsg(kryo).send(sockets.get(SERVER_INDEX));
 						ZMsg.newStringMsg(ORDERS.CONFIRM.name()).send(sockets.get(ORDER_INDEX));
 					} else {
 						logger.warn("Cannot run send as given message is incompatible");

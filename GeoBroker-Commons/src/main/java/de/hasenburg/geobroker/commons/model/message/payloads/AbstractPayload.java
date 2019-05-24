@@ -1,7 +1,6 @@
 package de.hasenburg.geobroker.commons.model.message.payloads;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.hasenburg.geobroker.commons.model.JSONable;
 
 import java.lang.reflect.Field;
 import java.util.Optional;
@@ -9,22 +8,8 @@ import java.util.Optional;
 /**
  * Every internal server and client message has at least this empty payload.
  */
-public abstract class AbstractPayload implements JSONable {
+public abstract class AbstractPayload{
 
-	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
-	public boolean nullField() {
-		try {
-			for (Field f : getClass().getDeclaredFields()) {
-				if (f.get(this) == null) {
-					return true;
-				}
-			}
-			return false;
-		} catch (IllegalAccessException e) {
-			logger.error("Exception while null checking fields", e);
-			return true;
-		}
-	}
 
 	/*****************************************************************
 	 * Subclasses
@@ -172,15 +157,6 @@ public abstract class AbstractPayload implements JSONable {
 		} else {
 			return Optional.empty();
 		}
-	}
-
-	/*****************************************************************
-	 * JSON and String
-	 ****************************************************************/
-
-	@Override
-	public String toString() {
-		return JSONable.toJSON(this);
 	}
 
 }

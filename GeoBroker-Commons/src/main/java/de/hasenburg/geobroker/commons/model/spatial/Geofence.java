@@ -3,7 +3,6 @@ package de.hasenburg.geobroker.commons.model.spatial;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import de.hasenburg.geobroker.commons.model.JSONable;
 import de.hasenburg.geobroker.commons.exceptions.RuntimeShapeException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -17,7 +16,7 @@ import java.util.Objects;
 import static de.hasenburg.geobroker.commons.model.spatial.SpatialContext.GEO;
 
 
-public class Geofence implements JSONable {
+public class Geofence{
 
 	private static final Logger logger = LogManager.getLogger();
 	@JsonIgnore
@@ -34,7 +33,7 @@ public class Geofence implements JSONable {
 	}
 
 	@JsonCreator
-	private Geofence(@JsonProperty("WKT") String wkt) throws ParseException {
+	public Geofence(@JsonProperty("WKT") String wkt) throws ParseException {
 		WKTReader reader = (WKTReader) GEO.getFormats().getWktReader();
 		this.shape = reader.parse(wkt);
 		this.boundingBox = this.shape.getBoundingBox();

@@ -3,6 +3,7 @@ package de.hasenburg.geobroker.client.main;
 import de.hasenburg.geobroker.commons.Utility;
 import de.hasenburg.geobroker.commons.communication.ZMQControlUtility;
 import de.hasenburg.geobroker.commons.communication.ZMQProcessManager;
+import de.hasenburg.geobroker.commons.model.KryoSerializer;
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
 import de.hasenburg.geobroker.commons.model.message.ReasonCode;
 import de.hasenburg.geobroker.client.communication.ZMQProcessStarter;
@@ -27,6 +28,7 @@ public class SimpleClient {
 
 	private ZMQProcessManager processManager;
 	private String identifier;
+	private KryoSerializer kryo = new KryoSerializer();
 	ZMQ.Socket orderSocket;
 
 
@@ -58,7 +60,7 @@ public class SimpleClient {
 
 	public ZMsg sendInternalClientMessage(InternalClientMessage message) {
 		ZMsg orderMessage = ZMsg.newStringMsg(ZMQProcess_SimpleClient.ORDERS.SEND.name());
-		ZMsg internalClientMessage = message.getZMsg();
+		ZMsg internalClientMessage = message.getZMsg(kryo);
 		for (int i = 0; i <= internalClientMessage.size(); i++) {
 			orderMessage.add(internalClientMessage.pop());
 		}
@@ -73,7 +75,7 @@ public class SimpleClient {
 		// send order
 		orderMessage.send(orderSocket);
 		final Optional<InternalClientMessage> clientMessageO = InternalClientMessage.buildMessage(ZMsg.recvMsg(
-				orderSocket));
+				orderSocket), kryo);
 
 		return clientMessageO.orElse(null);
 	}
@@ -93,7 +95,7 @@ public class SimpleClient {
 			return null;
 		}
 
-		final Optional<InternalClientMessage> clientMessageO = InternalClientMessage.buildMessage(response);
+		final Optional<InternalClientMessage> clientMessageO = InternalClientMessage.buildMessage(response, kryo);
 
 		return clientMessageO.orElse(null);
 	}
