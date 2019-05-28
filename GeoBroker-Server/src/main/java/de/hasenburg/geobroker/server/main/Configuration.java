@@ -65,7 +65,25 @@ public class Configuration {
 
 			return parseToml(c, toml);
 		} catch (Exception e) {
-			logger.fatal("Could not default configuration", e);
+			logger.fatal("Could not configuration", e);
+		}
+		System.exit(1);
+		return null; // WHY DO I NEED YOU?
+	}
+
+	/**
+	 * Create a new configuration.
+	 */
+	public static Configuration readInternalConfiguration(String filePath) {
+		try {
+			Configuration c = new Configuration();
+
+			//noinspection ConstantConditions as exception catches nullpointers
+			Toml toml = new Toml().read(Configuration.class.getClassLoader().getResourceAsStream(filePath));
+
+			return parseToml(c, toml);
+		} catch (Exception e) {
+			logger.fatal("Could not internal configuration", e);
 		}
 		System.exit(1);
 		return null; // WHY DO I NEED YOU?
@@ -97,7 +115,7 @@ public class Configuration {
 	}
 
 	public static void main(String[] args) {
-		Configuration c = Configuration.readConfiguration("configuration.toml");
+		Configuration c = Configuration.readInternalConfiguration("configuration.toml");
 		logger.info(c);
 	}
 

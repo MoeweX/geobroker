@@ -447,7 +447,7 @@ class DisGBScenarioRuns {
         val configurations = listOf(parisConf, berlinConf)
 
         for ((i, lifecycle) in listOf(paris, berlin).withIndex()) {
-            val c = Configuration.readConfiguration(configurations[i])
+            val c = Configuration.readInternalConfiguration(configurations[i])
             lifecycle.loadConfiguration(c)
             lifecycle.initializeFields()
             lifecycle.startServer()
