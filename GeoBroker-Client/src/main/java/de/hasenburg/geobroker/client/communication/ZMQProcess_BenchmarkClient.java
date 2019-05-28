@@ -173,6 +173,11 @@ public class ZMQProcess_BenchmarkClient extends ZMQProcess {
 	}
 
 	@Override
+	protected void utilizationCalculated(double utilization) {
+		logger.info("Current Utilization is {}%", utilization);
+	}
+
+	@Override
 	protected void shutdownCompleted() {
 		// write results to disk
 		writeResultsToDisk();

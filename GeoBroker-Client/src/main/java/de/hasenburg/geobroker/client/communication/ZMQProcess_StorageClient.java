@@ -91,6 +91,11 @@ public class ZMQProcess_StorageClient extends ZMQProcess {
 	}
 
 	@Override
+	protected void utilizationCalculated(double utilization) {
+		logger.info("Current Utilization is {}%", utilization);
+	}
+
+	@Override
 	protected void shutdownCompleted() {
 		// flush and close writer
 		try {

@@ -82,6 +82,11 @@ class ZMQProcess_Server extends ZMQProcess {
 	}
 
 	@Override
+	protected void utilizationCalculated(double utilization) {
+		logger.info("Current Utilization is {}%", utilization);
+	}
+
+	@Override
 	protected void shutdownCompleted() {
 		logger.info("Shut down ZMQProcess_Server {}", getServerIdentity(identity));
 	}
