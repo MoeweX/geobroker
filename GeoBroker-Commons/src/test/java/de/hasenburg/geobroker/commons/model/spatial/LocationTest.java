@@ -59,6 +59,24 @@ public class LocationTest {
 	}
 
 	@Test
+	public void testLocationInDistance() {
+		Location berlin = new Location(52.5200, 13.4050);
+
+		Location l450m = Location.locationInDistance(berlin, 0.450, 45);
+		logger.info(berlin.distanceKmTo(l450m));
+		assertEquals(0.450, berlin.distanceKmTo(l450m), 0.01);
+
+		Location l0 = Location.locationInDistance(berlin, 223.4, 0);
+		assertEquals(223.4, berlin.distanceKmTo(l0), 0.01);
+
+		Location l360 = Location.locationInDistance(berlin, 223.4, 360);
+		assertEquals(223.4, berlin.distanceKmTo(l360), 0.01);
+
+		Location l361 = Location.locationInDistance(berlin, 1000, 361);
+		assertEquals(1000, berlin.distanceKmTo(l361), 0.01);
+	}
+
+	@Test
 	public void testDistance() {
 		Location location = new Location(40.0, 40.0);
 		Location location2 = new Location(35.0, 35.0);

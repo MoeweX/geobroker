@@ -8,6 +8,7 @@ import de.hasenburg.geobroker.commons.model.JSONable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.locationtech.spatial4j.distance.DistanceUtils;
 import org.locationtech.spatial4j.io.ShapeWriter;
 import org.locationtech.spatial4j.shape.Point;
 
@@ -17,6 +18,7 @@ import java.util.Random;
 
 import static de.hasenburg.geobroker.commons.model.spatial.SpatialContext.GEO;
 import static org.locationtech.spatial4j.distance.DistanceUtils.DEG_TO_KM;
+import static org.locationtech.spatial4j.distance.DistanceUtils.KM_TO_DEG;
 
 public class Location implements JSONable {
 
@@ -76,6 +78,7 @@ public class Location implements JSONable {
 
 	/**
 	 * Creates a random location that is inside the given Geofence.
+	 *
 	 * @param geofence - may not be a geofence that crosses any datelines!!
 	 * @return a random location or null if the geofence crosses a dateline
 	 */
@@ -96,6 +99,24 @@ public class Location implements JSONable {
 		} while (!geofence.contains(result) && ++i < 1000);
 		// location was in geofence, so let's return it
 		return result;
+	}
+
+	/**
+	 * @param location - starting location
+	 * @param distance - distance from starting location in km
+	 * @param direction - direction (0 - 360)
+	 */
+	public static Location locationInDistance(Location location, double distance, double direction) {
+		if (location.isUndefined()) {
+			return Location.undefined();
+		}
+		Point result = GEO.getDistCalc().pointOnBearing(location.point,
+				distance * KM_TO_DEG,
+				direction,
+				GEO,
+				GEO.getShapeFactory().pointLatLon(0.0, 0.0));
+
+		return new Location(result);
 	}
 
 	/**
