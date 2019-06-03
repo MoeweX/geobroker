@@ -12,5 +12,6 @@ public enum ReasonCode {
 
 	// New Reason Codes
 	LocationUpdated,
-	WrongBroker
+	WrongBroker,
+	NoMatchingSubscribersButForwarded //  locally there are no subscribers, but others MIGHT have some
 }

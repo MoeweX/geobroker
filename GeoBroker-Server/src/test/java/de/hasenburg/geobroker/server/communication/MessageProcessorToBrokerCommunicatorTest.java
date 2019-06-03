@@ -1,6 +1,5 @@
 package de.hasenburg.geobroker.server.communication;
 
-import de.hasenburg.geobroker.commons.Utility;
 import de.hasenburg.geobroker.commons.communication.ZMQProcessManager;
 import de.hasenburg.geobroker.commons.model.BrokerInfo;
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
@@ -124,12 +123,12 @@ public class MessageProcessorToBrokerCommunicatorTest {
 	class TestDistributionLogic implements IDistributionLogic {
 
 		@Override
-		public void sendMessageToOtherBrokers(ZMsg msg, Socket broker) {
+		public void sendMessageToOtherBrokers(ZMsg msg, Socket broker, String targetBrokerId) {
 			logger.info("Received message " + msg);
 		}
 
 		@Override
-		public void processOtherBrokerAcknowledgement(ZMsg msg) {
+		public void processOtherBrokerAcknowledgement(ZMsg msg, String otherBrokerId) {
 			logger.info("Received message " + msg);
 		}
 	}

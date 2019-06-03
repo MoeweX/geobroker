@@ -3,22 +3,17 @@ package de.hasenburg.geobroker.server.scenarios;
 import de.hasenburg.geobroker.commons.communication.ZMQProcessManager;
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
 import de.hasenburg.geobroker.commons.model.message.ReasonCode;
-import de.hasenburg.geobroker.server.communication.ZMQProcessStarter;
-import de.hasenburg.geobroker.server.distribution.BrokerAreaManager;
 import de.hasenburg.geobroker.server.main.Configuration;
 import de.hasenburg.geobroker.client.main.SimpleClient;
 import de.hasenburg.geobroker.commons.Utility;
 import de.hasenburg.geobroker.client.communication.InternalClientMessage;
 import de.hasenburg.geobroker.commons.model.message.Topic;
 import de.hasenburg.geobroker.server.main.server.SingleGeoBrokerServerLogic;
-import de.hasenburg.geobroker.server.matching.SingleGeoBrokerMatchingLogic;
-import de.hasenburg.geobroker.server.storage.client.ClientDirectory;
 import de.hasenburg.geobroker.commons.model.message.payloads.CONNECTPayload;
 import de.hasenburg.geobroker.commons.model.message.payloads.PUBLISHPayload;
 import de.hasenburg.geobroker.commons.model.message.payloads.SUBSCRIBEPayload;
 import de.hasenburg.geobroker.commons.model.spatial.Geofence;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
-import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.After;
@@ -40,7 +35,7 @@ public class PublishSubscribeTest {
 		logger.info("Running test setUp");
 
 		serverLogic = new SingleGeoBrokerServerLogic();
-		serverLogic.loadConfiguration(Configuration.readDefaultConfiguration());
+		serverLogic.loadConfiguration(new Configuration());
 		serverLogic.initializeFields();
 		serverLogic.startServer();
 

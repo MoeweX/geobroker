@@ -1,30 +1,22 @@
 package de.hasenburg.geobroker.server.scenarios;
 
-import de.hasenburg.geobroker.commons.BenchmarkHelper;
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
 import de.hasenburg.geobroker.commons.model.message.ReasonCode;
 import de.hasenburg.geobroker.commons.communication.ZMQProcessManager;
-import de.hasenburg.geobroker.server.communication.ZMQProcessStarter;
-import de.hasenburg.geobroker.server.distribution.BrokerAreaManager;
 import de.hasenburg.geobroker.server.main.Configuration;
 import de.hasenburg.geobroker.client.main.SimpleClient;
 import de.hasenburg.geobroker.commons.Utility;
 import de.hasenburg.geobroker.client.communication.InternalClientMessage;
 import de.hasenburg.geobroker.server.main.server.SingleGeoBrokerServerLogic;
-import de.hasenburg.geobroker.server.matching.SingleGeoBrokerMatchingLogic;
-import de.hasenburg.geobroker.server.storage.client.ClientDirectory;
-import de.hasenburg.geobroker.commons.exceptions.CommunicatorException;
 import de.hasenburg.geobroker.commons.model.message.payloads.CONNECTPayload;
 import de.hasenburg.geobroker.commons.model.message.payloads.DISCONNECTPayload;
 import de.hasenburg.geobroker.commons.model.message.payloads.PINGREQPayload;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
-import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import zmq.Config;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -43,7 +35,7 @@ public class PingTest {
 		logger.info("Running test setUp");
 
 		serverLogic = new SingleGeoBrokerServerLogic();
-		serverLogic.loadConfiguration(Configuration.readDefaultConfiguration());
+		serverLogic.loadConfiguration(new Configuration());
 		serverLogic.initializeFields();
 		serverLogic.startServer();
 

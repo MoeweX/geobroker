@@ -15,7 +15,13 @@ import org.zeromq.ZMsg;
 import java.util.Arrays;
 import java.util.List;
 
-class ZMQProcess_BrokerCommunicator extends ZMQProcess {
+/**
+ * Messages send by this class appear, for other brokers, to be send by clients, as they are received
+ * by the {@link ZMQProcess_Server}.
+ *
+ * Responses of other brokers are sent back to this class.
+ */
+public class ZMQProcess_BrokerCommunicator extends ZMQProcess {
 
 	private static final Logger logger = LogManager.getLogger();
 
@@ -94,7 +100,8 @@ class ZMQProcess_BrokerCommunicator extends ZMQProcess {
 		int dealerIndex = socketIndex - SOCKET_OFFSET;
 
 		if (otherBrokerInfos.size() - 1 < dealerIndex) {
-			distributionLogic.processOtherBrokerAcknowledgement(msg);
+			String otherBrokerId = otherBrokerInfos.get(dealerIndex).getBrokerId();
+			distributionLogic.processOtherBrokerAcknowledgement(msg, otherBrokerId);
 			return;
 		}
 
@@ -129,20 +136,20 @@ class ZMQProcess_BrokerCommunicator extends ZMQProcess {
 
 		Socket socket = sockets.get(socketIndex);
 
-		distributionLogic.sendMessageToOtherBrokers(msg, socket);
+		distributionLogic.sendMessageToOtherBrokers(msg, socket, targetBrokerId);
 	}
 
 	/*****************************************************************
 	 * Message Generation Helpers
 	 ****************************************************************/
 
-	static ZMsg generatePULLSocketMessage(String targetBrokerId, InternalBrokerMessage ibm) {
+	public static ZMsg generatePULLSocketMessage(String targetBrokerId, InternalBrokerMessage ibm) {
 		ZMsg msg = ZMsg.newStringMsg(targetBrokerId);
 		ZMsg ibm_message = ibm.getZMsg();
 		msg.add(ibm_message.pop());
 		msg.add(ibm_message.pop());
 		if (ibm_message.size() > 0) {
-			logger.error("All message frames should have been popped.");
+			logger.error("All message frames should have been popped, it remains {}", msg);
 		}
 		return msg;
 	}

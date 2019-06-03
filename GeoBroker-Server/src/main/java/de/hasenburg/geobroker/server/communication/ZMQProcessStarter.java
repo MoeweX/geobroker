@@ -17,34 +17,34 @@ public class ZMQProcessStarter {
 	private static final Logger logger = LogManager.getLogger();
 
 	public static ZMQProcess_Server runZMQProcess_Server(ZMQProcessManager processManager, String ip, int port,
-														 String identity) {
-		ZMQProcess_Server zmqProcess = new ZMQProcess_Server(ip, port, identity);
-		processManager.submitZMQProcess(ZMQProcess_Server.getServerIdentity(identity), zmqProcess);
+														 String brokerId) {
+		ZMQProcess_Server zmqProcess = new ZMQProcess_Server(ip, port, brokerId);
+		processManager.submitZMQProcess(ZMQProcess_Server.getServerIdentity(brokerId), zmqProcess);
 		return zmqProcess;
 	}
 
 	public static ZMQProcess_MessageProcessor runZMQProcess_MessageProcessor(ZMQProcessManager processManager,
-																			 String identity, int number,
+																			 String brokerId, int number,
 																			 IMatchingLogic matchingLogic,
 																			 int numberOfBrokerCommunicators) {
-		ZMQProcess_MessageProcessor zmqProcess = new ZMQProcess_MessageProcessor(identity,
+		ZMQProcess_MessageProcessor zmqProcess = new ZMQProcess_MessageProcessor(brokerId,
 				number,
 				matchingLogic,
 				numberOfBrokerCommunicators);
-		processManager.submitZMQProcess(ZMQProcess_MessageProcessor.getMessageProcessorIdentity(identity, number),
+		processManager.submitZMQProcess(ZMQProcess_MessageProcessor.getMessageProcessorIdentity(brokerId, number),
 				zmqProcess);
 		return zmqProcess;
 	}
 
 	public static ZMQProcess_BrokerCommunicator runZMQProcess_BrokerCommunicator(ZMQProcessManager processManager,
-																				 String identity, int number,
+																				 String brokerId, int number,
 																				 IDistributionLogic distributionLogic,
 																				 List<BrokerInfo> otherBrokerInfos) {
-		ZMQProcess_BrokerCommunicator zmqProcess = new ZMQProcess_BrokerCommunicator(identity,
+		ZMQProcess_BrokerCommunicator zmqProcess = new ZMQProcess_BrokerCommunicator(brokerId,
 				number,
 				distributionLogic,
 				otherBrokerInfos);
-		processManager.submitZMQProcess(ZMQProcess_BrokerCommunicator.getBrokerCommunicatorId(identity, number),
+		processManager.submitZMQProcess(ZMQProcess_BrokerCommunicator.getBrokerCommunicatorId(brokerId, number),
 				zmqProcess);
 		return zmqProcess;
 	}

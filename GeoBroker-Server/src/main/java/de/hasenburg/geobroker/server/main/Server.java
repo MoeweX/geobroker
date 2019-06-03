@@ -1,13 +1,9 @@
 package de.hasenburg.geobroker.server.main;
 
-import de.hasenburg.geobroker.commons.communication.ZMQProcessManager;
-import de.hasenburg.geobroker.server.communication.ZMQProcessStarter;
-import de.hasenburg.geobroker.server.distribution.BrokerAreaManager;
+import de.hasenburg.geobroker.server.main.server.DisGBServerLogic;
+import de.hasenburg.geobroker.server.main.server.IServerLogic;
 import de.hasenburg.geobroker.server.main.server.ServerLifecycle;
 import de.hasenburg.geobroker.server.main.server.SingleGeoBrokerServerLogic;
-import de.hasenburg.geobroker.server.matching.SingleGeoBrokerMatchingLogic;
-import de.hasenburg.geobroker.server.storage.client.ClientDirectory;
-import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -17,18 +13,21 @@ public class Server {
 
 	public static void main(String[] args) {
 
-		Configuration configuration = Configuration.readDefaultConfiguration();
+		Configuration configuration = Configuration.readConfiguration("configuration.toml");
+		IServerLogic logic;
+		if (Configuration.Mode.single.equals(configuration.getMode())) {
+			logger.info("GeoBroker is configured to run standalone");
+			logic = new SingleGeoBrokerServerLogic();
+		} else {
+			logger.info("GeoBroker is configured to run geo-distributed");
+			logic = new DisGBServerLogic();
+		}
 
-		// TODO should be configurable
-		ServerLifecycle lifecycle = new ServerLifecycle(new SingleGeoBrokerServerLogic());
+		ServerLifecycle lifecycle = new ServerLifecycle(logic);
 
 		logger.info("Starting lifecycle");
 		lifecycle.run(configuration);
 		logger.info("End of lifecycle reached, shutting down");
-
-		// in case of DisGB, set brokers
-		// BrokerAreaManager brokerAreaManager = new BrokerAreaManager(configuration.getBrokerId());
-		// brokerAreaManager.setup_DefaultFile();
 
 	}
 

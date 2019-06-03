@@ -17,7 +17,8 @@ public class BrokerArea implements JSONable {
 	private final Geofence coveredArea;
 
 	@JsonCreator
-	public BrokerArea(@JsonProperty("responsibleBroker") BrokerInfo responsibleBroker, @JsonProperty("coveredArea") Geofence coveredArea) {
+	public BrokerArea(@JsonProperty("responsibleBroker") BrokerInfo responsibleBroker,
+					  @JsonProperty("coveredArea") Geofence coveredArea) {
 		this.responsibleBroker = responsibleBroker;
 		this.coveredArea = coveredArea;
 	}
@@ -32,6 +33,10 @@ public class BrokerArea implements JSONable {
 
 	boolean ContainsLocation(Location location) {
 		return coveredArea.contains(location);
+	}
+
+	boolean intersects(Geofence messageGeofence) {
+		return coveredArea.intersects(messageGeofence);
 	}
 
 	@Override
@@ -55,4 +60,5 @@ public class BrokerArea implements JSONable {
 	public int hashCode() {
 		return Objects.hash(responsibleBroker, coveredArea);
 	}
+
 }

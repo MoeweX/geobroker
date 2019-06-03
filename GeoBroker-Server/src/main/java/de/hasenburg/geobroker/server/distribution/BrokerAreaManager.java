@@ -2,6 +2,7 @@ package de.hasenburg.geobroker.server.distribution;
 
 import de.hasenburg.geobroker.commons.model.BrokerInfo;
 import de.hasenburg.geobroker.commons.model.JSONable;
+import de.hasenburg.geobroker.commons.model.spatial.Geofence;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -30,13 +31,13 @@ public class BrokerAreaManager {
 		this.ownBrokerId = ownBrokerId;
 	}
 
-	public void setup_DefaultFile() {
+	public void readFromFile(String filepath) {
 		String json = "[]";
-		InputStream is = BrokerAreaManager.class.getClassLoader().getResourceAsStream("defaultBrokerAreas.json");
+		InputStream is = BrokerAreaManager.class.getClassLoader().getResourceAsStream(filepath);
 		try (BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
 			json = br.lines().collect(Collectors.joining(System.lineSeparator()));
 		} catch (IOException | NullPointerException e) {
-			logger.fatal("Could not read default broker area file", e);
+			logger.fatal("Could not read broker area file from {}", filepath, e);
 			System.exit(1);
 		}
 
@@ -51,6 +52,10 @@ public class BrokerAreaManager {
 		return ownArea.ContainsLocation(clientLocation);
 	}
 
+	public boolean checkOurAreaForMessageGeofence(Geofence messageGeofence) {
+		return ownArea.intersects(messageGeofence);
+	}
+
 	public @Nullable BrokerInfo getOtherBrokerForClientLocation(Location clientLocation) {
 		for (BrokerArea area : otherAreas) {
 			if (area.ContainsLocation(clientLocation)) {
@@ -58,6 +63,20 @@ public class BrokerAreaManager {
 			}
 		}
 		return null;
+	}
+
+	public List<BrokerInfo> getOtherBrokersForMessageGeofence(Geofence messageGeofence) {
+		List<BrokerInfo> otherBrokers = new ArrayList<>();
+		for (BrokerArea area : otherAreas) {
+			if (area.intersects(messageGeofence)) {
+				otherBrokers.add(area.getResponsibleBroker());
+			}
+		}
+		return otherBrokers;
+	}
+
+	public List<BrokerInfo> getOtherBrokerInfo() {
+		return otherAreas.stream().map(BrokerArea::getResponsibleBroker).collect(Collectors.toList());
 	}
 
 	public String getOwnBrokerId() {
@@ -72,7 +91,7 @@ public class BrokerAreaManager {
 	 * Helper Methods
 	 ****************************************************************/
 
-	void createFromJson (String json) {
+	void createFromJson(String json) {
 		JSONArray jsonArray = new JSONArray(json);
 		for (int i = 0; i < jsonArray.length(); i++) {
 			JSONObject object = jsonArray.getJSONObject(i);
@@ -86,4 +105,5 @@ public class BrokerAreaManager {
 			});
 		}
 	}
+
 }

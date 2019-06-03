@@ -14,8 +14,8 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Used for communication to other brokers and for the other broker's replies. Note, that other broker receive messages
- * via the {@link ZMQProcess_Server}, so they use the {@link InternalServerMessage}.
+ * Used for communication to other brokers and for the other brokers direct replies. Note, that other broker receive
+ * these messages via the {@link ZMQProcess_Server}, so they get an {@link InternalServerMessage}.
  */
 public class InternalBrokerMessage {
 

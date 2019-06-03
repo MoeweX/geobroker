@@ -13,13 +13,23 @@ public class Configuration {
 
 	private static final Logger logger = LogManager.getLogger();
 
+	enum Mode {
+		single, disgb
+	}
+
+	private final static String S3_BUCKET_NAME = "geobroker";
+	private final static String S3_CONFIGURATIONS_FOLDER = "Configurations/";
+
 	private String brokerId = "broker";
 	private Integer port = 5559;
 	private Integer granularity = 1;
 	private Integer messageProcessors = 1;
 
-	private final static String S3_BUCKET_NAME = "geobroker";
-	private final static String S3_CONFIGURATIONS_FOLDER = "Configurations/";
+	private Mode mode = Mode.single;
+
+	// disgb specific
+	private String brokerAreaFilePath = "defaultBrokerAreas.json";
+	private Integer brokerCommunicators = 1;
 
 	public Configuration() {
 		// default values
@@ -44,11 +54,12 @@ public class Configuration {
 	/**
 	 * Create a new configuration.
 	 */
-	public static Configuration readDefaultConfiguration() {
+	public static Configuration readConfiguration(String filePath) {
 		try {
 			Configuration c = new Configuration();
 
-			Toml toml = new Toml().read(Configuration.class.getClassLoader().getResourceAsStream("configuration.toml"));
+			//noinspection ConstantConditions as exception catches nullpointers
+			Toml toml = new Toml().read(Configuration.class.getClassLoader().getResourceAsStream(filePath));
 
 			return parseToml(c, toml);
 		} catch (Exception e) {
@@ -59,24 +70,33 @@ public class Configuration {
 	}
 
 	private static Configuration parseToml(Configuration c, Toml toml) {
-		Toml server = toml.getTable("server");
-		c.brokerId = server.getString("brokerId", c.brokerId);
-		c.port = Math.toIntExact(server.getLong("port", c.port.longValue()));
 
-		c.granularity = Math.toIntExact(server.getLong("granularity", c.granularity.longValue()));
-		c.messageProcessors = Math.toIntExact(server.getLong("messageProcessors", c.messageProcessors.longValue()));
-		try {
-			logger.info(c.toString());
-		} catch (NullPointerException e) {
-			logger.fatal("Configuration is missing mandatory fields", e);
+		// server information
+		Toml toml_server = toml.getTable("server");
+		c.brokerId = toml_server.getString("brokerId", c.brokerId);
+		c.port = Math.toIntExact(toml_server.getLong("port", c.port.longValue()));
+
+		c.granularity = Math.toIntExact(toml_server.getLong("granularity", c.granularity.longValue()));
+		c.messageProcessors = Math.toIntExact(toml_server.getLong("messageProcessors",
+				c.messageProcessors.longValue()));
+
+		// server mode specific information
+		Toml toml_server_mode = toml_server.getTable("mode");
+		if (toml_server_mode != null) {
+			c.mode = Mode.valueOf(toml_server_mode.getString("name", Mode.single.toString()));
+
+			// disgb specific
+			c.brokerAreaFilePath = toml_server_mode.getString("brokerAreaFilePath", c.brokerAreaFilePath);
+			c.brokerCommunicators = Math.toIntExact(toml_server.getLong("brokerCommunicators",
+					c.brokerCommunicators.longValue()));
 		}
 
 		return c;
 	}
 
 	public static void main(String[] args) {
-		Configuration c = Configuration.readConfigurationFromS3("example_config.toml");
-		Configuration c2 = Configuration.readDefaultConfiguration();
+		Configuration c = Configuration.readConfiguration("configuration.toml");
+		logger.info(c);
 	}
 
 	/*****************************************************************
@@ -99,8 +119,28 @@ public class Configuration {
 		return port;
 	}
 
+	public Mode getMode() {
+		return mode;
+	}
+
+	/**
+	 * This field only has a meaning when {@link #getMode()} == Mode.disgb.
+	 */
+	public String getBrokerAreaFilePath() {
+		return brokerAreaFilePath;
+	}
+
+	/**
+	 * This field only has a meaning when {@link #getMode()} == Mode.disgb.
+	 */
+	public Integer getBrokerCommunicators() {
+		return brokerCommunicators;
+	}
+
 	@Override
 	public String toString() {
-		return "Configuration{" + "granularity=" + granularity + ", messageProcessors=" + messageProcessors + '}';
+		return "Configuration{" + "brokerId='" + brokerId + '\'' + ", port=" + port + ", granularity=" + granularity +
+				", messageProcessors=" + messageProcessors + ", mode=" + mode + ", brokerAreaFilePath='" +
+				brokerAreaFilePath + '\'' + ", brokerCommunicators=" + brokerCommunicators + '}';
 	}
 }

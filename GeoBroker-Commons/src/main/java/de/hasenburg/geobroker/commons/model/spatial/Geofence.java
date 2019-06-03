@@ -17,7 +17,7 @@ import java.util.Objects;
 import static de.hasenburg.geobroker.commons.model.spatial.SpatialContext.GEO;
 
 
-public class Geofence implements JSONable  {
+public class Geofence implements JSONable {
 
 	private static final Logger logger = LogManager.getLogger();
 	@JsonIgnore
@@ -118,6 +118,10 @@ public class Geofence implements JSONable  {
 
 	public boolean contains(Location location) {
 		return shape.relate(location.getPoint()).equals(SpatialRelation.CONTAINS);
+	}
+
+	public boolean intersects(Geofence geofence) {
+		return shape.relate(geofence.shape).equals(SpatialRelation.INTERSECTS);
 	}
 
 	public boolean disjoint(Geofence geofence) {
