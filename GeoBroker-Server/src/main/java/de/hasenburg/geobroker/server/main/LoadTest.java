@@ -1,19 +1,19 @@
 package de.hasenburg.geobroker.server.main;
 
+import de.hasenburg.geobroker.client.communication.InternalClientMessage;
 import de.hasenburg.geobroker.client.main.SimpleClient;
 import de.hasenburg.geobroker.commons.BenchmarkHelper;
 import de.hasenburg.geobroker.commons.Utility;
 import de.hasenburg.geobroker.commons.communication.ZMQProcessManager;
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
-import de.hasenburg.geobroker.client.communication.InternalClientMessage;
 import de.hasenburg.geobroker.commons.model.message.Topic;
-import de.hasenburg.geobroker.server.main.server.SingleGeoBrokerServerLogic;
 import de.hasenburg.geobroker.commons.model.message.payloads.CONNECTPayload;
 import de.hasenburg.geobroker.commons.model.message.payloads.PINGREQPayload;
 import de.hasenburg.geobroker.commons.model.message.payloads.PUBLISHPayload;
 import de.hasenburg.geobroker.commons.model.message.payloads.SUBSCRIBEPayload;
 import de.hasenburg.geobroker.commons.model.spatial.Geofence;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
+import de.hasenburg.geobroker.server.main.server.SingleGeoBrokerServerLogic;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

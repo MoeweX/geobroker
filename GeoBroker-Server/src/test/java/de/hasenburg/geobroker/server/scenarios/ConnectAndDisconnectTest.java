@@ -10,7 +10,7 @@ import de.hasenburg.geobroker.commons.model.message.payloads.CONNECTPayload;
 import de.hasenburg.geobroker.commons.model.message.payloads.DISCONNECTPayload;
 import de.hasenburg.geobroker.commons.model.spatial.Geofence;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
-import de.hasenburg.geobroker.server.distribution.BrokerArea;
+import de.hasenburg.geobroker.commons.model.BrokerArea;
 import de.hasenburg.geobroker.server.main.Configuration;
 import de.hasenburg.geobroker.server.main.server.DisGBSubscriberMatchingServerLogic;
 import org.apache.logging.log4j.LogManager;
@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
 public class ConnectAndDisconnectTest {

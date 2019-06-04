@@ -11,10 +11,9 @@ public class BrokerForwardPublishPayload extends AbstractPayload {
 	Location publisherLocation; // needed in case of matching at the subscriber
 	String subscriberClientIdentifier; // needed in case of matching at the publisher
 
-	public BrokerForwardPublishPayload() {
-
-	}
-
+	/**
+	 * This constructor is used in case of matching at the subscriber
+	 */
 	public BrokerForwardPublishPayload(PUBLISHPayload publishPayload, Location publisherLocation) {
 		super();
 		this.publishPayload = publishPayload;
@@ -22,10 +21,25 @@ public class BrokerForwardPublishPayload extends AbstractPayload {
 		this.subscriberClientIdentifier = "empty";
 	}
 
+	/**
+	 * This constructor is used in case of matching at the publisher
+	 */
 	public BrokerForwardPublishPayload(PUBLISHPayload publishPayload, String subscriberClientIdentifier) {
 		super();
 		this.publishPayload = publishPayload;
 		this.publisherLocation = Location.undefined();
+		this.subscriberClientIdentifier = subscriberClientIdentifier;
+	}
+
+	/**
+	 * This constructor is used by {@link de.hasenburg.geobroker.commons.model.KryoSerializer} as kryo does not know
+	 * which kind of matching we are doing.
+	 */
+	public BrokerForwardPublishPayload(PUBLISHPayload publishPayload, String subscriberClientIdentifier,
+									   Location publisherLocation) {
+		super();
+		this.publishPayload = publishPayload;
+		this.publisherLocation = publisherLocation;
 		this.subscriberClientIdentifier = subscriberClientIdentifier;
 	}
 

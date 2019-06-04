@@ -8,7 +8,6 @@ import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
 import de.hasenburg.geobroker.commons.model.message.ReasonCode;
 import de.hasenburg.geobroker.commons.model.message.Topic;
 import de.hasenburg.geobroker.commons.model.message.payloads.CONNECTPayload;
-import de.hasenburg.geobroker.commons.model.message.payloads.PUBLISHPayload;
 import de.hasenburg.geobroker.commons.model.message.payloads.SUBSCRIBEPayload;
 import de.hasenburg.geobroker.commons.model.message.payloads.UNSUBSCRIBEPayload;
 import de.hasenburg.geobroker.commons.model.spatial.Geofence;
@@ -22,7 +21,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 
 public class SubscribeUnsubscribeTest {
 

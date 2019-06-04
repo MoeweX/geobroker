@@ -8,10 +8,6 @@ public class CONNECTPayload extends AbstractPayload {
 
 	protected Location location;
 
-	public CONNECTPayload() {
-
-	}
-
 	public CONNECTPayload(Location location) {
 		super();
 		this.location = location;

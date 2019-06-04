@@ -1,47 +1,38 @@
-package de.hasenburg.geobroker.server.distribution;
+package de.hasenburg.geobroker.commons.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import de.hasenburg.geobroker.commons.model.BrokerInfo;
-import de.hasenburg.geobroker.commons.model.JSONable;
 import de.hasenburg.geobroker.commons.model.spatial.Geofence;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
 
 import java.util.Objects;
 
-public class BrokerArea implements JSONable {
+public class BrokerArea {
 
-	@JsonProperty
 	private final BrokerInfo responsibleBroker;
-	@JsonProperty
 	private final Geofence coveredArea;
 
-	@JsonCreator
-	public BrokerArea(@JsonProperty("responsibleBroker") BrokerInfo responsibleBroker,
-					  @JsonProperty("coveredArea") Geofence coveredArea) {
+	public BrokerArea(BrokerInfo responsibleBroker, Geofence coveredArea) {
 		this.responsibleBroker = responsibleBroker;
 		this.coveredArea = coveredArea;
 	}
 
-	BrokerInfo getResponsibleBroker() {
+	public BrokerInfo getResponsibleBroker() {
 		return responsibleBroker;
 	}
 
-	boolean CheckResponsibleBroker(String brokerId) {
+	public Geofence getCoveredArea() {
+		return coveredArea;
+	}
+
+	public boolean CheckResponsibleBroker(String brokerId) {
 		return responsibleBroker.getBrokerId().equals(brokerId);
 	}
 
-	boolean ContainsLocation(Location location) {
+	public boolean ContainsLocation(Location location) {
 		return coveredArea.contains(location);
 	}
 
-	boolean intersects(Geofence messageGeofence) {
+	public boolean intersects(Geofence messageGeofence) {
 		return coveredArea.intersects(messageGeofence);
-	}
-
-	@Override
-	public String toString() {
-		return JSONable.toJSON(this);
 	}
 
 	/*****************************************************************

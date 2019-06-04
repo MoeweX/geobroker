@@ -5,8 +5,6 @@ import de.hasenburg.geobroker.commons.model.spatial.Geofence
 import de.hasenburg.geobroker.commons.model.spatial.Location
 import org.apache.commons.lang3.tuple.ImmutablePair
 import org.apache.logging.log4j.LogManager
-import org.apache.logging.log4j.Logger
-
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 

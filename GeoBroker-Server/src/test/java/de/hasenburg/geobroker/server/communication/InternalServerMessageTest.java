@@ -15,21 +15,21 @@ import org.zeromq.ZMsg;
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings({"OptionalGetWithoutIsPresent"})
-public class InternalBrokerMessageTest {
+public class InternalServerMessageTest {
 
-	private static final Logger logger = LogManager.getLogger();
+    private static final Logger logger = LogManager.getLogger();
 
-	@Test
-	public void testValid() {
-		PUBLISHPayload publishPayload = new PUBLISHPayload(new Topic("topic"), Geofence.world(), "content");
-		BrokerForwardPublishPayload bfpp = new BrokerForwardPublishPayload(publishPayload, Location.random());
+    @Test
+    public void testValid() {
+        PUBLISHPayload publishPayload = new PUBLISHPayload(new Topic("topic"), Geofence.world(), "content");
+        BrokerForwardPublishPayload bfpp = new BrokerForwardPublishPayload(publishPayload, Location.random());
 
-		InternalBrokerMessage valid = new InternalBrokerMessage(ControlPacketType.BrokerForwardPublish, bfpp);
+        InternalServerMessage valid = new InternalServerMessage("Client", ControlPacketType.BrokerForwardPublish, bfpp);
 
-		ZMsg validZMsg = valid.getZMsg(new KryoSerializer());
-		logger.info(validZMsg);
+        ZMsg validZMsg = valid.getZMsg(new KryoSerializer());
+        logger.info(validZMsg);
 
-		assertEquals(valid, InternalBrokerMessage.buildMessage(validZMsg, new KryoSerializer()).get());
-	}
+        assertEquals(valid, InternalServerMessage.buildMessage(validZMsg, new KryoSerializer()).get());
+    }
 
 }

@@ -8,10 +8,6 @@ public class CONNACKPayload extends AbstractPayload {
 
 	protected ReasonCode reasonCode;
 
-	public CONNACKPayload() {
-
-	}
-
 	public CONNACKPayload(ReasonCode reasonCode) {
 		super();
 		this.reasonCode = reasonCode;

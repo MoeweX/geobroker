@@ -1,8 +1,6 @@
 package de.hasenburg.geobroker.commons.model.spatial;
 
-import de.hasenburg.geobroker.commons.model.JSONable;
-import de.hasenburg.geobroker.commons.model.spatial.Geofence;
-import de.hasenburg.geobroker.commons.model.spatial.Location;
+import de.hasenburg.geobroker.commons.model.KryoSerializer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Test;
@@ -16,6 +14,34 @@ import static org.junit.Assert.*;
 public class GeofenceTest {
 
 	private static final Logger logger = LogManager.getLogger();
+	private static KryoSerializer kryo = new KryoSerializer();
+
+	@Test
+	public void toAndFromByte() {
+		Geofence fence = berlinRectangle();
+		byte[] bytes = kryo.write(fence);
+		Geofence fence2 = kryo.read(bytes, Geofence.class);
+		assertEquals(fence, fence2);
+		logger.info("Geofences {} and {} still equal after JSON stuff", fence, fence2);
+	}
+
+	@Test
+	public void toAndFromJsonCircle() {
+		Geofence fence = Geofence.circle(Location.random(), 1.4);
+		byte[] bytes = kryo.write(fence);
+		Geofence fence2 = kryo.read(bytes, Geofence.class);
+		assertEquals(fence, fence2);
+		logger.info("Geofences {} and {} still equal after JSON stuff", fence, fence2);
+	}
+
+	@Test
+	public void toAndFromJsonCircle2() {
+		Geofence fence = Geofence.circle(new Location(40.007499, 116.320013), 0.1);
+		byte[] bytes = kryo.write(fence);
+		Geofence fence2 = kryo.read(bytes, Geofence.class);
+		assertEquals(fence, fence2);
+		logger.info("Geofences {} and {} still equal after JSON stuff", fence, fence2);
+	}
 
 	@Test
 	public void testEquals() {
@@ -26,39 +52,6 @@ public class GeofenceTest {
 		logger.info("Geofences {} and {} equal", fence, fence2);
 		assertNotEquals(fence, fence3);
 		logger.info("Geofences {} and {} do not equal", fence, fence3);
-	}
-
-	@Test
-	public void toAndFromJson() {
-		Geofence fence = berlinRectangle();
-		String json = JSONable.toJSON(fence);
-		logger.info("JSON 1: {}", json);
-		Geofence fence2 = JSONable.fromJSON(json, Geofence.class).get();
-		logger.info("JSON 2: {}", JSONable.toJSON(fence2));
-		assertEquals(fence, fence2);
-		logger.info("Geofences {} and {} still equal after JSON stuff", fence, fence2);
-	}
-
-	@Test
-	public void toAndFromJsonCircle() {
-		Geofence fence = Geofence.circle(Location.random(), 1.4);
-		String json = JSONable.toJSON(fence);
-		logger.info("JSON 1: {}", json);
-		Geofence fence2 = JSONable.fromJSON(json, Geofence.class).get();
-		logger.info("JSON 2: {}", JSONable.toJSON(fence2));
-		assertEquals(fence, fence2);
-		logger.info("Geofences {} and {} still equal after JSON stuff", fence, fence2);
-	}
-
-	@Test
-	public void toAndFromJsonCircle2() {
-		Geofence fence = Geofence.circle(new Location(40.007499, 116.320013), 0.1);
-		String json = JSONable.toJSON(fence);
-		logger.info("JSON 1: {}", json);
-		Geofence fence2 = JSONable.fromJSON(json, Geofence.class).get();
-		logger.info("JSON 2: {}", JSONable.toJSON(fence2));
-		assertEquals(fence, fence2);
-		logger.info("Geofences {} and {} still equal after JSON stuff", fence, fence2);
 	}
 
 	@Test

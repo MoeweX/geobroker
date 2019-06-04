@@ -1,12 +1,10 @@
 package de.hasenburg.geobroker.client.communication;
 
-import de.hasenburg.geobroker.commons.model.JSONable;
+import de.hasenburg.geobroker.commons.model.KryoSerializer;
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
-import de.hasenburg.geobroker.commons.Utility;
 import de.hasenburg.geobroker.commons.model.message.payloads.AbstractPayload;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
 
 import java.util.Objects;
@@ -25,7 +23,7 @@ public class InternalClientMessage {
 	 * 	- Payload incompatible to control packet type
 	 * 	- Payload misses fields
 	 */
-	public static Optional<InternalClientMessage> buildMessage(ZMsg msg) {
+	public static Optional<InternalClientMessage> buildMessage(ZMsg msg, KryoSerializer kryo) {
 		if (msg == null) {
 			// happens when queue is empty
 			return Optional.empty();
@@ -40,13 +38,15 @@ public class InternalClientMessage {
 
 		try {
 			message.controlPacketType = ControlPacketType.valueOf(msg.popString());
-			String s = msg.pop().getString(ZMQ.CHARSET);
-			message.payload = Utility.buildPayloadFromString(s, message.controlPacketType);
+			byte[] arr = msg.pop().getData();
+			message.payload = kryo.read(arr, message.controlPacketType);
+			if(message.payload == null){
+				message = null;
+			}
 		} catch (Exception e) {
 			logger.warn("Cannot parse message, due to exception, discarding it", e);
 			message = null;
 		}
-
 		return Optional.ofNullable(message);
 	}
 
@@ -59,8 +59,9 @@ public class InternalClientMessage {
 		this.payload = payload;
 	}
 
-	public ZMsg getZMsg() {
-		return ZMsg.newStringMsg(controlPacketType.name(), JSONable.toJSON(payload));
+	public ZMsg getZMsg(KryoSerializer kryo) {
+		byte[] arr = kryo.write(payload);
+		return ZMsg.newStringMsg(controlPacketType.name()).addLast(arr);
 	}
 
 	/*****************************************************************

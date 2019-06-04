@@ -1,11 +1,13 @@
 package de.hasenburg.geobroker.server.distribution;
 
+import de.hasenburg.geobroker.commons.model.KryoSerializer;
+import de.hasenburg.geobroker.commons.model.message.payloads.AbstractPayload;
+import de.hasenburg.geobroker.commons.model.message.payloads.BrokerForwardPublishPayload;
+import de.hasenburg.geobroker.server.communication.InternalBrokerMessage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.zeromq.ZMsg;
 import org.zeromq.ZMQ.Socket;
-import de.hasenburg.geobroker.commons.model.message.payloads.*;
-import de.hasenburg.geobroker.server.communication.*;
+import org.zeromq.ZMsg;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -34,7 +36,7 @@ public class DisGBDistributionLogic implements IDistributionLogic {
 	 * @param targetBrokerId - id of the other broker we are sending this message to
 	 */
 	@Override
-	public void sendMessageToOtherBrokers(ZMsg msg, Socket broker, String targetBrokerId) {
+	public void sendMessageToOtherBrokers(ZMsg msg, Socket broker, String targetBrokerId, KryoSerializer kryo) {
 		int n = notAcknowledgedMessages.computeIfAbsent(targetBrokerId, k -> new AtomicInteger(0)).incrementAndGet();
 		logger.trace("New message sent to other broker, now {} not acknowledged messages", n);
 		msg.send(broker);
@@ -47,7 +49,7 @@ public class DisGBDistributionLogic implements IDistributionLogic {
 	 * @param otherBrokerId - id of the other broker that sent us the acknowledgement
 	 */
 	@Override
-	public void processOtherBrokerAcknowledgement(ZMsg msg, String otherBrokerId) {
+	public void processOtherBrokerAcknowledgement(ZMsg msg, String otherBrokerId, KryoSerializer kryo) {
 		if (notAcknowledgedMessages.containsKey(otherBrokerId)) {
 			int n = notAcknowledgedMessages.get(otherBrokerId).decrementAndGet();
 			logger.trace("Other broker acknowledged a {} message, now {} not acknowledged messages", msg.getFirst(), n);

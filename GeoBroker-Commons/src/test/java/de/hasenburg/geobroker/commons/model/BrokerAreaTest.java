@@ -1,7 +1,5 @@
-package de.hasenburg.geobroker.server.distribution;
+package de.hasenburg.geobroker.commons.model;
 
-import de.hasenburg.geobroker.commons.model.BrokerInfo;
-import de.hasenburg.geobroker.commons.model.JSONable;
 import de.hasenburg.geobroker.commons.model.spatial.Geofence;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
 import org.apache.logging.log4j.LogManager;
@@ -19,9 +17,10 @@ public class BrokerAreaTest {
 	public void testSerialize() {
 		BrokerInfo brokerInfo = new BrokerInfo("brokerId", "address", 1000);
 		BrokerArea brokerArea1 = new BrokerArea(brokerInfo, Geofence.circle(Location.random(), 10));
-		String json = JSONable.toJSON(brokerArea1);
-		logger.info(json);
-		BrokerArea brokerArea2 = JSONable.fromJSON(json, BrokerArea.class).get();
+		KryoSerializer kryo = new KryoSerializer();
+		byte[] arr = kryo.write(brokerArea1);
+		logger.info(arr);
+		BrokerArea brokerArea2 = kryo.read(arr, BrokerArea.class);
 		assertEquals(brokerArea1, brokerArea2);
 	}
 

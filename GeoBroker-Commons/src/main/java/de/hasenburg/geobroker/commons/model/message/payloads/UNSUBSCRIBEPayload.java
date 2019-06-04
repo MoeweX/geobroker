@@ -1,17 +1,12 @@
 package de.hasenburg.geobroker.commons.model.message.payloads;
 
 import de.hasenburg.geobroker.commons.model.message.Topic;
-import de.hasenburg.geobroker.commons.model.spatial.Geofence;
 
 import java.util.Objects;
 
 public class UNSUBSCRIBEPayload extends AbstractPayload {
 
 	protected Topic topic;
-
-	public UNSUBSCRIBEPayload() {
-
-	}
 
 	public UNSUBSCRIBEPayload(Topic topic) {
 		super();

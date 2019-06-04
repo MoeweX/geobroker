@@ -8,10 +8,6 @@ public class BrokerForwardDisconnectPayload extends AbstractPayload {
 	String clientIdentifier;
 	DISCONNECTPayload disconnectPayload;
 
-	public BrokerForwardDisconnectPayload() {
-
-	}
-
 	public BrokerForwardDisconnectPayload(String clientIdentifier, DISCONNECTPayload disconnectPayload) {
 		super();
 		this.clientIdentifier = clientIdentifier;

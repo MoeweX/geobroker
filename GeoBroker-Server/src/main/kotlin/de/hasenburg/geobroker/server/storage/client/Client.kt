@@ -3,9 +3,8 @@ package de.hasenburg.geobroker.server.storage.client
 import de.hasenburg.geobroker.commons.model.message.Topic
 import de.hasenburg.geobroker.commons.model.spatial.Geofence
 import de.hasenburg.geobroker.commons.model.spatial.Location
-import org.apache.commons.lang3.tuple.ImmutablePair
 import de.hasenburg.geobroker.server.matching.DisGBAtPublisherMatchingLogic
-
+import org.apache.commons.lang3.tuple.ImmutablePair
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 

@@ -2,6 +2,7 @@ package de.hasenburg.geobroker.client.communication;
 
 import de.hasenburg.geobroker.commons.communication.ZMQControlUtility;
 import de.hasenburg.geobroker.commons.communication.ZMQProcess;
+import de.hasenburg.geobroker.commons.model.KryoSerializer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.SocketType;
@@ -28,6 +29,7 @@ public class ZMQProcess_StorageClient extends ZMQProcess {
 	// Address and port of the server the client connects to
 	private String address;
 	private int port;
+	public KryoSerializer kryo = new KryoSerializer();
 
 	// Writer
 	private BufferedWriter writer;
@@ -61,10 +63,10 @@ public class ZMQProcess_StorageClient extends ZMQProcess {
 			logger.trace("Sending a message to the server.");
 
 			//the zMsg should consist of an InternalClientMessage only
-			Optional<InternalClientMessage> clientMessageO = InternalClientMessage.buildMessage(msg);
+			Optional<InternalClientMessage> clientMessageO = InternalClientMessage.buildMessage(msg, kryo);
 
 			if (clientMessageO.isPresent()) {
-				clientMessageO.get().getZMsg().send(sockets.get(SERVER_INDEX));
+				clientMessageO.get().getZMsg(kryo).send(sockets.get(SERVER_INDEX));
 			} else {
 				logger.warn("Cannot send message to server as not an InternalClientMessage" + msg);
 			}
@@ -78,7 +80,7 @@ public class ZMQProcess_StorageClient extends ZMQProcess {
 		}
 
 		logger.trace("Received a message, writing it to file.");
-		Optional<InternalClientMessage> serverMessage = InternalClientMessage.buildMessage(msg);
+		Optional<InternalClientMessage> serverMessage = InternalClientMessage.buildMessage(msg, kryo);
 		if (serverMessage.isPresent()) {
 			try {
 				writer.write(serverMessage.get().toString());

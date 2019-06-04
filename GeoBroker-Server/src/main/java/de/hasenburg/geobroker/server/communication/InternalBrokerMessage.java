@@ -1,13 +1,11 @@
 package de.hasenburg.geobroker.server.communication;
 
-import de.hasenburg.geobroker.commons.Utility;
 import de.hasenburg.geobroker.commons.exceptions.CommunicatorException;
-import de.hasenburg.geobroker.commons.model.JSONable;
+import de.hasenburg.geobroker.commons.model.KryoSerializer;
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
 import de.hasenburg.geobroker.commons.model.message.payloads.AbstractPayload;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
 
 import java.util.Objects;
@@ -28,7 +26,7 @@ public class InternalBrokerMessage {
 	 * Optional is empty when - ZMsg is not a InternalBrokerMessage or null - Payload incompatible to control packet
 	 * type - Payload misses fields
 	 */
-	public static Optional<InternalBrokerMessage> buildMessage(ZMsg msg) {
+	public static Optional<InternalBrokerMessage> buildMessage(ZMsg msg, KryoSerializer kryo) {
 		if (msg == null) {
 			// happens when queue is empty
 			return Optional.empty();
@@ -44,9 +42,11 @@ public class InternalBrokerMessage {
 		try {
 			message.controlPacketType = ControlPacketType.valueOf(msg.popString());
 			InternalBrokerMessage.validateControlPacketType(message.controlPacketType);
-
-			String s = msg.pop().getString(ZMQ.CHARSET);
-			message.payload = Utility.buildPayloadFromString(s, message.controlPacketType);
+			byte[] arr = msg.pop().getData();
+			message.payload = kryo.read(arr, message.controlPacketType);
+			if(message.payload == null){
+				message = null;
+			}
 		} catch (Exception e) {
 			logger.warn("Cannot parse message, due to exception, discarding it", e);
 			message = null;
@@ -76,8 +76,9 @@ public class InternalBrokerMessage {
 		this.payload = payload;
 	}
 
-	public ZMsg getZMsg() {
-		return ZMsg.newStringMsg(controlPacketType.name(), JSONable.toJSON(payload));
+	public ZMsg getZMsg(KryoSerializer kryo) {
+		byte[] arr = kryo.write(payload);
+		return ZMsg.newStringMsg(controlPacketType.name()).addLast(arr);
 	}
 
 	/*****************************************************************

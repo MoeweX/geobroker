@@ -1,13 +1,13 @@
 package de.hasenburg.geobroker.server.communication;
 
+import de.hasenburg.geobroker.commons.Utility;
 import de.hasenburg.geobroker.commons.communication.ZMQControlUtility;
 import de.hasenburg.geobroker.commons.communication.ZMQProcessManager;
-import de.hasenburg.geobroker.server.main.Configuration;
-import de.hasenburg.geobroker.commons.Utility;
-import de.hasenburg.geobroker.server.matching.SingleGeoBrokerMatchingLogic;
-import de.hasenburg.geobroker.server.storage.client.ClientDirectory;
 import de.hasenburg.geobroker.commons.exceptions.CommunicatorException;
+import de.hasenburg.geobroker.server.main.Configuration;
+import de.hasenburg.geobroker.server.matching.SingleGeoBrokerMatchingLogic;
 import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper;
+import de.hasenburg.geobroker.server.storage.client.ClientDirectory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Test;

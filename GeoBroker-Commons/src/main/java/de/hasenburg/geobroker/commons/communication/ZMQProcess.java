@@ -8,11 +8,7 @@ import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.Socket;
 import org.zeromq.ZMsg;
 
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * ZMQProcesses are submitted to the ZMQProcessManager by using {@link ZMQProcessManager#submitZMQProcess(String,
@@ -80,8 +76,8 @@ public abstract class ZMQProcess implements Runnable {
 			oldTime = System.nanoTime();
 
 			if (poller.pollin(zmqControlIndex)) {
-				Pair<ZMQControlUtility.ZMQControlCommand, ZMsg> pair =
-						ZMQControlUtility.getCommandAndMsg(poller, zmqControlIndex);
+				Pair<ZMQControlUtility.ZMQControlCommand, ZMsg> pair = ZMQControlUtility.getCommandAndMsg(poller,
+						zmqControlIndex);
 				if (ZMQControlUtility.ZMQControlCommand.KILL.equals(pair.getLeft())) {
 					break; // break out of while loop, time to shut down
 				} else {
@@ -108,7 +104,7 @@ public abstract class ZMQProcess implements Runnable {
 			// add utilization roughly every 10 seconds
 			if (pollTime + processingTime >= measurementInterval * 1000000000L) {
 				double utilization = processingTime / (processingTime + pollTime + 0.0);
-				utilization = Math.round(utilization*1000.0) / 10.0;
+				utilization = Math.round(utilization * 1000.0) / 10.0;
 				utilizationCalculated(utilization);
 				pollTime = 0;
 				processingTime = 0;

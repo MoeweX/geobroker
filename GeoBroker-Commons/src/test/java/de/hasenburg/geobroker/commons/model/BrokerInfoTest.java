@@ -1,7 +1,7 @@
-package de.hasenburg.geobroker.server.distribution;
+package de.hasenburg.geobroker.commons.model;
 
 import de.hasenburg.geobroker.commons.model.BrokerInfo;
-import de.hasenburg.geobroker.commons.model.JSONable;
+import de.hasenburg.geobroker.commons.model.KryoSerializer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Test;
@@ -16,10 +16,10 @@ public class BrokerInfoTest {
 	@Test
 	public void testSerialize() {
 		BrokerInfo brokerInfo1 = new BrokerInfo("brokerId", "address", 1000);
-		String json = JSONable.toJSON(brokerInfo1);
-		logger.info(json);
-		BrokerInfo brokerInfo2 = JSONable.fromJSON(json, BrokerInfo.class).get();
+		KryoSerializer kryo = new KryoSerializer();
+		byte[] arr = kryo.write(brokerInfo1);
+		logger.info(arr);
+		BrokerInfo brokerInfo2 = kryo.read(arr, BrokerInfo.class);
 		assertEquals(brokerInfo1, brokerInfo2);
 	}
-
 }

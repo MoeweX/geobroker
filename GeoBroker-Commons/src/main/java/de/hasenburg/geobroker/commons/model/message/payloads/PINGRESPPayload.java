@@ -8,10 +8,6 @@ public class PINGRESPPayload extends AbstractPayload {
 
 	protected ReasonCode reasonCode;
 
-	public PINGRESPPayload() {
-
-	}
-
 	public PINGRESPPayload(ReasonCode reasonCode) {
 		super();
 		this.reasonCode = reasonCode;

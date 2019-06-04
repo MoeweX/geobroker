@@ -8,10 +8,6 @@ public class UNSUBACKPayload extends AbstractPayload {
 
 	protected ReasonCode reasonCode;
 
-	public UNSUBACKPayload() {
-
-	}
-
 	public UNSUBACKPayload(ReasonCode reasonCode) {
 		super();
 		this.reasonCode = reasonCode;
