@@ -13,7 +13,7 @@ public class LocationTest {
 	private static final Logger logger = LogManager.getLogger();
 
 	private Location location;
-	private final int N = 10000;
+	private final int N = 100000;
 
 	@Before
 	public void setUp() {
@@ -37,6 +37,16 @@ public class LocationTest {
 		// undefined
 		bytes = kryo.write(Location.undefined());
 		assertEquals(Location.undefined(), kryo.read(bytes, Location.class));
+	}
+
+	@Test
+	public void toAndFromByteN() {
+		KryoSerializer kryo = new KryoSerializer();
+		long time = System.nanoTime();
+		for (int i = 0; i < N; i++) {
+			assertEquals(location, kryo.read(kryo.write(location), Location.class));
+		}
+		logger.info("Created and read {} locations in {}ms", N, (System.nanoTime() - time) / 1000000);
 	}
 
 	@Test

@@ -1,8 +1,8 @@
 package de.hasenburg.geobroker.server.distribution;
 
 import de.hasenburg.geobroker.commons.model.KryoSerializer;
-import org.zeromq.ZMsg;
 import org.zeromq.ZMQ.Socket;
+import org.zeromq.ZMsg;
 
 /**
  * Different Distribution logic, for example, could check or discard acknowledgements.

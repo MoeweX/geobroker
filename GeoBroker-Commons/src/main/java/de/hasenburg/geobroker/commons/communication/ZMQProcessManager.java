@@ -1,8 +1,6 @@
 package de.hasenburg.geobroker.commons.communication;
 
-import com.esotericsoftware.kryo.Kryo;
 import de.hasenburg.geobroker.commons.Utility;
-import de.hasenburg.geobroker.commons.model.KryoSerializer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.ZContext;
@@ -84,10 +82,6 @@ public class ZMQProcessManager {
 	public void sendCommandToZMQProcess(String targetProcessIdentity, ZMQControlUtility.ZMQControlCommand command, ZMsg msg) {
 		logger.trace("Sending {} command to {}, message is {}", command, targetProcessIdentity, msg);
 		ZMQControlUtility.sendZMQControlCommand(zmqController, targetProcessIdentity, command, msg);
-	}
-
-	public KryoSerializer getKryoFromZMQProcess(){
-		return new KryoSerializer();
 	}
 
 	public List<String> getIncompleteZMQProcesses() {

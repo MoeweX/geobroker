@@ -90,10 +90,10 @@ class KryoSerializer {
 
                     override fun read(kryo: Kryo, input: Input,
                                       aClass: Class<BrokerForwardDisconnectPayload>): BrokerForwardDisconnectPayload? {
-                        val clientidentifier = kryo.readObjectOrNull(input, String::class.java) ?: return null
-                        val disconnectPayload = kryo.readObjectOrNull(input, DISCONNECTPayload::class.java) ?: return null
-                                ?: return null
-                        return BrokerForwardDisconnectPayload(clientidentifier, disconnectPayload)
+                        val clientIdentifier = kryo.readObjectOrNull(input, String::class.java) ?: return null
+                        val disconnectPayload = kryo.readObjectOrNull(input, DISCONNECTPayload::class.java)
+                                ?: return null ?: return null
+                        return BrokerForwardDisconnectPayload(clientIdentifier, disconnectPayload)
                     }
                 })
         kryo.register(BrokerForwardPingreqPayload::class.java, object : Serializer<BrokerForwardPingreqPayload>() {
@@ -104,9 +104,9 @@ class KryoSerializer {
 
             override fun read(kryo: Kryo, input: Input,
                               aClass: Class<BrokerForwardPingreqPayload>): BrokerForwardPingreqPayload? {
-                val clientidentifier = kryo.readObjectOrNull(input, String::class.java) ?: return null
+                val clientIdentifier = kryo.readObjectOrNull(input, String::class.java) ?: return null
                 val pingreqPayload = kryo.readObjectOrNull(input, PINGREQPayload::class.java) ?: return null
-                return BrokerForwardPingreqPayload(clientidentifier, pingreqPayload)
+                return BrokerForwardPingreqPayload(clientIdentifier, pingreqPayload)
             }
         })
         kryo.register(BrokerForwardPublishPayload::class.java, object : Serializer<BrokerForwardPublishPayload>() {
@@ -132,9 +132,9 @@ class KryoSerializer {
 
             override fun read(kryo: Kryo, input: Input,
                               aClass: Class<BrokerForwardSubscribePayload>): BrokerForwardSubscribePayload? {
-                val clientidentifier = kryo.readObjectOrNull(input, String::class.java) ?: return null
+                val clientIdentifier = kryo.readObjectOrNull(input, String::class.java) ?: return null
                 val subscribePayload = kryo.readObjectOrNull(input, SUBSCRIBEPayload::class.java) ?: return null
-                return BrokerForwardSubscribePayload(clientidentifier, subscribePayload)
+                return BrokerForwardSubscribePayload(clientIdentifier, subscribePayload)
             }
         })
         kryo.register(BrokerForwardUnsubscribePayload::class.java,
@@ -146,10 +146,10 @@ class KryoSerializer {
 
                     override fun read(kryo: Kryo, input: Input,
                                       aClass: Class<BrokerForwardUnsubscribePayload>): BrokerForwardUnsubscribePayload? {
-                        val clientidentifier = kryo.readObjectOrNull(input, String::class.java) ?: return null
+                        val clientIdentifier = kryo.readObjectOrNull(input, String::class.java) ?: return null
                         val unsubscribePayload = kryo.readObjectOrNull(input, UNSUBSCRIBEPayload::class.java)
                                 ?: return null
-                        return BrokerForwardUnsubscribePayload(clientidentifier, unsubscribePayload)
+                        return BrokerForwardUnsubscribePayload(clientIdentifier, unsubscribePayload)
                     }
                 })
         kryo.register(CONNACKPayload::class.java, object : Serializer<CONNACKPayload>() {
@@ -210,7 +210,8 @@ class KryoSerializer {
             }
 
             override fun read(kryo: Kryo, input: Input, aClass: Class<PUBACKPayload>): PUBACKPayload? {
-                return PUBACKPayload(kryo.readObjectOrNull(input, ReasonCode::class.java)) ?: return null
+                val reasonCode = kryo.readObjectOrNull(input, ReasonCode::class.java) ?: return null
+                return PUBACKPayload(reasonCode)
             }
         })
         kryo.register(PUBLISHPayload::class.java, object : Serializer<PUBLISHPayload>() {

@@ -1,6 +1,5 @@
 package de.hasenburg.geobroker.commons.communication;
 
-import de.hasenburg.geobroker.commons.model.KryoSerializer;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -9,11 +8,7 @@ import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.Socket;
 import org.zeromq.ZMsg;
 
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * ZMQProcesses are submitted to the ZMQProcessManager by using {@link ZMQProcessManager#submitZMQProcess(String,

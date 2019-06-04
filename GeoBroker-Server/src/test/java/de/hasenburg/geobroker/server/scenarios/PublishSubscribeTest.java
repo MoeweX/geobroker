@@ -1,26 +1,27 @@
 package de.hasenburg.geobroker.server.scenarios;
 
+import de.hasenburg.geobroker.client.communication.InternalClientMessage;
+import de.hasenburg.geobroker.client.main.SimpleClient;
+import de.hasenburg.geobroker.commons.Utility;
 import de.hasenburg.geobroker.commons.communication.ZMQProcessManager;
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
 import de.hasenburg.geobroker.commons.model.message.ReasonCode;
-import de.hasenburg.geobroker.server.main.Configuration;
-import de.hasenburg.geobroker.client.main.SimpleClient;
-import de.hasenburg.geobroker.commons.Utility;
-import de.hasenburg.geobroker.client.communication.InternalClientMessage;
 import de.hasenburg.geobroker.commons.model.message.Topic;
-import de.hasenburg.geobroker.server.main.server.SingleGeoBrokerServerLogic;
 import de.hasenburg.geobroker.commons.model.message.payloads.CONNECTPayload;
 import de.hasenburg.geobroker.commons.model.message.payloads.PUBLISHPayload;
 import de.hasenburg.geobroker.commons.model.message.payloads.SUBSCRIBEPayload;
 import de.hasenburg.geobroker.commons.model.spatial.Geofence;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
+import de.hasenburg.geobroker.server.main.Configuration;
+import de.hasenburg.geobroker.server.main.server.SingleGeoBrokerServerLogic;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 public class PublishSubscribeTest {
 

@@ -2,23 +2,16 @@ package de.hasenburg.geobroker.server.storage
 
 import de.hasenburg.geobroker.commons.model.spatial.Geofence
 import de.hasenburg.geobroker.commons.model.spatial.Location
-import de.hasenburg.geobroker.server.storage.Raster
-import de.hasenburg.geobroker.server.storage.RasterEntry
 import org.apache.commons.lang3.tuple.ImmutablePair
 import org.apache.logging.log4j.LogManager
-import org.apache.logging.log4j.Logger
 import org.junit.After
+import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 import org.locationtech.spatial4j.exception.InvalidShapeException
-
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
-import java.util.Arrays
-
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Assert.fail
+import java.util.*
 
 private val logger = LogManager.getLogger()
 

@@ -1,6 +1,5 @@
 package de.hasenburg.geobroker.server.communication;
 
-import com.esotericsoftware.kryo.Kryo;
 import de.hasenburg.geobroker.commons.communication.ZMQControlUtility;
 import de.hasenburg.geobroker.commons.communication.ZMQProcess;
 import de.hasenburg.geobroker.commons.model.KryoSerializer;
@@ -12,7 +11,9 @@ import org.zeromq.ZContext;
 import org.zeromq.ZMQ.Socket;
 import org.zeromq.ZMsg;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 
 class ZMQProcess_MessageProcessor extends ZMQProcess {
 
@@ -24,7 +25,7 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 	private final int numberOfBrokerCommunicators;
 
 	private int numberOfProcessedMessages = 0;
-	public KryoSerializer kryo = new KryoSerializer();
+	private KryoSerializer kryo = new KryoSerializer();
 
 	// socket index
 	private final int PROCESSOR_INDEX = 0;
@@ -141,10 +142,6 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 	@Override
 	protected void shutdownCompleted() {
 		logger.info("Shut down ZMQProcess_MessageProcessor {}", getMessageProcessorIdentity(identity, number));
-	}
-
-	public KryoSerializer getKryo() {
-		return kryo;
 	}
 
 	int getNumberOfProcessedMessages() {

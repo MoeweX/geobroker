@@ -1,6 +1,5 @@
 package de.hasenburg.geobroker.server.distribution;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.hasenburg.geobroker.commons.model.BrokerInfo;
 import de.hasenburg.geobroker.commons.model.spatial.Geofence;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
@@ -18,7 +17,6 @@ import java.io.InputStreamReader;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class BrokerAreaManager {

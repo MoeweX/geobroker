@@ -1,7 +1,7 @@
 package de.hasenburg.geobroker.server.matching
 
-import de.hasenburg.geobroker.commons.model.message.ControlPacketType
 import de.hasenburg.geobroker.commons.model.KryoSerializer
+import de.hasenburg.geobroker.commons.model.message.ControlPacketType
 import de.hasenburg.geobroker.commons.model.message.ReasonCode
 import de.hasenburg.geobroker.commons.model.message.payloads.PINGRESPPayload
 import de.hasenburg.geobroker.commons.model.message.payloads.PUBACKPayload

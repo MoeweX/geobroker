@@ -1,14 +1,14 @@
 package de.hasenburg.geobroker.client.main;
 
+import de.hasenburg.geobroker.client.communication.InternalClientMessage;
+import de.hasenburg.geobroker.client.communication.ZMQProcessStarter;
+import de.hasenburg.geobroker.client.communication.ZMQProcess_SimpleClient;
 import de.hasenburg.geobroker.commons.Utility;
 import de.hasenburg.geobroker.commons.communication.ZMQControlUtility;
 import de.hasenburg.geobroker.commons.communication.ZMQProcessManager;
 import de.hasenburg.geobroker.commons.model.KryoSerializer;
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
 import de.hasenburg.geobroker.commons.model.message.ReasonCode;
-import de.hasenburg.geobroker.client.communication.ZMQProcessStarter;
-import de.hasenburg.geobroker.client.communication.ZMQProcess_SimpleClient;
-import de.hasenburg.geobroker.client.communication.InternalClientMessage;
 import de.hasenburg.geobroker.commons.model.message.payloads.CONNECTPayload;
 import de.hasenburg.geobroker.commons.model.message.payloads.DISCONNECTPayload;
 import de.hasenburg.geobroker.commons.model.spatial.Location;

@@ -1,6 +1,5 @@
 package de.hasenburg.geobroker.client.communication;
 
-import com.esotericsoftware.kryo.Kryo;
 import de.hasenburg.geobroker.commons.Utility;
 import de.hasenburg.geobroker.commons.communication.ZMQControlUtility;
 import de.hasenburg.geobroker.commons.communication.ZMQProcess;

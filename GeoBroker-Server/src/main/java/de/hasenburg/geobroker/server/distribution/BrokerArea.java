@@ -8,6 +8,7 @@ import de.hasenburg.geobroker.commons.model.spatial.Location;
 
 import java.util.Objects;
 
+// TODO migrate to commons and add serialization to kryo serializer
 public class BrokerArea {
 
 	@JsonProperty

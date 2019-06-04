@@ -19,21 +19,12 @@ public class BrokerAreaTest {
 
 	private static final Logger logger = LogManager.getLogger();
 
-	/*@Test
-	public void testSerialize() {
-		BrokerInfo brokerInfo = new BrokerInfo("brokerId", "address", 1000);
-		BrokerArea brokerArea1 = new BrokerArea(brokerInfo, Geofence.circle(Location.random(), 10));
-		String json = JSONable.toJSON(brokerArea1);
-		logger.info(json);
-		BrokerArea brokerArea2 = JSONable.fromJSON(json, BrokerArea.class).get();
-		assertEquals(brokerArea1, brokerArea2);
-	}*/
-
 	@Test
 	public void testSerialize() {
 		BrokerInfo brokerInfo = new BrokerInfo("brokerId", "address", 1000);
 		BrokerArea brokerArea1 = new BrokerArea(brokerInfo, Geofence.circle(Location.random(), 10));
 		KryoSerializer kryo = new KryoSerializer();
+		// TODO this should be a part of KryoSerializer -> for that BrokerArea must be moved to commons
 		kryo.getKryo().register(BrokerArea.class, new Serializer<BrokerArea>() {
 			@Override
 			public void write(Kryo kryo, Output output, BrokerArea object) {

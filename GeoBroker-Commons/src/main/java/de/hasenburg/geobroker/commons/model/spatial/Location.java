@@ -1,6 +1,5 @@
 package de.hasenburg.geobroker.commons.model.spatial;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.hasenburg.geobroker.commons.Utility;
@@ -10,7 +9,6 @@ import org.jetbrains.annotations.NotNull;
 import org.locationtech.spatial4j.io.ShapeWriter;
 import org.locationtech.spatial4j.shape.Point;
 
-import java.text.ParseException;
 import java.util.Objects;
 import java.util.Random;
 

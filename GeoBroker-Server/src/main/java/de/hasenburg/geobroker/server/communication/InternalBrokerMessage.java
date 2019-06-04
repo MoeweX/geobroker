@@ -1,9 +1,8 @@
 package de.hasenburg.geobroker.server.communication;
 
-import de.hasenburg.geobroker.commons.Utility;
 import de.hasenburg.geobroker.commons.exceptions.CommunicatorException;
-import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
 import de.hasenburg.geobroker.commons.model.KryoSerializer;
+import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
 import de.hasenburg.geobroker.commons.model.message.payloads.AbstractPayload;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -44,7 +43,7 @@ public class InternalBrokerMessage {
 			message.controlPacketType = ControlPacketType.valueOf(msg.popString());
 			InternalBrokerMessage.validateControlPacketType(message.controlPacketType);
 			byte[] arr = msg.pop().getData();
-			message.payload = (AbstractPayload) kryo.read(arr, message.controlPacketType);
+			message.payload = kryo.read(arr, message.controlPacketType);
 			if(message.payload == null){
 				message = null;
 			}

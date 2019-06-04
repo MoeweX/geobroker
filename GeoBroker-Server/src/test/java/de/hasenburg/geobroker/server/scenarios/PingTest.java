@@ -1,17 +1,17 @@
 package de.hasenburg.geobroker.server.scenarios;
 
-import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
-import de.hasenburg.geobroker.commons.model.message.ReasonCode;
-import de.hasenburg.geobroker.commons.communication.ZMQProcessManager;
-import de.hasenburg.geobroker.server.main.Configuration;
+import de.hasenburg.geobroker.client.communication.InternalClientMessage;
 import de.hasenburg.geobroker.client.main.SimpleClient;
 import de.hasenburg.geobroker.commons.Utility;
-import de.hasenburg.geobroker.client.communication.InternalClientMessage;
-import de.hasenburg.geobroker.server.main.server.SingleGeoBrokerServerLogic;
+import de.hasenburg.geobroker.commons.communication.ZMQProcessManager;
+import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
+import de.hasenburg.geobroker.commons.model.message.ReasonCode;
 import de.hasenburg.geobroker.commons.model.message.payloads.CONNECTPayload;
 import de.hasenburg.geobroker.commons.model.message.payloads.DISCONNECTPayload;
 import de.hasenburg.geobroker.commons.model.message.payloads.PINGREQPayload;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
+import de.hasenburg.geobroker.server.main.Configuration;
+import de.hasenburg.geobroker.server.main.server.SingleGeoBrokerServerLogic;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.After;
@@ -19,7 +19,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("ConstantConditions")
 public class PingTest {
@@ -75,7 +74,7 @@ public class PingTest {
 			}
 		}
 		double time2 = System.nanoTime();
-		System.out.println("TIME FOR SERIALISATION:  " + ((time2 - time1)/1000000000));
+		logger.info("Messages took {}s", (time2 - time1)/1000000000);
 	}
 
 	@Test

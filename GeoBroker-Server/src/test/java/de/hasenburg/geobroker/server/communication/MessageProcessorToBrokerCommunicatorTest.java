@@ -2,8 +2,8 @@ package de.hasenburg.geobroker.server.communication;
 
 import de.hasenburg.geobroker.commons.communication.ZMQProcessManager;
 import de.hasenburg.geobroker.commons.model.BrokerInfo;
-import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
 import de.hasenburg.geobroker.commons.model.KryoSerializer;
+import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
 import de.hasenburg.geobroker.commons.model.message.ReasonCode;
 import de.hasenburg.geobroker.commons.model.message.payloads.CONNACKPayload;
 import de.hasenburg.geobroker.commons.model.message.payloads.CONNECTPayload;

@@ -1,6 +1,5 @@
 package de.hasenburg.geobroker.server.communication;
 
-import com.esotericsoftware.kryo.Kryo;
 import de.hasenburg.geobroker.commons.communication.ZMQControlUtility;
 import de.hasenburg.geobroker.commons.communication.ZMQProcess;
 import de.hasenburg.geobroker.commons.model.BrokerInfo;
@@ -35,7 +34,7 @@ public class ZMQProcess_BrokerCommunicator extends ZMQProcess {
 	private final int SOCKET_OFFSET = 1; // we have one other socket that is not a dealer broker socket
 	private List<BrokerInfo> otherBrokerInfos;
 	private IDistributionLogic distributionLogic;
-	public KryoSerializer kryo = new KryoSerializer();
+	private KryoSerializer kryo = new KryoSerializer();
 
 	/**
 	 * @param brokerId - identity should be the broker id this broker communicator is running on
@@ -178,10 +177,6 @@ public class ZMQProcess_BrokerCommunicator extends ZMQProcess {
 			i++;
 		}
 		return -1;
-	}
-
-	public KryoSerializer getKryo() {
-		return kryo;
 	}
 
 	int getNumberOfProcessedMessages() {

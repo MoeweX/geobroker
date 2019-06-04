@@ -1,8 +1,7 @@
 package de.hasenburg.geobroker.server.communication;
 
-import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
-import de.hasenburg.geobroker.commons.Utility;
 import de.hasenburg.geobroker.commons.model.KryoSerializer;
+import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
 import de.hasenburg.geobroker.commons.model.message.payloads.AbstractPayload;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

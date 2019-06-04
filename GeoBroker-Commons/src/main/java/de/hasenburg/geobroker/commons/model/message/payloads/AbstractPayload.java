@@ -2,14 +2,12 @@ package de.hasenburg.geobroker.commons.model.message.payloads;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import java.lang.reflect.Field;
 import java.util.Optional;
 
 /**
  * Every internal server and client message has at least this empty payload.
  */
-public abstract class AbstractPayload{
-
+public class AbstractPayload{
 
 	/*****************************************************************
 	 * Subclasses

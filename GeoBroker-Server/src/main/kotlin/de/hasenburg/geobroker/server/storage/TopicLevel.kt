@@ -2,8 +2,6 @@ package de.hasenburg.geobroker.server.storage
 
 import de.hasenburg.geobroker.commons.model.message.Topic
 import org.apache.logging.log4j.LogManager
-import org.apache.logging.log4j.Logger
-import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 
 private val logger = LogManager.getLogger()
