@@ -74,6 +74,9 @@ public class LocationTest {
 
 		Location l361 = Location.locationInDistance(berlin, 1000, 361);
 		assertEquals(1000, berlin.distanceKmTo(l361), 0.01);
+
+		Location ln180 = Location.locationInDistance(berlin, 140.1, -180);
+		assertEquals(140.1, berlin.distanceKmTo(ln180), 0.01);
 	}
 
 	@Test

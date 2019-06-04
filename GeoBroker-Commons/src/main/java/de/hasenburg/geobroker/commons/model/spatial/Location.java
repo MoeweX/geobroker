@@ -204,5 +204,9 @@ public class Location implements JSONable {
 		Location l = new Location(39.984702, 116.318417);
 		Location l2 = new Location(39.974702, 116.318417);
 		logger.info("Distance is {}km", l.distanceKmTo(l2));
+
+		l = new Location(57.34922076607738, 34.53035122251791);
+		l2 = new Location(57.34934475583778, 34.53059311887825);
+		logger.info("Distance is {}km", l.distanceKmTo(l2));
 	}
 }
