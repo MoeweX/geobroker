@@ -8,10 +8,6 @@ public class BrokerForwardPingreqPayload extends AbstractPayload {
 	String clientIdentifier;
 	PINGREQPayload pingreqPayload;
 
-	public BrokerForwardPingreqPayload() {
-
-	}
-
 	public BrokerForwardPingreqPayload(String clientIdentifier, PINGREQPayload pingreqPayload) {
 		super();
 		this.clientIdentifier = clientIdentifier;

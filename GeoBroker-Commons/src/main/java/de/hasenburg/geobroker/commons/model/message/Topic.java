@@ -1,9 +1,5 @@
 package de.hasenburg.geobroker.commons.model.message;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Objects;
 
 public class Topic {
@@ -11,11 +7,9 @@ public class Topic {
 	public static final String TOPIC_LEVEL_SEPARATOR = "/";
 
 	private final String topic;
-	@JsonIgnore
 	private final String[] levelSpecifiers;
 
-	@JsonCreator
-	public Topic(@JsonProperty("topic") String topic) {
+	public Topic(String topic) {
 		this.topic = topic;
 		this.levelSpecifiers = topic.split(TOPIC_LEVEL_SEPARATOR);
 	}
@@ -31,7 +25,6 @@ public class Topic {
 	/**
 	 * @return the number of available levels
 	 */
-	@JsonIgnore
 	public int getNumberOfLevels() {
 		return levelSpecifiers.length;
 	}

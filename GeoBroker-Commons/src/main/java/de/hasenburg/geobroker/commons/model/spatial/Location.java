@@ -1,12 +1,8 @@
 package de.hasenburg.geobroker.commons.model.spatial;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import de.hasenburg.geobroker.commons.Utility;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
-import org.locationtech.spatial4j.distance.DistanceUtils;
 import org.locationtech.spatial4j.io.ShapeWriter;
 import org.locationtech.spatial4j.shape.Point;
 
@@ -17,7 +13,7 @@ import static de.hasenburg.geobroker.commons.model.spatial.SpatialContext.GEO;
 import static org.locationtech.spatial4j.distance.DistanceUtils.DEG_TO_KM;
 import static org.locationtech.spatial4j.distance.DistanceUtils.KM_TO_DEG;
 
-public class Location{
+public class Location {
 
 	private static final Logger logger = LogManager.getLogger();
 
@@ -47,7 +43,6 @@ public class Location{
 	/**
 	 * Creates an undefined location, i.e., one that does not have a point and is not contained in any geofence.
 	 */
-	@NotNull
 	public static Location undefined() {
 		return new Location(true);
 	}
@@ -135,22 +130,18 @@ public class Location{
 	 * Getters and String
 	 ****************************************************************/
 
-	@JsonIgnore
 	public Point getPoint() {
 		return point;
 	}
 
-	@JsonIgnore
 	public double getLat() {
 		return point.getLat();
 	}
 
-	@JsonIgnore
 	public double getLon() {
 		return point.getLon();
 	}
 
-	@JsonProperty("WKT")
 	public String getWKTString() {
 		if (undefined) {
 			return "{ undefined }";
@@ -159,7 +150,6 @@ public class Location{
 		return writer.toString(point);
 	}
 
-	@JsonIgnore
 	public boolean isUndefined() {
 		return undefined;
 	}

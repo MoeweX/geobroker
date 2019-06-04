@@ -56,7 +56,7 @@ public class InternalClientMessageTest {
 	@Test
 	public void testPayloadPINGREQEmpty() {
 		logger.info("RUNNING testPayloadPINGREQEmpty TEST");
-		InternalClientMessage message = new InternalClientMessage(ControlPacketType.PINGREQ, new PINGREQPayload());
+		InternalClientMessage message = new InternalClientMessage(ControlPacketType.PINGREQ, new PINGREQPayload(null));
 		logger.debug(message);
 		ZMsg zmsg = message.getZMsg(kryo);
 		assertFalse(InternalClientMessage.buildMessage(zmsg, kryo).isPresent());

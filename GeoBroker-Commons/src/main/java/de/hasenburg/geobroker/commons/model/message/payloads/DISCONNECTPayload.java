@@ -10,10 +10,6 @@ public class DISCONNECTPayload extends AbstractPayload {
 	private ReasonCode reasonCode;
 	private BrokerInfo brokerInfo;
 
-	public DISCONNECTPayload() {
-
-	}
-
 	public DISCONNECTPayload(ReasonCode reasonCode) {
 		super();
 		this.reasonCode = reasonCode;

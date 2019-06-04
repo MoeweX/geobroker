@@ -8,10 +8,6 @@ public class BrokerForwardSubscribePayload extends AbstractPayload {
 	String clientIdentifier;
 	SUBSCRIBEPayload subscribePayload;
 
-	public BrokerForwardSubscribePayload() {
-
-	}
-
 	public BrokerForwardSubscribePayload(String clientIdentifier, SUBSCRIBEPayload subscribePayload) {
 		super();
 		this.clientIdentifier = clientIdentifier;

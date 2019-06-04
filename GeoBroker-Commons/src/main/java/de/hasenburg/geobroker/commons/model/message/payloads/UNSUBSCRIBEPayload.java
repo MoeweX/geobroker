@@ -8,10 +8,6 @@ public class UNSUBSCRIBEPayload extends AbstractPayload {
 
 	protected Topic topic;
 
-	public UNSUBSCRIBEPayload() {
-
-	}
-
 	public UNSUBSCRIBEPayload(Topic topic) {
 		super();
 		this.topic = topic;

@@ -1,8 +1,5 @@
 package de.hasenburg.geobroker.commons.model.spatial;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import de.hasenburg.geobroker.commons.exceptions.RuntimeShapeException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -19,12 +16,10 @@ import static de.hasenburg.geobroker.commons.model.spatial.SpatialContext.GEO;
 public class Geofence{
 
 	private static final Logger logger = LogManager.getLogger();
-	@JsonIgnore
 	private final Shape shape;
 
 	// TODO increase size a little bit so that we do not miss any due to rounding issues
 	// we need it most times anyways, so let's buffer it //
-	@JsonIgnore
 	final Rectangle boundingBox;
 
 	private Geofence(Shape shape) {
@@ -32,8 +27,7 @@ public class Geofence{
 		this.boundingBox = shape.getBoundingBox();
 	}
 
-	@JsonCreator
-	public Geofence(@JsonProperty("WKT") String wkt) throws ParseException {
+	public Geofence(String wkt) throws ParseException {
 		WKTReader reader = (WKTReader) GEO.getFormats().getWktReader();
 		this.shape = reader.parse(wkt);
 		this.boundingBox = this.shape.getBoundingBox();
@@ -75,7 +69,6 @@ public class Geofence{
 		return new Geofence(worldShape);
 	}
 
-	@JsonIgnore
 	public boolean isRectangle() {
 		return GEO.getShapeFactory().getGeometryFrom(shape).isRectangle();
 	}
@@ -84,22 +77,18 @@ public class Geofence{
 	 * BoundingBox
 	 ****************************************************************/
 
-	@JsonIgnore
 	public Location getBoundingBoxNorthWest() {
 		return new Location(boundingBox.getMaxY(), boundingBox.getMinX());
 	}
 
-	@JsonIgnore
 	public Location getBoundingBoxNorthEast() {
 		return new Location(boundingBox.getMaxY(), boundingBox.getMaxX());
 	}
 
-	@JsonIgnore
 	public Location getBoundingBoxSouthEast() {
 		return new Location(boundingBox.getMinY(), boundingBox.getMaxX());
 	}
 
-	@JsonIgnore
 	public Location getBoundingBoxSouthWest() {
 		return new Location(boundingBox.getMinY(), boundingBox.getMinX());
 	}
@@ -107,7 +96,6 @@ public class Geofence{
 	/**
 	 * See {@link Rectangle#getHeight()}, is the latitude distance in degree
 	 */
-	@JsonIgnore
 	public double getBoundingBoxLatDistanceInDegree() {
 		return boundingBox.getHeight();
 	}
@@ -115,7 +103,6 @@ public class Geofence{
 	/**
 	 * See {@link Rectangle#getWidth()}, is the longitude distance in degree
 	 */
-	@JsonIgnore
 	public double getBoundingBoxLonDistanceInDegree() {
 		return boundingBox.getWidth();
 	}
@@ -144,7 +131,6 @@ public class Geofence{
 	 * Getters and String
 	 ****************************************************************/
 
-	@JsonProperty("WKT")
 	public String getWKTString() {
 		ShapeWriter writer = GEO.getFormats().getWktWriter();
 		return writer.toString(shape);

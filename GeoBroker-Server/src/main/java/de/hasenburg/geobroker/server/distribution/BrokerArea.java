@@ -1,7 +1,5 @@
 package de.hasenburg.geobroker.server.distribution;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import de.hasenburg.geobroker.commons.model.BrokerInfo;
 import de.hasenburg.geobroker.commons.model.spatial.Geofence;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
@@ -11,14 +9,10 @@ import java.util.Objects;
 // TODO migrate to commons and add serialization to kryo serializer
 public class BrokerArea {
 
-	@JsonProperty
 	private final BrokerInfo responsibleBroker;
-	@JsonProperty
 	private final Geofence coveredArea;
 
-	@JsonCreator
-	public BrokerArea(@JsonProperty("responsibleBroker") BrokerInfo responsibleBroker,
-					  @JsonProperty("coveredArea") Geofence coveredArea) {
+	public BrokerArea(BrokerInfo responsibleBroker, Geofence coveredArea) {
 		this.responsibleBroker = responsibleBroker;
 		this.coveredArea = coveredArea;
 	}

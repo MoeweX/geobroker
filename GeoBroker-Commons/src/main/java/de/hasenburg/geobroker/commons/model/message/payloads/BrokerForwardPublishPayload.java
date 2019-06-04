@@ -11,10 +11,6 @@ public class BrokerForwardPublishPayload extends AbstractPayload {
 	Location publisherLocation; // needed in case of matching at the subscriber
 	String subscriberClientIdentifier; // needed in case of matching at the publisher
 
-	public BrokerForwardPublishPayload() {
-
-	}
-
 	/**
 	 * This constructor is used in case of matching at the subscriber
 	 */

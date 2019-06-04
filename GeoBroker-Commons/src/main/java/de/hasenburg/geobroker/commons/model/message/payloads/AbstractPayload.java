@@ -1,7 +1,5 @@
 package de.hasenburg.geobroker.commons.model.message.payloads;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import java.util.Optional;
 
 /**
@@ -13,7 +11,6 @@ public class AbstractPayload{
 	 * Subclasses
 	 ****************************************************************/
 
-	@JsonIgnore
 	public Optional<CONNACKPayload> getCONNACKPayload() {
 		if (this instanceof CONNACKPayload) {
 			return Optional.of((CONNACKPayload) this);
@@ -22,7 +19,6 @@ public class AbstractPayload{
 		}
 	}
 
-	@JsonIgnore
 	public Optional<CONNECTPayload> getCONNECTPayload() {
 		if (this instanceof CONNECTPayload) {
 			return Optional.of((CONNECTPayload) this);
@@ -31,7 +27,6 @@ public class AbstractPayload{
 		}
 	}
 
-	@JsonIgnore
 	public Optional<DISCONNECTPayload> getDISCONNECTPayload() {
 		if (this instanceof DISCONNECTPayload) {
 			return Optional.of((DISCONNECTPayload) this);
@@ -40,7 +35,6 @@ public class AbstractPayload{
 		}
 	}
 
-	@JsonIgnore
 	public Optional<PINGREQPayload> getPINGREQPayload() {
 		if (this instanceof PINGREQPayload) {
 			return Optional.of((PINGREQPayload) this);
@@ -49,7 +43,6 @@ public class AbstractPayload{
 		}
 	}
 
-	@JsonIgnore
 	public Optional<PINGRESPPayload> getPINGRESPPayload() {
 		if (this instanceof PINGRESPPayload) {
 			return Optional.of((PINGRESPPayload) this);
@@ -58,7 +51,6 @@ public class AbstractPayload{
 		}
 	}
 
-	@JsonIgnore
 	public Optional<PUBLISHPayload> getPUBLISHPayload() {
 		if (this instanceof PUBLISHPayload) {
 			return Optional.of((PUBLISHPayload) this);
@@ -67,7 +59,6 @@ public class AbstractPayload{
 		}
 	}
 
-	@JsonIgnore
 	public Optional<PUBACKPayload> getPUBACKPayload() {
 		if (this instanceof PUBACKPayload) {
 			return Optional.of((PUBACKPayload) this);
@@ -76,7 +67,6 @@ public class AbstractPayload{
 		}
 	}
 
-	@JsonIgnore
 	public Optional<SUBSCRIBEPayload> getSUBSCRIBEPayload() {
 		if (this instanceof SUBSCRIBEPayload) {
 			return Optional.of((SUBSCRIBEPayload) this);
@@ -85,7 +75,6 @@ public class AbstractPayload{
 		}
 	}
 
-	@JsonIgnore
 	public Optional<SUBACKPayload> getSUBACKPayload() {
 		if (this instanceof SUBACKPayload) {
 			return Optional.of((SUBACKPayload) this);
@@ -94,7 +83,6 @@ public class AbstractPayload{
 		}
 	}
 
-	@JsonIgnore
 	public Optional<UNSUBSCRIBEPayload> getUNSUBSCRIBEPayload() {
 		if (this instanceof UNSUBSCRIBEPayload) {
 			return Optional.of((UNSUBSCRIBEPayload) this);
@@ -103,7 +91,6 @@ public class AbstractPayload{
 		}
 	}
 
-	@JsonIgnore
 	public Optional<UNSUBACKPayload> getUNSUBACKPayload() {
 		if (this instanceof UNSUBACKPayload) {
 			return Optional.of((UNSUBACKPayload) this);
@@ -112,7 +99,6 @@ public class AbstractPayload{
 		}
 	}
 
-	@JsonIgnore
 	public Optional<BrokerForwardDisconnectPayload> getBrokerForwardDisconnectPayload() {
 		if (this instanceof BrokerForwardDisconnectPayload) {
 			return Optional.of((BrokerForwardDisconnectPayload) this);
@@ -121,7 +107,6 @@ public class AbstractPayload{
 		}
 	}
 
-	@JsonIgnore
 	public Optional<BrokerForwardPingreqPayload> getBrokerForwardPingreqPayload() {
 		if (this instanceof BrokerForwardPingreqPayload) {
 			return Optional.of((BrokerForwardPingreqPayload) this);
@@ -130,7 +115,6 @@ public class AbstractPayload{
 		}
 	}
 
-	@JsonIgnore
 	public Optional<BrokerForwardSubscribePayload> getBrokerForwardSubscribePayload() {
 		if (this instanceof BrokerForwardSubscribePayload) {
 			return Optional.of((BrokerForwardSubscribePayload) this);
@@ -139,7 +123,6 @@ public class AbstractPayload{
 		}
 	}
 
-	@JsonIgnore
 	public Optional<BrokerForwardUnsubscribePayload> getBrokerForwardUnsubscribePayload() {
 		if (this instanceof BrokerForwardUnsubscribePayload) {
 			return Optional.of((BrokerForwardUnsubscribePayload) this);
@@ -148,7 +131,6 @@ public class AbstractPayload{
 		}
 	}
 
-	@JsonIgnore
 	public Optional<BrokerForwardPublishPayload> getBrokerForwardPublishPayload() {
 		if (this instanceof BrokerForwardPublishPayload) {
 			return Optional.of((BrokerForwardPublishPayload) this);

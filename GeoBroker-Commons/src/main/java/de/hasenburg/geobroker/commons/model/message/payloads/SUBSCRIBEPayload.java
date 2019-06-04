@@ -10,10 +10,6 @@ public class SUBSCRIBEPayload extends AbstractPayload {
 	protected Topic topic;
 	protected Geofence geofence;
 
-	public SUBSCRIBEPayload() {
-
-	}
-
 	public SUBSCRIBEPayload(Topic topic, Geofence geofence) {
 		super();
 		this.topic = topic;

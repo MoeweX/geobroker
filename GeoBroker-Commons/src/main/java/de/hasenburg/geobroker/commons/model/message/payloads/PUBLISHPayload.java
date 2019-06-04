@@ -11,10 +11,6 @@ public class PUBLISHPayload extends AbstractPayload {
 	protected Geofence geofence;
 	protected String content;
 
-	public PUBLISHPayload() {
-
-	}
-
 	public PUBLISHPayload(Topic topic, Geofence geofence, String content) {
 		super();
 		this.topic = topic;

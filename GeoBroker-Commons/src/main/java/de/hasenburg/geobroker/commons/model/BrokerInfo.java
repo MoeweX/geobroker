@@ -1,23 +1,18 @@
 package de.hasenburg.geobroker.commons.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Objects;
 
 /**
  * Stores information of a given broker: brokerId, publicly reachable server ip and server port.
  */
-public class BrokerInfo{
+public class BrokerInfo {
 
 	private final String brokerId;
 	// This is the public ip used by other brokers, so should be reachable via the internet
 	private final String ip;
 	private final int port;
 
-	@JsonCreator
-	public BrokerInfo(@JsonProperty("brokerId") String brokerId, @JsonProperty("ip") String ip,
-					  @JsonProperty("port") int port) {
+	public BrokerInfo(String brokerId, String ip, int port) {
 		this.brokerId = brokerId;
 		this.ip = ip;
 		this.port = port;

@@ -8,10 +8,6 @@ public class PINGREQPayload extends AbstractPayload {
 
 	protected Location location;
 
-	public PINGREQPayload() {
-
-	}
-
 	public PINGREQPayload(Location location) {
 		super();
 		this.location = location;
