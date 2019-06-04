@@ -175,6 +175,11 @@ public class ZMQProcess_SimpleClient extends ZMQProcess {
 	}
 
 	@Override
+	protected void utilizationCalculated(double utilization) {
+		logger.info("Current Utilization is {}%", utilization);
+	}
+
+	@Override
 	protected void shutdownCompleted() {
 		logger.info("Shut down ZMQProcess_SimpleClient {}", identity);
 	}

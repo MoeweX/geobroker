@@ -12,6 +12,7 @@ import de.hasenburg.geobroker.commons.model.message.payloads.PINGREQPayload;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
 import de.hasenburg.geobroker.server.main.Configuration;
 import de.hasenburg.geobroker.server.main.server.SingleGeoBrokerServerLogic;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.After;
@@ -120,5 +121,37 @@ public class PingTest {
 		assertEquals(ReasonCode.NotConnected,
 				internalClientMessage.getPayload().getPINGRESPPayload().get().getReasonCode());
 	}
+
+
+	// @Test this is more like a benchmark, no need to run this when testing
+	public void compareSerial() {
+		Utility.setLogLevel(logger, Level.WARN);
+		double time1 = System.nanoTime();
+		// connect, ping, and disconnect
+		SimpleClient client = new SimpleClient(null, "localhost", 5559, clientProcessManager);
+		client.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.CONNECT,
+				new CONNECTPayload(Location.random())));
+		for (int i = 0; i < 100000; i++) {
+			client.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.PINGREQ,
+					new PINGREQPayload(Location.random())));
+		}
+
+		client.sendInternalClientMessage(new InternalClientMessage(ControlPacketType.DISCONNECT,
+				new DISCONNECTPayload(ReasonCode.NormalDisconnection)));
+
+		for (int i = 0; i < 100001; i++) {
+			InternalClientMessage internalClientMessage = client.receiveInternalClientMessage();
+			if (i == 0) {
+				assertEquals(ControlPacketType.CONNACK, internalClientMessage.getControlPacketType());
+			} else {
+				assertEquals(ControlPacketType.PINGRESP, internalClientMessage.getControlPacketType());
+				assertEquals(ReasonCode.LocationUpdated,
+						internalClientMessage.getPayload().getPINGRESPPayload().get().getReasonCode());
+			}
+		}
+		double time2 = System.nanoTime();
+		System.out.println("Execution time (s): " + ((time2 - time1)/1000000000));
+	}
+
 
 }

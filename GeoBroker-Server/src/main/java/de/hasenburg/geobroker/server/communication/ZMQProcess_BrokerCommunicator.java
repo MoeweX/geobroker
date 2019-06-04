@@ -29,6 +29,7 @@ public class ZMQProcess_BrokerCommunicator extends ZMQProcess {
 
 	private final int number;
 	private int numberOfProcessedMessages = 0;
+	private int numberOfSentMessages = 0; // sent to other brokers
 
 	private final int PULL_INDEX = 0; // the pull socket
 	private final int SOCKET_OFFSET = 1; // we have one other socket that is not a dealer broker socket
@@ -140,6 +141,7 @@ public class ZMQProcess_BrokerCommunicator extends ZMQProcess {
 		Socket socket = sockets.get(socketIndex);
 
 		distributionLogic.sendMessageToOtherBrokers(msg, socket, targetBrokerId, kryo);
+    numberOfSentMessages++;
 	}
 
 	/*****************************************************************
@@ -161,6 +163,13 @@ public class ZMQProcess_BrokerCommunicator extends ZMQProcess {
 	/*****************************************************************
 	 * Others
 	 ****************************************************************/
+
+	@Override
+	protected void utilizationCalculated(double utilization) {
+		logger.info("Current Utilization is {}%", utilization);
+		// let's also print the number of messages sent to other brokers
+		logger.info("Total number of sent messages: {}", numberOfSentMessages);
+	}
 
 	@Override
 	protected void shutdownCompleted() {

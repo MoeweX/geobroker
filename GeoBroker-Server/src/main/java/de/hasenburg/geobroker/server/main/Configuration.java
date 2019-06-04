@@ -7,6 +7,8 @@ import com.moandjiezana.toml.Toml;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.InputStreamReader;
 
 public class Configuration {
@@ -57,13 +59,31 @@ public class Configuration {
 	public static Configuration readConfiguration(String filePath) {
 		try {
 			Configuration c = new Configuration();
+			File f = new File(filePath);
+
+			Toml toml = new Toml().read(f);
+
+			return parseToml(c, toml);
+		} catch (Exception e) {
+			logger.fatal("Could not configuration", e);
+		}
+		System.exit(1);
+		return null; // WHY DO I NEED YOU?
+	}
+
+	/**
+	 * Create a new configuration.
+	 */
+	public static Configuration readInternalConfiguration(String filePath) {
+		try {
+			Configuration c = new Configuration();
 
 			//noinspection ConstantConditions as exception catches nullpointers
 			Toml toml = new Toml().read(Configuration.class.getClassLoader().getResourceAsStream(filePath));
 
 			return parseToml(c, toml);
 		} catch (Exception e) {
-			logger.fatal("Could not read default configuration", e);
+			logger.fatal("Could not internal configuration", e);
 		}
 		System.exit(1);
 		return null; // WHY DO I NEED YOU?
@@ -95,7 +115,7 @@ public class Configuration {
 	}
 
 	public static void main(String[] args) {
-		Configuration c = Configuration.readConfiguration("configuration.toml");
+		Configuration c = Configuration.readInternalConfiguration("configuration.toml");
 		logger.info(c);
 	}
 

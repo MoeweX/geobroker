@@ -105,7 +105,7 @@ public abstract class ZMQProcess implements Runnable {
 			if (pollTime + processingTime >= measurementInterval * 1000000000L) {
 				double utilization = processingTime / (processingTime + pollTime + 0.0);
 				utilization = Math.round(utilization * 1000.0) / 10.0;
-				logger.info("Utilization is at {}%", utilization);
+				utilizationCalculated(utilization);
 				pollTime = 0;
 				processingTime = 0;
 			}
@@ -125,6 +125,8 @@ public abstract class ZMQProcess implements Runnable {
 																  ZMsg msg);
 
 	protected abstract void processZMsg(int socketIndex, ZMsg msg);
+
+	protected abstract void utilizationCalculated(double utilization);
 
 	protected abstract void shutdownCompleted();
 }

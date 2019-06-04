@@ -39,7 +39,7 @@ public class ConnectAndDisconnectTest {
 		logger.info("Running test setUp");
 
 		serverLogic = new DisGBSubscriberMatchingServerLogic();
-		serverLogic.loadConfiguration(Configuration.readConfiguration("connect_and_disconnect.toml"));
+		serverLogic.loadConfiguration(Configuration.readInternalConfiguration("connect_and_disconnect.toml"));
 		serverLogic.initializeFields();
 		serverLogic.startServer();
 

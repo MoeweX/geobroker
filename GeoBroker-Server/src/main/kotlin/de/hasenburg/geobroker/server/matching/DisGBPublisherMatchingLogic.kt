@@ -440,6 +440,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
 
         // validate that target client is connected
         if (clientDirectory.clientExists(payload.subscriberClientIdentifier)) {
+            // TODO only send one message to other brokers for all matching clients to reduce inter-node traffic
             logger.debug("Sending a message that was matched by broker $otherBrokerId to Client {}",
                     payload.subscriberClientIdentifier)
             val toPublish = InternalServerMessage(payload.subscriberClientIdentifier,

@@ -9,12 +9,14 @@ import de.hasenburg.geobroker.commons.model.message.Topic
 import de.hasenburg.geobroker.commons.model.message.payloads.*
 import de.hasenburg.geobroker.commons.model.spatial.Geofence
 import de.hasenburg.geobroker.commons.model.spatial.Location
+import de.hasenburg.geobroker.commons.setLogLevel
 import de.hasenburg.geobroker.commons.sleepNoLog
 import de.hasenburg.geobroker.server.main.Configuration
 import de.hasenburg.geobroker.server.main.server.DisGBPublisherMatchingServerLogic
 import de.hasenburg.geobroker.server.main.server.DisGBSubscriberMatchingServerLogic
 import de.hasenburg.geobroker.server.main.server.IServerLogic
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory
+import org.apache.logging.log4j.Level
 import org.apache.logging.log4j.LogManager
 import org.junit.After
 import org.junit.Assert.*
@@ -51,6 +53,7 @@ class DisGBScenarioRuns {
 
     @Before
     fun setUp() {
+        setLogLevel(logger, Level.INFO)
         clientProcessManager = ZMQProcessManager()
         clients = setupLocalhostClients(listOf(5558, 5558, 5559))
 
@@ -447,7 +450,7 @@ class DisGBScenarioRuns {
         val configurations = listOf(parisConf, berlinConf)
 
         for ((i, lifecycle) in listOf(paris, berlin).withIndex()) {
-            val c = Configuration.readConfiguration(configurations[i])
+            val c = Configuration.readInternalConfiguration(configurations[i])
             lifecycle.loadConfiguration(c)
             lifecycle.initializeFields()
             lifecycle.startServer()
@@ -478,10 +481,10 @@ class DisGBScenarioRuns {
             val message = client.receiveInternalClientMessageWithTimeout(1000)!!
             if (ControlPacketType.PUBLISH == message.controlPacketType) {
                 remainingPublishs--
-                logger.info("Received a PUBLISH message from server: {}", message.payload.publishPayload.get())
+                logger.debug("Received a PUBLISH message from server: {}", message.payload.publishPayload.get())
             } else if (ControlPacketType.PUBACK == message.controlPacketType) {
                 remainingPubacks--
-                logger.info("Received a PUBACK message from server: {}", message.payload.pubackPayload.get())
+                logger.debug("Received a PUBACK message from server: {}", message.payload.pubackPayload.get())
             }
         }
         assertEquals(0, remainingPubacks)
