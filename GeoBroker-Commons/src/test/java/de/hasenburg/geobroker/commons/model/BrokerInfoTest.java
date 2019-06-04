@@ -1,4 +1,4 @@
-package de.hasenburg.geobroker.server.distribution;
+package de.hasenburg.geobroker.commons.model;
 
 import de.hasenburg.geobroker.commons.model.BrokerInfo;
 import de.hasenburg.geobroker.commons.model.KryoSerializer;

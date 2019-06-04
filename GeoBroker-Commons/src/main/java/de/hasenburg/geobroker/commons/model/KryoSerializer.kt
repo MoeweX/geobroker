@@ -35,6 +35,18 @@ class KryoSerializer {
                 return BrokerInfo(brokerId, ip, port)
             }
         })
+        kryo.register(BrokerArea::class.java, object : Serializer<BrokerArea>() {
+            override fun write(kryo: Kryo, output: Output, o: BrokerArea) {
+                kryo.writeObjectOrNull(output, o.responsibleBroker, BrokerInfo::class.java)
+                kryo.writeObjectOrNull(output, o.coveredArea, Geofence::class.java)
+            }
+
+            override fun read(kryo: Kryo, input: Input, aClass: Class<BrokerArea>): BrokerArea? {
+                val broker = kryo.readObjectOrNull(input, BrokerInfo::class.java) ?: return null
+                val geofence = kryo.readObjectOrNull(input, Geofence::class.java) ?: return null
+                return BrokerArea(broker, geofence)
+            }
+        })
         kryo.register(Location::class.java, object : Serializer<Location>() {
             override fun write(kryo: Kryo, output: Output, o: Location) {
                 if (o.isUndefined) {

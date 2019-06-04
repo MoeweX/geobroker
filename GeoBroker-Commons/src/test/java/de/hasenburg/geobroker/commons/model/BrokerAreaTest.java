@@ -1,11 +1,5 @@
-package de.hasenburg.geobroker.server.distribution;
+package de.hasenburg.geobroker.commons.model;
 
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.Serializer;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-import de.hasenburg.geobroker.commons.model.BrokerInfo;
-import de.hasenburg.geobroker.commons.model.KryoSerializer;
 import de.hasenburg.geobroker.commons.model.spatial.Geofence;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
 import org.apache.logging.log4j.LogManager;
@@ -24,21 +18,6 @@ public class BrokerAreaTest {
 		BrokerInfo brokerInfo = new BrokerInfo("brokerId", "address", 1000);
 		BrokerArea brokerArea1 = new BrokerArea(brokerInfo, Geofence.circle(Location.random(), 10));
 		KryoSerializer kryo = new KryoSerializer();
-		// TODO this should be a part of KryoSerializer -> for that BrokerArea must be moved to commons
-		kryo.getKryo().register(BrokerArea.class, new Serializer<BrokerArea>() {
-			@Override
-			public void write(Kryo kryo, Output output, BrokerArea object) {
-				kryo.writeObjectOrNull(output, object.getResponsibleBroker(), BrokerInfo.class);
-				kryo.writeObjectOrNull(output, object.getCoveredArea(), Geofence.class);
-			}
-
-			@Override
-			public BrokerArea read(Kryo kryo, Input input, Class<BrokerArea> type) {
-				BrokerInfo broker = kryo.readObjectOrNull(input, BrokerInfo.class);
-				Geofence geofence = kryo.readObjectOrNull(input, Geofence.class);
-				return new BrokerArea(broker, geofence);
-			}
-		});
 		byte[] arr = kryo.write(brokerArea1);
 		logger.info(arr);
 		BrokerArea brokerArea2 = kryo.read(arr, BrokerArea.class);

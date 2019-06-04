@@ -1,12 +1,10 @@
-package de.hasenburg.geobroker.server.distribution;
+package de.hasenburg.geobroker.commons.model;
 
-import de.hasenburg.geobroker.commons.model.BrokerInfo;
 import de.hasenburg.geobroker.commons.model.spatial.Geofence;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
 
 import java.util.Objects;
 
-// TODO migrate to commons and add serialization to kryo serializer
 public class BrokerArea {
 
 	private final BrokerInfo responsibleBroker;
@@ -17,23 +15,23 @@ public class BrokerArea {
 		this.coveredArea = coveredArea;
 	}
 
-	BrokerInfo getResponsibleBroker() {
+	public BrokerInfo getResponsibleBroker() {
 		return responsibleBroker;
 	}
 
-	Geofence getCoveredArea() {
+	public Geofence getCoveredArea() {
 		return coveredArea;
 	}
 
-	boolean CheckResponsibleBroker(String brokerId) {
+	public boolean CheckResponsibleBroker(String brokerId) {
 		return responsibleBroker.getBrokerId().equals(brokerId);
 	}
 
-	boolean ContainsLocation(Location location) {
+	public boolean ContainsLocation(Location location) {
 		return coveredArea.contains(location);
 	}
 
-	boolean intersects(Geofence messageGeofence) {
+	public boolean intersects(Geofence messageGeofence) {
 		return coveredArea.intersects(messageGeofence);
 	}
 
