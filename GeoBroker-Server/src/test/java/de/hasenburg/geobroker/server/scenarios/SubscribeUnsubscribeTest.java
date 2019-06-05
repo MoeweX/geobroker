@@ -22,6 +22,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
+@SuppressWarnings("ConstantConditions")
 public class SubscribeUnsubscribeTest {
 
 	private static final Logger logger = LogManager.getLogger();
@@ -49,7 +50,6 @@ public class SubscribeUnsubscribeTest {
 		serverLogic.cleanUp();
 	}
 
-	@SuppressWarnings({"OptionalGetWithoutIsPresent"})
 	@Test
 	public void testSubscribeUnsubscribe() {
 		// connect, ping, and disconnect
@@ -80,16 +80,13 @@ public class SubscribeUnsubscribeTest {
 
 		message = client.receiveInternalClientMessage();
 		assertEquals(ControlPacketType.UNSUBACK, message.getControlPacketType());
-		assertEquals(ReasonCode.Success, message.getPayload().getUNSUBACKPayload().get().getReasonCode());
+		assertEquals(ReasonCode.Success, message.getPayload().getUNSUBACKPayload().getReasonCode());
 		assertEquals(0, serverLogic.getClientDirectory().getCurrentClientSubscriptions(cI));
 	}
 
-	@SuppressWarnings({"OptionalGetWithoutIsPresent"})
 	@Test
 	public void testUnsubscribeNotConnected() {
 		// connect, ping, and disconnect
-		Location l = Location.random();
-		Geofence g = Geofence.circle(l, 0.4);
 		Topic t = new Topic("test");
 		String cI = "testClient";
 
@@ -101,7 +98,7 @@ public class SubscribeUnsubscribeTest {
 
 		InternalClientMessage message = client.receiveInternalClientMessage();
 		assertEquals(ControlPacketType.UNSUBACK, message.getControlPacketType());
-		assertEquals(ReasonCode.NoSubscriptionExisted, message.getPayload().getUNSUBACKPayload().get().getReasonCode());
+		assertEquals(ReasonCode.NoSubscriptionExisted, message.getPayload().getUNSUBACKPayload().getReasonCode());
 		assertEquals(0, serverLogic.getClientDirectory().getCurrentClientSubscriptions(cI));
 	}
 

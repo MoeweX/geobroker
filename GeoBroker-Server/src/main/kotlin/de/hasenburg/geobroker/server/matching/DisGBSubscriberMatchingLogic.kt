@@ -24,7 +24,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
                                      private val brokerAreaManager: BrokerAreaManager) : IMatchingLogic {
 
     override fun processCONNECT(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer) {
-        val payload = message.payload.connectPayload.get()
+        val payload = message.payload.getCONNECTPayload() ?: return
 
         if (!handleResponsibility(message.clientIdentifier, payload.location, clients, kryo)) {
             return  // we are not responsible, client has been notified
@@ -38,7 +38,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
     }
 
     override fun processDISCONNECT(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer) {
-        val payload = message.payload.disconnectPayload.get()
+        val payload = message.payload.getDISCONNECTPayload() ?: return
 
         val success = clientDirectory.removeClient(message.clientIdentifier)
         if (!success) {
@@ -50,7 +50,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
     }
 
     override fun processPINGREQ(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer) {
-        val payload = message.payload.pingreqPayload.get()
+        val payload = message.payload.getPINGREQPayload() ?: return
 
         // check whether client has moved to another broker area
         if (!handleResponsibility(message.clientIdentifier, payload.location, clients, kryo)) {
@@ -72,7 +72,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
     }
 
     override fun processSUBSCRIBE(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer) {
-        val payload = message.payload.subscribePayload.get()
+        val payload = message.payload.getSUBSCRIBEPayload() ?: return
 
         val reasonCode = subscribeAtLocalBroker(message.clientIdentifier,
                 clientDirectory,
@@ -91,7 +91,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
     }
 
     override fun processUNSUBSCRIBE(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer) {
-        val payload = message.payload.unsubscribePayload.get()
+        val payload = message.payload.getUNSUBSCRIBEPayload() ?: return
 
         val reasonCode = unsubscribeAtLocalBroker(message.clientIdentifier,
                 clientDirectory,
@@ -110,7 +110,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
 
     override fun processPUBLISH(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer) {
         val reasonCode: ReasonCode
-        val payload = message.payload.publishPayload.get()
+        val payload = message.payload.getPUBLISHPayload() ?: return
         val publisherLocation = clientDirectory.getClientLocation(message.clientIdentifier)
 
         if (publisherLocation == null) { // null if client is not connected
@@ -144,12 +144,12 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
                         kryo)
             }
 
-            if (otherBrokers.size > 0 && ourReasonCode == ReasonCode.NoMatchingSubscribers) {
-                reasonCode = ReasonCode.NoMatchingSubscribersButForwarded
+            reasonCode = if (otherBrokers.size > 0 && ourReasonCode == ReasonCode.NoMatchingSubscribers) {
+                ReasonCode.NoMatchingSubscribersButForwarded
             } else if (otherBrokers.size == 0 && ourReasonCode == ReasonCode.NoMatchingSubscribers) {
-                reasonCode = ReasonCode.NoMatchingSubscribers
+                ReasonCode.NoMatchingSubscribers
             } else {
-                reasonCode = ReasonCode.Success
+                ReasonCode.Success
             }
 
         }
@@ -191,14 +191,14 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
      * to the original client.
      */
     override fun processBrokerForwardPublish(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer) {
-        val payload = message.payload.brokerForwardPublishPayload.get()
+        val payload = message.payload.getBrokerForwardPublishPayload() ?: return
 
         // the id is determined by ZeroMQ based on the first frame, so here it is the id of the forwarding broker
         val otherBrokerId = message.clientIdentifier
         logger.trace("Processing BrokerForwardPublish from broker {}", otherBrokerId)
 
         val reasonCode = publishMessageToLocalClients(payload.publisherLocation,
-                payload.getPublishPayload(),
+                payload.publishPayload,
                 clientDirectory,
                 topicAndGeofenceMapper,
                 clients,

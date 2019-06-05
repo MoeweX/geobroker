@@ -97,7 +97,7 @@ class KryoSerializer {
                 object : Serializer<BrokerForwardDisconnectPayload>() {
                     override fun write(kryo: Kryo, output: Output, o: BrokerForwardDisconnectPayload) {
                         kryo.writeObjectOrNull(output, o.clientIdentifier, String::class.java)
-                        kryo.writeObjectOrNull(output, o.getDisconnectPayload(), DISCONNECTPayload::class.java)
+                        kryo.writeObjectOrNull(output, o.disconnectPayload, DISCONNECTPayload::class.java)
                     }
 
                     override fun read(kryo: Kryo, input: Input,
@@ -111,7 +111,7 @@ class KryoSerializer {
         kryo.register(BrokerForwardPingreqPayload::class.java, object : Serializer<BrokerForwardPingreqPayload>() {
             override fun write(kryo: Kryo, output: Output, o: BrokerForwardPingreqPayload) {
                 kryo.writeObjectOrNull(output, o.clientIdentifier, String::class.java)
-                kryo.writeObjectOrNull(output, o.getPingreqPayload(), PINGREQPayload::class.java)
+                kryo.writeObjectOrNull(output, o.pingreqPayload, PINGREQPayload::class.java)
             }
 
             override fun read(kryo: Kryo, input: Input,
@@ -123,7 +123,7 @@ class KryoSerializer {
         })
         kryo.register(BrokerForwardPublishPayload::class.java, object : Serializer<BrokerForwardPublishPayload>() {
             override fun write(kryo: Kryo, output: Output, o: BrokerForwardPublishPayload) {
-                kryo.writeObjectOrNull(output, o.getPublishPayload(), PUBLISHPayload::class.java)
+                kryo.writeObjectOrNull(output, o.publishPayload, PUBLISHPayload::class.java)
                 kryo.writeObjectOrNull(output, o.publisherLocation, Location::class.java)
                 kryo.writeObjectOrNull(output, o.subscriberClientIdentifier, String::class.java)
             }
@@ -139,7 +139,7 @@ class KryoSerializer {
         kryo.register(BrokerForwardSubscribePayload::class.java, object : Serializer<BrokerForwardSubscribePayload>() {
             override fun write(kryo: Kryo, output: Output, o: BrokerForwardSubscribePayload) {
                 kryo.writeObjectOrNull(output, o.clientIdentifier, String::class.java)
-                kryo.writeObjectOrNull(output, o.getSubscribePayload(), SUBSCRIBEPayload::class.java)
+                kryo.writeObjectOrNull(output, o.subscribePayload, SUBSCRIBEPayload::class.java)
             }
 
             override fun read(kryo: Kryo, input: Input,
@@ -153,7 +153,7 @@ class KryoSerializer {
                 object : Serializer<BrokerForwardUnsubscribePayload>() {
                     override fun write(kryo: Kryo, output: Output, o: BrokerForwardUnsubscribePayload) {
                         kryo.writeObjectOrNull(output, o.clientIdentifier, String::class.java)
-                        kryo.writeObjectOrNull(output, o.getUnsubscribePayload(), UNSUBSCRIBEPayload::class.java)
+                        kryo.writeObjectOrNull(output, o.unsubscribePayload, UNSUBSCRIBEPayload::class.java)
                     }
 
                     override fun read(kryo: Kryo, input: Input,

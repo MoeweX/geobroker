@@ -11,8 +11,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.zeromq.ZMsg;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
 
 @SuppressWarnings("ConstantConditions")
 public class InternalClientMessageTest {
@@ -35,7 +34,7 @@ public class InternalClientMessageTest {
 		InternalClientMessage message = new InternalClientMessage(ControlPacketType.CONNECT, new CONNECTPayload(Location.random()));
 		logger.debug(message);
 		ZMsg zmsg = message.getZMsg(kryo);
-		InternalClientMessage message2 = InternalClientMessage.buildMessage(zmsg, kryo).get();
+		InternalClientMessage message2 = InternalClientMessage.buildMessage(zmsg, kryo);
 		logger.debug(message2);
 		assertEquals("Messages should be equal", message, message2);
 		logger.info("FINISHED TEST");
@@ -47,19 +46,19 @@ public class InternalClientMessageTest {
 		InternalClientMessage message = new InternalClientMessage(ControlPacketType.PINGREQ, new PINGREQPayload(Location.random()));
 		logger.debug(message);
 		ZMsg zmsg = message.getZMsg(kryo);
-		InternalClientMessage message2 = InternalClientMessage.buildMessage(zmsg, kryo).get();
+		InternalClientMessage message2 = InternalClientMessage.buildMessage(zmsg, kryo);
 		logger.debug(message2);
 		assertEquals("Messages should be equal", message, message2);
 		logger.info("FINISHED TEST");
 	}
 
-	@Test
+	@Test (expected = IllegalArgumentException.class)
 	public void testPayloadPINGREQEmpty() {
 		logger.info("RUNNING testPayloadPINGREQEmpty TEST");
 		InternalClientMessage message = new InternalClientMessage(ControlPacketType.PINGREQ, new PINGREQPayload(null));
 		logger.debug(message);
 		ZMsg zmsg = message.getZMsg(kryo);
-		assertFalse(InternalClientMessage.buildMessage(zmsg, kryo).isPresent());
+		assertNull(InternalClientMessage.buildMessage(zmsg, kryo));
 		logger.info("FINISHED TEST");
 	}
 

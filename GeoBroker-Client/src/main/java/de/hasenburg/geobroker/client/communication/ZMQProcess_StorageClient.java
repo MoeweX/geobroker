@@ -63,10 +63,10 @@ public class ZMQProcess_StorageClient extends ZMQProcess {
 			logger.trace("Sending a message to the server.");
 
 			//the zMsg should consist of an InternalClientMessage only
-			Optional<InternalClientMessage> clientMessageO = InternalClientMessage.buildMessage(msg, kryo);
+			InternalClientMessage clientMessage = InternalClientMessage.buildMessage(msg, kryo);
 
-			if (clientMessageO.isPresent()) {
-				clientMessageO.get().getZMsg(kryo).send(sockets.get(SERVER_INDEX));
+			if (clientMessage != null) {
+				clientMessage.getZMsg(kryo).send(sockets.get(SERVER_INDEX));
 			} else {
 				logger.warn("Cannot send message to server as not an InternalClientMessage" + msg);
 			}
@@ -80,10 +80,10 @@ public class ZMQProcess_StorageClient extends ZMQProcess {
 		}
 
 		logger.trace("Received a message, writing it to file.");
-		Optional<InternalClientMessage> serverMessage = InternalClientMessage.buildMessage(msg, kryo);
-		if (serverMessage.isPresent()) {
+		InternalClientMessage serverMessage = InternalClientMessage.buildMessage(msg, kryo);
+		if (serverMessage != null) {
 			try {
-				writer.write(serverMessage.get().toString());
+				writer.write(serverMessage.toString());
 			} catch (IOException e) {
 				logger.error("Could not write server message to file", e);
 			}

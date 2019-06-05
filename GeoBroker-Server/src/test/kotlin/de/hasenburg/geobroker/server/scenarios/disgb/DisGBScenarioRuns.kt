@@ -481,10 +481,10 @@ class DisGBScenarioRuns {
             val message = client.receiveInternalClientMessageWithTimeout(1000)!!
             if (ControlPacketType.PUBLISH == message.controlPacketType) {
                 remainingPublishs--
-                logger.debug("Received a PUBLISH message from server: {}", message.payload.publishPayload.get())
+                logger.debug("Received a PUBLISH message from server: {}", message.payload.getPUBLISHPayload()!!)
             } else if (ControlPacketType.PUBACK == message.controlPacketType) {
                 remainingPubacks--
-                logger.debug("Received a PUBACK message from server: {}", message.payload.pubackPayload.get())
+                logger.debug("Received a PUBACK message from server: {}", message.payload.getPUBACKPayload()!!)
             }
         }
         assertEquals(0, remainingPubacks)
@@ -505,11 +505,11 @@ class DisGBScenarioRuns {
         assertEquals(expectedControlPacketType, internalClientMessage.controlPacketType)
         when (expectedControlPacketType) {
             ControlPacketType.CONNACK -> {
-                assertEquals(expectedReasonCode, internalClientMessage.payload.connackPayload.get().reasonCode)
+                assertEquals(expectedReasonCode, internalClientMessage.payload.getCONNACKPayload()!!.reasonCode)
             }
 
             ControlPacketType.DISCONNECT -> assertEquals(expectedReasonCode,
-                    internalClientMessage.payload.disconnectPayload.get().reasonCode)
+                    internalClientMessage.payload.getDISCONNECTPayload()!!.reasonCode)
 
             else -> fail("Missing test code")
         }
@@ -528,7 +528,7 @@ class DisGBScenarioRuns {
         val internalClientMessage = client.receiveInternalClientMessage()
 
         assertEquals(ControlPacketType.PINGRESP, internalClientMessage.controlPacketType)
-        assertEquals(expectedReasonCode, internalClientMessage.payload.pingrespPayload.get().reasonCode)
+        assertEquals(expectedReasonCode, internalClientMessage.payload.getPINGRESPPayload()!!.reasonCode)
     }
 
     private fun sendSUBSCRIBE(client: SimpleClient, t: Topic, g: Geofence,
@@ -537,7 +537,7 @@ class DisGBScenarioRuns {
         val internalClientMessage = client.receiveInternalClientMessage()
 
         assertEquals(ControlPacketType.SUBACK, internalClientMessage.controlPacketType)
-        assertEquals(expectedReasonCode, internalClientMessage.payload.subackPayload.get().reasonCode)
+        assertEquals(expectedReasonCode, internalClientMessage.payload.getSUBACKPayload()!!.reasonCode)
     }
 
     private fun sendUNSUBSCRIBE(client: SimpleClient, t: Topic, expectedReasonCode: ReasonCode = ReasonCode.Success) {
@@ -545,7 +545,7 @@ class DisGBScenarioRuns {
         val internalClientMessage = client.receiveInternalClientMessage()
 
         assertEquals(ControlPacketType.UNSUBACK, internalClientMessage.controlPacketType)
-        assertEquals(expectedReasonCode, internalClientMessage.payload.unsubackPayload.get().reasonCode)
+        assertEquals(expectedReasonCode, internalClientMessage.payload.getUNSUBACKPayload()!!.reasonCode)
     }
 
     private fun sendPUBLISH(client: SimpleClient, t: Topic, g: Geofence, c: String) {

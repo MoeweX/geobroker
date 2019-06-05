@@ -97,6 +97,7 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 			Socket clientsSocket = sockets.get(PROCESSOR_INDEX);
 			Socket brokersSocket = sockets.get(BROKER_COMMUNICATOR_INDEX);
 			switch (message.getControlPacketType()) {
+				// TODO supply payload and client idea rather than then whole message (which explicitly cannot be null)
 				case CONNECT:
 					matchingLogic.processCONNECT(message, clientsSocket, brokersSocket, kryo);
 					break;

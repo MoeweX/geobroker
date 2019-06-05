@@ -71,7 +71,7 @@ public class PingTest {
 			} else {
 				assertEquals(ControlPacketType.PINGRESP, internalClientMessage.getControlPacketType());
 				assertEquals(ReasonCode.LocationUpdated,
-						internalClientMessage.getPayload().getPINGRESPPayload().get().getReasonCode());
+						internalClientMessage.getPayload().getPINGRESPPayload().getReasonCode());
 			}
 		}
 		double time2 = System.nanoTime();
@@ -102,7 +102,7 @@ public class PingTest {
 			} else {
 				assertEquals(ControlPacketType.PINGRESP, internalClientMessage.getControlPacketType());
 				assertEquals(ReasonCode.LocationUpdated,
-						internalClientMessage.getPayload().getPINGRESPPayload().get().getReasonCode());
+						internalClientMessage.getPayload().getPINGRESPPayload().getReasonCode());
 			}
 		}
 	}
@@ -119,7 +119,7 @@ public class PingTest {
 
 		assertEquals(ControlPacketType.PINGRESP, internalClientMessage.getControlPacketType());
 		assertEquals(ReasonCode.NotConnected,
-				internalClientMessage.getPayload().getPINGRESPPayload().get().getReasonCode());
+				internalClientMessage.getPayload().getPINGRESPPayload().getReasonCode());
 	}
 
 }

@@ -19,6 +19,7 @@ public class InternalServerMessage {
 	private AbstractPayload payload;
 
 	/**
+	 * TODO get rid of Optional
 	 * Optional is empty when
 	 * 	- ZMsg is not a InternalClientMessage or null
 	 * 	- Payload incompatible to control packet type

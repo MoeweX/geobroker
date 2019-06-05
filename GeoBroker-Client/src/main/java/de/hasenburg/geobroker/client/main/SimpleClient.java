@@ -19,7 +19,6 @@ import org.zeromq.SocketType;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
 
-import java.util.Optional;
 import java.util.Random;
 
 public class SimpleClient {
@@ -34,7 +33,6 @@ public class SimpleClient {
 
 	public SimpleClient(@Nullable String identifier, String address, int port, ZMQProcessManager processManager) {
 		if (identifier == null) {
-			Random random = new Random();
 			identifier = "SimpleClient-" + System.nanoTime();
 		}
 
@@ -74,14 +72,12 @@ public class SimpleClient {
 
 		// send order
 		orderMessage.send(orderSocket);
-		final Optional<InternalClientMessage> clientMessageO = InternalClientMessage.buildMessage(ZMsg.recvMsg(
-				orderSocket), kryo);
 
-		return clientMessageO.orElse(null);
+		return InternalClientMessage.buildMessage(ZMsg.recvMsg(orderSocket), kryo);
 	}
 
 	/**
-	 * @param - receive timeout in ms
+	 * @param timeout - receive timeout in ms
 	 * @return a message from the server or null if server did not send a message
 	 */
 	public @Nullable InternalClientMessage receiveInternalClientMessageWithTimeout(int timeout) {
@@ -95,9 +91,7 @@ public class SimpleClient {
 			return null;
 		}
 
-		final Optional<InternalClientMessage> clientMessageO = InternalClientMessage.buildMessage(response, kryo);
-
-		return clientMessageO.orElse(null);
+		return InternalClientMessage.buildMessage(response, kryo);
 	}
 
 	public static void main(String[] args) {

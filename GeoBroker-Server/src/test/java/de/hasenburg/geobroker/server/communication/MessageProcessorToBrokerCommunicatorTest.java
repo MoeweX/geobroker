@@ -22,7 +22,7 @@ import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
 
-@SuppressWarnings({"OptionalGetWithoutIsPresent"})
+@SuppressWarnings({"OptionalGetWithoutIsPresent", "ConstantConditions"})
 public class MessageProcessorToBrokerCommunicatorTest {
 
 	private static final Logger logger = LogManager.getLogger();
@@ -63,7 +63,7 @@ public class MessageProcessorToBrokerCommunicatorTest {
 		ZMsg msg = ZMsg.recvMsg(req);
 		InternalServerMessage response = InternalServerMessage.buildMessage(msg, kryo).get();
 		logger.info("Received response" + response);
-		assertEquals(ReasonCode.Success, response.getPayload().getCONNACKPayload().get().getReasonCode());
+		assertEquals(ReasonCode.Success, response.getPayload().getCONNACKPayload().getReasonCode());
 
 		assertEquals(1, messageProcessor.getNumberOfProcessedMessages());
 		assertEquals(1, brokerCommunicator.getNumberOfProcessedMessages());

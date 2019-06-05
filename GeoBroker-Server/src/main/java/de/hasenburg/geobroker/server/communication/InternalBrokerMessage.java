@@ -23,8 +23,11 @@ public class InternalBrokerMessage {
 	private AbstractPayload payload;
 
 	/**
-	 * Optional is empty when - ZMsg is not a InternalBrokerMessage or null - Payload incompatible to control packet
-	 * type - Payload misses fields
+	 * TODO get rid of Optional
+	 * Optional is empty when
+	 * 	- ZMsg is not a InternalBrokerMessage or null
+	 * 	- Payload incompatible to control packet type
+	 * 	- Payload misses fields
 	 */
 	public static Optional<InternalBrokerMessage> buildMessage(ZMsg msg, KryoSerializer kryo) {
 		if (msg == null) {

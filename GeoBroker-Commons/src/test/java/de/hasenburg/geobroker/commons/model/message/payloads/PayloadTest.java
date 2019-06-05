@@ -15,7 +15,7 @@ import org.zeromq.ZMsg;
 
 import static org.junit.Assert.*;
 
-@SuppressWarnings({"ConstantConditions", "OptionalGetWithoutIsPresent"})
+@SuppressWarnings("ConstantConditions")
 public class PayloadTest {
 
 	private static final Logger logger = LogManager.getLogger();
@@ -29,7 +29,7 @@ public class PayloadTest {
 		ZMsg message = new ZMsg().addFirst(bytes1);
 		byte[] bytes2 = message.getFirst().getData();
 
-		CONNECTPayload payload2 = kryo.read(bytes2, ControlPacketType.CONNECT).getCONNECTPayload().get();
+		CONNECTPayload payload2 = kryo.read(bytes2, ControlPacketType.CONNECT).getCONNECTPayload();
 		assertEquals(payload, payload2);
 	}
 
@@ -41,11 +41,11 @@ public class PayloadTest {
 		ZMsg message = new ZMsg().addFirst(bytes1);
 		byte[] bytes2 = message.getFirst().getData();
 
-		PINGREQPayload payload2 = kryo.read(bytes2, ControlPacketType.PINGREQ).getPINGREQPayload().get();
+		PINGREQPayload payload2 = kryo.read(bytes2, ControlPacketType.PINGREQ).getPINGREQPayload();
 		assertEquals(payload, payload2);
 	}
 
-	@Test
+	@Test (expected = IllegalArgumentException.class)
 	public void testPINGREQPayloadEmpty() {
 		PINGREQPayload payload = new PINGREQPayload(null);
 		byte[] bytes1 = kryo.write(payload);
@@ -67,7 +67,7 @@ public class PayloadTest {
 		ZMsg message = new ZMsg().addFirst(bytes1);
 		byte[] bytes2 = message.getFirst().getData();
 
-		PUBLISHPayload payload2 = kryo.read(bytes2, ControlPacketType.PUBLISH).getPUBLISHPayload().get();
+		PUBLISHPayload payload2 = kryo.read(bytes2, ControlPacketType.PUBLISH).getPUBLISHPayload();
 		assertEquals(payload, payload2);
 	}
 
@@ -76,7 +76,7 @@ public class PayloadTest {
 		SUBSCRIBEPayload payload = new SUBSCRIBEPayload(new Topic("data"), Geofence.circle(Location.random(), 1));
 		byte[] bytes = kryo.write(payload);
 		AbstractPayload payload2 = kryo.read(bytes, ControlPacketType.SUBSCRIBE);
-		assertEquals(payload, payload2.getSUBSCRIBEPayload().get());
+		assertEquals(payload, payload2.getSUBSCRIBEPayload());
 	}
 
 
@@ -88,7 +88,7 @@ public class PayloadTest {
 				"Some random content"), "Subscriber 1");
 		byte[] bytes = kryo.write(payload);
 		AbstractPayload payload2 = kryo.read(bytes, ControlPacketType.BrokerForwardPublish);
-		assertEquals(payload, payload2.getBrokerForwardPublishPayload().get());
+		assertEquals(payload, payload2.getBrokerForwardPublishPayload());
 
 		// TODO subscriber matching
 	}

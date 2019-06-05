@@ -23,6 +23,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
+@SuppressWarnings("ConstantConditions")
 public class PublishSubscribeTest {
 
 	private static final Logger logger = LogManager.getLogger();
@@ -50,7 +51,6 @@ public class PublishSubscribeTest {
 		serverLogic.cleanUp();
 	}
 
-	@SuppressWarnings({"ConstantConditions", "OptionalGetWithoutIsPresent"})
 	@Test
 	public void testSubscribeInGeofence() {
 		logger.info("RUNNING testSubscribeInGeofence TEST");
@@ -78,15 +78,14 @@ public class PublishSubscribeTest {
 
 		message = client.receiveInternalClientMessage();
 		assertEquals(ControlPacketType.PUBLISH, message.getControlPacketType());
-		assertEquals("Content", message.getPayload().getPUBLISHPayload().get().getContent());
+		assertEquals("Content", message.getPayload().getPUBLISHPayload().getContent());
 		logger.info("Received published message {}", message);
 
 		message = client.receiveInternalClientMessage();
 		assertEquals(ControlPacketType.PUBACK, message.getControlPacketType());
-		assertEquals(ReasonCode.Success, message.getPayload().getPUBACKPayload().get().getReasonCode());
+		assertEquals(ReasonCode.Success, message.getPayload().getPUBACKPayload().getReasonCode());
 	}
 
-	@SuppressWarnings("ConstantConditions")
 	@Test
 	public void testSubscriberNotInGeofence() {
 		// subscriber
@@ -112,7 +111,6 @@ public class PublishSubscribeTest {
 		validateNoPublishReceived(clientSubscriber, clientPublisher);
 	}
 
-	@SuppressWarnings("ConstantConditions")
 	@Test
 	public void testPublisherNotInGeofence() {
 		// subscriber
@@ -138,7 +136,6 @@ public class PublishSubscribeTest {
 		validateNoPublishReceived(clientSubscriber, clientPublisher);
 	}
 
-	@SuppressWarnings("OptionalGetWithoutIsPresent")
 	private void validateNoPublishReceived(SimpleClient clientSubscriber, SimpleClient clientPublisher) {
 		// check subscriber messages: must not contain "PUBLISH"
 		int subscriberMessageCount = 2;
@@ -155,7 +152,7 @@ public class PublishSubscribeTest {
 			if (i == 1) {
 				assertEquals(ControlPacketType.PUBACK, message.getControlPacketType());
 				assertEquals(ReasonCode.NoMatchingSubscribers,
-						message.getPayload().getPUBACKPayload().get().getReasonCode());
+						message.getPayload().getPUBACKPayload().getReasonCode());
 			}
 		}
 	}

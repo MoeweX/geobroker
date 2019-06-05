@@ -35,7 +35,8 @@ import java.util.*;
  *
  * Furthermore, the client counts all PUBLISH messages it receives.
  *
- * TODO: the benchmark client also does not has to use the order architecture, could be build similarly to StorageClient
+ * TODO: the benchmark client also does not has to use the order architecture, could be build similarly to
+ * StorageClient
  */
 public class ZMQProcess_BenchmarkClient extends ZMQProcess {
 
@@ -98,7 +99,8 @@ public class ZMQProcess_BenchmarkClient extends ZMQProcess {
 	}
 
 	@Override
-	protected void processZMQControlCommandOtherThanKill(ZMQControlUtility.ZMQControlCommand zmqControlCommand, ZMsg msg) {
+	protected void processZMQControlCommandOtherThanKill(ZMQControlUtility.ZMQControlCommand zmqControlCommand,
+														 ZMsg msg) {
 
 	}
 
@@ -109,12 +111,15 @@ public class ZMQProcess_BenchmarkClient extends ZMQProcess {
 		switch (socketIndex) {
 			case SERVER_INDEX: // got a reply from the server
 
-				Optional<InternalClientMessage> serverMessage = InternalClientMessage.buildMessage(msg, kryo);
+				InternalClientMessage serverMessage = InternalClientMessage.buildMessage(msg, kryo);
 				logger.trace("Received message {}, storing timestamp", serverMessage);
-				if (serverMessage.isPresent()) {
-					if (ControlPacketType.PUBLISH.equals(serverMessage.get().getControlPacketType())) {
-						@SuppressWarnings("OptionalGetWithoutIsPresent") PUBLISHPayload payload =
-								serverMessage.get().getPayload().getPUBLISHPayload().get();
+				if (serverMessage != null) {
+					if (ControlPacketType.PUBLISH.equals(serverMessage.getControlPacketType())) {
+						PUBLISHPayload payload = serverMessage.getPayload().getPUBLISHPayload();
+						if (payload == null) {
+							logger.warn("Publish message has an incompatible payload");
+							return;
+						}
 						if (payload.getContent().startsWith(identity + "+")) {
 							// this is our own publish message that was received from the server
 							timestamps.get(999).add(timestamp);
@@ -123,7 +128,7 @@ public class ZMQProcess_BenchmarkClient extends ZMQProcess {
 							receivedForeignPublishMessages++;
 						}
 					} else {
-						List<Long> longs = timestamps.get(serverMessage.get().getControlPacketType().ordinal());
+						List<Long> longs = timestamps.get(serverMessage.getControlPacketType().ordinal());
 						// check whether interesting control packet type -> put into correct list
 						if (longs != null) {
 							longs.add(timestamp);
@@ -148,15 +153,15 @@ public class ZMQProcess_BenchmarkClient extends ZMQProcess {
 					logger.trace("Sending message to server");
 
 					//the zMsg should consist of an InternalClientMessage only, as other entries are popped
-					Optional<InternalClientMessage> clientMessageO = InternalClientMessage.buildMessage(msg, kryo);
+					InternalClientMessage clientMessage = InternalClientMessage.buildMessage(msg, kryo);
 
-					if (clientMessageO.isPresent()) {
-						List<Long> longs = timestamps.get(clientMessageO.get().getControlPacketType().ordinal());
+					if (clientMessage != null) {
+						List<Long> longs = timestamps.get(clientMessage.getControlPacketType().ordinal());
 						// check whether interesting control packet type -> put into correct list
 						if (longs != null) {
 							longs.add(timestamp);
 						}
-						clientMessageO.get().getZMsg(kryo).send(sockets.get(SERVER_INDEX));
+						clientMessage.getZMsg(kryo).send(sockets.get(SERVER_INDEX));
 						ZMsg.newStringMsg(ORDERS.CONFIRM.name()).send(sockets.get(ORDER_INDEX));
 					} else {
 						logger.warn("Cannot run send as given message is incompatible");
@@ -193,6 +198,7 @@ public class ZMQProcess_BenchmarkClient extends ZMQProcess {
 
 		try {
 			File f = new File(targetDir);
+			//noinspection ResultOfMethodCallIgnored
 			f.mkdirs();
 			BufferedWriter writer = new BufferedWriter(new FileWriter(targetFile));
 			writer.write("receivedForeignPublishMessages," + receivedForeignPublishMessages + "\n");

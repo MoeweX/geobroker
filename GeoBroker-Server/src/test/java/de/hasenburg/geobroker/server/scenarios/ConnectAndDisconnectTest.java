@@ -25,7 +25,7 @@ import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 
-@SuppressWarnings("OptionalGetWithoutIsPresent")
+@SuppressWarnings("ConstantConditions")
 public class ConnectAndDisconnectTest {
 
 	private static final Logger logger = LogManager.getLogger();
@@ -127,7 +127,7 @@ public class ConnectAndDisconnectTest {
 		InternalClientMessage response = client.receiveInternalClientMessage();
 		logger.info("Client received response {}", response.getControlPacketType().toString());
 		assertEquals(ControlPacketType.DISCONNECT, response.getControlPacketType());
-		assertEquals(ReasonCode.WrongBroker, response.getPayload().getDISCONNECTPayload().get().getReasonCode());
+		assertEquals(ReasonCode.WrongBroker, response.getPayload().getDISCONNECTPayload().getReasonCode());
 
 		// check whether client exists
 		assertEquals(0, serverLogic.getClientDirectory().getNumberOfClients());

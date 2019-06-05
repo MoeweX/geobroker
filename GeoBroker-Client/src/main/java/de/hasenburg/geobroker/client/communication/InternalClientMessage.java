@@ -5,10 +5,10 @@ import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
 import de.hasenburg.geobroker.commons.model.message.payloads.AbstractPayload;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 import org.zeromq.ZMsg;
 
 import java.util.Objects;
-import java.util.Optional;
 
 public class InternalClientMessage {
 
@@ -18,20 +18,20 @@ public class InternalClientMessage {
 	private AbstractPayload payload;
 
 	/**
-	 * Optional is empty when
+	 * Returns null when:
 	 * 	- ZMsg is not a InternalClientMessage or null
 	 * 	- Payload incompatible to control packet type
 	 * 	- Payload misses fields
 	 */
-	public static Optional<InternalClientMessage> buildMessage(ZMsg msg, KryoSerializer kryo) {
+	public static @Nullable InternalClientMessage buildMessage(ZMsg msg, KryoSerializer kryo) {
 		if (msg == null) {
 			// happens when queue is empty
-			return Optional.empty();
+			return null;
 		}
 
 		if (msg.size() != 2) {
 			logger.error("Cannot parse message {} to InternalClientMessage, has wrong size.", msg.toString());
-			return Optional.empty();
+			return null;
 		}
 
 		InternalClientMessage message = new InternalClientMessage();
@@ -47,7 +47,7 @@ public class InternalClientMessage {
 			logger.warn("Cannot parse message, due to exception, discarding it", e);
 			message = null;
 		}
-		return Optional.ofNullable(message);
+		return message;
 	}
 
 	private InternalClientMessage() {
