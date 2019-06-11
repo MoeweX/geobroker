@@ -97,7 +97,8 @@ class Raster(val granularity: Int) {
      * @param location - the location that determines which [RasterEntry] fits
      * @return a Map containing all fitting subscriptionIds; client -> set of subscription ids
      */
-    fun getSubscriptionIdsForPublisherLocation(location: Location): Map<String, Set<ImmutablePair<String, Int>>> {
+    fun getSubscriptionIdsInRasterEntryForPublisherLocation(
+            location: Location): Map<String, Set<ImmutablePair<String, Int>>> {
         val index = calculateIndexLocation(location)
         return rasterEntries[index]?.allSubscriptionIds ?: emptyMap()
     }

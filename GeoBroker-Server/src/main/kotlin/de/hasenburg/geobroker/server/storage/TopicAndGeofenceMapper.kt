@@ -4,6 +4,7 @@ import de.hasenburg.geobroker.commons.model.message.Topic
 import de.hasenburg.geobroker.commons.model.spatial.Geofence
 import de.hasenburg.geobroker.commons.model.spatial.Location
 import de.hasenburg.geobroker.server.main.Configuration
+import de.hasenburg.geobroker.server.storage.client.ClientDirectory
 import org.apache.commons.lang3.tuple.ImmutablePair
 
 import java.util.*
@@ -38,26 +39,47 @@ class TopicAndGeofenceMapper(configuration: Configuration) {
 
     /**
      * Gets all subscription ids for clients that subscribed to the given [Topic] and that have subscribed to a
-     * [Geofence] which contains the publisher's current [Location].
+     * [Geofence] that intersects with the raster entry that contains the publisher's current [Location].
+     *
+     * Important!!!
+     * When using this method, you have to run an additional contains check for the corresponding
+     * geofences and the given [publisherLocation] if you want 100% accurate results.
      *
      * @param topic - see above
      * @param publisherLocation - see above
      * @return see above
      */
-    fun getSubscriptionIds(topic: Topic, publisherLocation: Location): Set<ImmutablePair<String, Int>> {
+    fun getPotentialSubscriptionIds(topic: Topic, publisherLocation: Location): Set<ImmutablePair<String, Int>> {
         // get TopicLevel that match Topic
         val matchingTopicLevels = getMatchingTopicLevels(topic)
 
         // get subscription ids from raster for publisher location
         val subscriptionIds = HashSet<ImmutablePair<String, Int>>()
         for (matchingTopicLevel in matchingTopicLevels) {
-            val tmp = matchingTopicLevel.raster.getSubscriptionIdsForPublisherLocation(publisherLocation)
+            val tmp = matchingTopicLevel.raster.getSubscriptionIdsInRasterEntryForPublisherLocation(publisherLocation)
             for (set in tmp.values) {
                 subscriptionIds.addAll(set)
             }
         }
 
         return subscriptionIds
+    }
+
+    /**
+     * Gets all subscription ids for clients that subscribed to the given [Topic] and that have subscribed to a
+     * [Geofence] which contains the publisher's current [Location].
+     *
+     * @param topic - see above
+     * @param publisherLocation - see above
+     * @param clientDirectory - used to get the subscription geofences that are needed for the final contains check,
+     *        also see [getPotentialSubscriptionIds].
+     * @return see above
+     */
+    fun getSubscriptionIds(topic: Topic, publisherLocation: Location,
+                           clientDirectory: ClientDirectory): Set<ImmutablePair<String, Int>> {
+        return getPotentialSubscriptionIds(topic, publisherLocation).filter { subId ->
+            clientDirectory.getSubscription(subId.left, topic)?.geofence?.contains(publisherLocation) ?: false
+        }.toSet()
     }
 
     /**

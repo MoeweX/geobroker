@@ -6,10 +6,10 @@ import de.hasenburg.geobroker.commons.model.spatial.Location
 import de.hasenburg.geobroker.commons.randomInt
 import de.hasenburg.geobroker.commons.randomName
 import de.hasenburg.geobroker.server.main.Configuration
+import de.hasenburg.geobroker.server.storage.client.ClientDirectory
 import org.apache.commons.lang3.tuple.ImmutablePair
 import org.apache.logging.log4j.LogManager
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
+import org.junit.Assert.*
 import org.junit.Test
 import java.util.*
 import java.util.stream.Collectors
@@ -70,7 +70,7 @@ class TopicAndGeofenceMapperTest {
 
         // test berlin
         testIds.forEach { id -> mapper.putSubscriptionId(id, t, berlinRectangle()) }
-        var returnedIds = mapper.getSubscriptionIds(t, berlinPoint()).toMutableSet()
+        var returnedIds = mapper.getPotentialSubscriptionIds(t, berlinPoint()).toMutableSet()
 
         // verify berlin
         assertEquals(testIds.size.toLong(), returnedIds.size.toLong())
@@ -78,7 +78,7 @@ class TopicAndGeofenceMapperTest {
         assertTrue(returnedIds.isEmpty())
 
         // test hamburg
-        returnedIds = mapper.getSubscriptionIds(t, hamburgPoint()).toMutableSet()
+        returnedIds = mapper.getPotentialSubscriptionIds(t, hamburgPoint()).toMutableSet()
 
         // verify hamburg
         assertEquals(0, returnedIds.size.toLong())
@@ -99,10 +99,10 @@ class TopicAndGeofenceMapperTest {
         testIds1.forEach { id -> mapper.putSubscriptionId(id, t1, berlinRectangle()) }
         testIds2.forEach { id -> mapper.putSubscriptionId(id, t2, berlinRectangle()) }
 
-        var returnedIds1: MutableSet<ImmutablePair<String, Int>> = mapper.getSubscriptionIds(t1, berlinPoint())
-                .toMutableSet()
-        var returnedIds2: MutableSet<ImmutablePair<String, Int>> = mapper.getSubscriptionIds(Topic("t/a/2"),
-                berlinPoint()).toMutableSet()
+        var returnedIds1: MutableSet<ImmutablePair<String, Int>> =
+                mapper.getPotentialSubscriptionIds(t1, berlinPoint()).toMutableSet()
+        var returnedIds2: MutableSet<ImmutablePair<String, Int>> =
+                mapper.getPotentialSubscriptionIds(Topic("t/a/2"), berlinPoint()).toMutableSet()
 
         // verify berlin
         assertEquals(testIds1.size.toLong(), returnedIds1.size.toLong())
@@ -114,8 +114,8 @@ class TopicAndGeofenceMapperTest {
         assertTrue(returnedIds2.isEmpty())
 
         // test hamburg
-        returnedIds1 = mapper.getSubscriptionIds(t1, hamburgPoint()).toMutableSet()
-        returnedIds2 = mapper.getSubscriptionIds(Topic("t/a/2"), hamburgPoint()).toMutableSet()
+        returnedIds1 = mapper.getPotentialSubscriptionIds(t1, hamburgPoint()).toMutableSet()
+        returnedIds2 = mapper.getPotentialSubscriptionIds(Topic("t/a/2"), hamburgPoint()).toMutableSet()
 
         // verify hamburg
         assertEquals(0, returnedIds1.size.toLong())
@@ -137,10 +137,10 @@ class TopicAndGeofenceMapperTest {
         testIds1.forEach { id -> mapper.putSubscriptionId(id, t1, berlinRectangle()) }
         testIds2.forEach { id -> mapper.putSubscriptionId(id, t2, datelineRectangle()) }
 
-        var returnedIds1: MutableSet<ImmutablePair<String, Int>> = mapper.getSubscriptionIds(t1, berlinPoint())
-                .toMutableSet()
-        var returnedIds2: MutableSet<ImmutablePair<String, Int>> = mapper.getSubscriptionIds(Topic("t/x/2"),
-                datelinePoint()).toMutableSet()
+        var returnedIds1: MutableSet<ImmutablePair<String, Int>> =
+                mapper.getPotentialSubscriptionIds(t1, berlinPoint()).toMutableSet()
+        var returnedIds2: MutableSet<ImmutablePair<String, Int>> =
+                mapper.getPotentialSubscriptionIds(Topic("t/x/2"), datelinePoint()).toMutableSet()
 
         // verify
         assertEquals(testIds1.size.toLong(), returnedIds1.size.toLong())
@@ -152,8 +152,8 @@ class TopicAndGeofenceMapperTest {
         assertTrue(returnedIds2.isEmpty())
 
         // test hamburg
-        returnedIds1 = mapper.getSubscriptionIds(t1, hamburgPoint()).toMutableSet()
-        returnedIds2 = mapper.getSubscriptionIds(Topic("t/a/2"), hamburgPoint()).toMutableSet()
+        returnedIds1 = mapper.getPotentialSubscriptionIds(t1, hamburgPoint()).toMutableSet()
+        returnedIds2 = mapper.getPotentialSubscriptionIds(Topic("t/a/2"), hamburgPoint()).toMutableSet()
 
         // verify hamburg
         assertEquals(0, returnedIds1.size.toLong())
@@ -174,7 +174,90 @@ class TopicAndGeofenceMapperTest {
         mapper.putSubscriptionId(testId, t, f)
 
         // test contained
-        assertTrue(mapper.getSubscriptionIds(t, l).contains(testId))
+        assertTrue(mapper.getPotentialSubscriptionIds(t, l).contains(testId))
+    }
+
+    @Test
+    fun randomTest() {
+        val td = ClientDirectory()
+
+        mapper = TopicAndGeofenceMapper(Configuration(10, 1))
+
+        // tested area
+        val testedArea = Geofence.circle(Location(10.0, 10.0), 2.0)
+
+        // prepare
+        val t1 = Topic("sensor/temperature")
+        val t1List = mutableListOf<Geofence>()
+        val t2 = Topic("sensor/car")
+        val t2List = mutableListOf<Geofence>()
+
+        // put t1 topics
+        for (i in 0..200) {
+            val clientIdentifier = "t1-client-" + i
+            val g = Geofence.circle(Location.randomInGeofence(testedArea), 0.5)
+            td.addClient(clientIdentifier, Location.undefined())
+            val id = td.updateSubscription(clientIdentifier, t1, g)!!
+            mapper.putSubscriptionId(id, t1, g)
+            t1List.add(g)
+        }
+
+        // put t2 topics
+        for (i in 0..200) {
+            val clientIdentifier = "t2-client-" + i
+            val g = Geofence.circle(Location.randomInGeofence(testedArea), 0.5)
+            td.addClient(clientIdentifier, Location.undefined())
+            val id = td.updateSubscription(clientIdentifier, t2, g)!!
+            mapper.putSubscriptionId(id, t2, g)
+            t2List.add(g)
+        }
+
+        // now test randomly locations for t1
+        for (i in 0..10) {
+            val matchingIndices = mutableListOf<Int>()
+            val publisherLocation = Location.randomInGeofence(testedArea)
+            for ((j, geofence) in t1List.withIndex()) {
+                if (geofence.contains(publisherLocation)) {
+                    matchingIndices.add(j)
+                }
+            }
+
+            val mapperResultIndices = mapper.getSubscriptionIds(t1, publisherLocation, td).stream().map { id -> id.right }
+                    .sorted(naturalOrder()).collect(Collectors.toList())
+            assertEquals(matchingIndices.size, mapperResultIndices.size)
+        }
+
+        // now test randomly locations for t2
+        for (i in 0..10) {
+            val matchingIndices = mutableListOf<Int>()
+            val publisherLocation = Location.randomInGeofence(testedArea)
+            for ((j, geofence) in t2List.withIndex()) {
+                if (geofence.contains(publisherLocation)) {
+                    matchingIndices.add(j)
+                }
+            }
+
+            val mapperResultIndices = mapper.getSubscriptionIds(t2, publisherLocation, td).stream().map { id -> id.right }
+                    .sorted(naturalOrder()).collect(Collectors.toList())
+            assertEquals(matchingIndices.size, mapperResultIndices.size)
+        }
+
+    }
+
+    @Test
+    fun specificTest() {
+        val g = Geofence("BUFFER (POINT (8.079053798283907 10.017496679172208), 0.5)")
+
+        val td = ClientDirectory()
+        td.addClient("c", Location.undefined())
+        val id = td.updateSubscription("c", Topic("t"), g)!!
+
+        mapper = TopicAndGeofenceMapper(Configuration(25, 1))
+        val pl = Location(9.55051768336062, 8.299518376483809)
+        mapper.putSubscriptionId(id, Topic("t"), g)
+
+        assertFalse(g.contains(pl))
+        assertTrue(mapper.getSubscriptionIds(Topic("t"), pl, td).size == 0)
     }
 
     /*****************************************************************

@@ -58,7 +58,7 @@ public class SingleGeoBrokerServerLogic implements IServerLogic {
 
 		while (keepRunning.get()) {
 			logger.info(clientDirectory.toString());
-			Utility.sleepNoLog(2000, 0);
+			Utility.sleepNoLog(20000, 0);
 		}
 	}
 

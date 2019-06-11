@@ -36,15 +36,20 @@ interface IMatchingLogic {
 
     fun processPUBLISH(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer)
 
-    fun processBrokerForwardDisconnect(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer)
+    fun processBrokerForwardDisconnect(message: InternalServerMessage, clients: Socket, brokers: Socket,
+                                       kryo: KryoSerializer)
 
-    fun processBrokerForwardPingreq(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer)
+    fun processBrokerForwardPingreq(message: InternalServerMessage, clients: Socket, brokers: Socket,
+                                    kryo: KryoSerializer)
 
-    fun processBrokerForwardSubscribe(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer)
+    fun processBrokerForwardSubscribe(message: InternalServerMessage, clients: Socket, brokers: Socket,
+                                      kryo: KryoSerializer)
 
-    fun processBrokerForwardUnsubscribe(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer)
+    fun processBrokerForwardUnsubscribe(message: InternalServerMessage, clients: Socket, brokers: Socket,
+                                        kryo: KryoSerializer)
 
-    fun processBrokerForwardPublish(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer)
+    fun processBrokerForwardPublish(message: InternalServerMessage, clients: Socket, brokers: Socket,
+                                    kryo: KryoSerializer)
 
 }
 
@@ -88,10 +93,8 @@ fun subscribeAtLocalBroker(clientIdentifier: String, clientDirectory: ClientDire
                            topicAndGeofenceMapper: TopicAndGeofenceMapper, topic: Topic, geofence: Geofence,
                            logger: Logger, kryo: KryoSerializer): ReasonCode {
 
-    val subscribed: ImmutablePair<ImmutablePair<String, Int>, Geofence>? = clientDirectory.checkIfSubscribed(
-            clientIdentifier,
-            topic,
-            geofence)
+    val subscribed: ImmutablePair<ImmutablePair<String, Int>, Geofence>? =
+            clientDirectory.checkIfSubscribed(clientIdentifier, topic, geofence)
 
     // if already subscribed -> remove subscription id from now unrelated geofence parts
     subscribed?.let { topicAndGeofenceMapper.removeSubscriptionId(subscribed.left, topic, subscribed.right) }
@@ -109,7 +112,8 @@ fun subscribeAtLocalBroker(clientIdentifier: String, clientDirectory: ClientDire
 }
 
 fun unsubscribeAtLocalBroker(clientIdentifier: String, clientDirectory: ClientDirectory,
-                             topicAndGeofenceMapper: TopicAndGeofenceMapper, topic: Topic, logger: Logger, kryo: KryoSerializer): ReasonCode {
+                             topicAndGeofenceMapper: TopicAndGeofenceMapper, topic: Topic, logger: Logger,
+                             kryo: KryoSerializer): ReasonCode {
     var reasonCode = ReasonCode.Success
 
     // unsubscribe from client directory -> get subscription id
@@ -137,7 +141,9 @@ fun publishMessageToLocalClients(publisherLocation: Location, publishPayload: PU
     logger.debug("Publishing topic {} to all subscribers", publishPayload.topic)
 
     // get subscriptions that have a geofence containing the publisher location
-    val subscriptionIdResults = topicAndGeofenceMapper.getSubscriptionIds(publishPayload.topic, publisherLocation)
+    val subscriptionIdResults =
+            topicAndGeofenceMapper.getSubscriptionIds(publishPayload.topic, publisherLocation, clientDirectory)
+
 
     // only keep subscription if subscriber location is insider message geofence
     val subscriptionIds = subscriptionIdResults.filter { subId ->

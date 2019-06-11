@@ -232,7 +232,7 @@ class RasterTest {
         assertTrue(containsLocation(result!!, index))
 
         raster!!.putSubscriptionIdIntoRasterEntries(fence, sid)
-        val ids = raster!!.getSubscriptionIdsForPublisherLocation(l)
+        val ids = raster!!.getSubscriptionIdsInRasterEntryForPublisherLocation(l)
         logger.info(ids)
     }
 

@@ -146,7 +146,7 @@ public class GeolifeStorage {
 						lastFence = fence;
 					} else if (numPublishOps < publishOps) {
 						// find publish targets
-						storage.getSubscriptionIds(topic, visitedLocation.left); // I am currently at visitedLocation
+						storage.getPotentialSubscriptionIds(topic, visitedLocation.left); // I am currently at visitedLocation
 						numPublishOps += 1;
 					} else {
 						numUpdateOps = 0;
