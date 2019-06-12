@@ -13,6 +13,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.zeromq.ZMsg;
 
+import java.util.Arrays;
+
 import static org.junit.Assert.*;
 
 @SuppressWarnings("ConstantConditions")
@@ -85,11 +87,17 @@ public class PayloadTest {
 		// publisher matching
 		BrokerForwardPublishPayload payload = new BrokerForwardPublishPayload(new PUBLISHPayload(new Topic("data"),
 				Geofence.circle(Location.random(), 1.0),
-				"Some random content"), "Subscriber 1");
+				"Some random content"), Arrays.asList("Subscriber 1", "Subscriber 2"));
 		byte[] bytes = kryo.write(payload);
 		AbstractPayload payload2 = kryo.read(bytes, ControlPacketType.BrokerForwardPublish);
 		assertEquals(payload, payload2.getBrokerForwardPublishPayload());
 
-		// TODO subscriber matching
+		// subscriber matching
+		payload = new BrokerForwardPublishPayload(new PUBLISHPayload(new Topic("data"),
+				Geofence.circle(Location.random(), 1.0),
+				"Some random content"), Location.undefined());
+		bytes = kryo.write(payload);
+		payload2 = kryo.read(bytes, ControlPacketType.BrokerForwardPublish);
+		assertEquals(payload, payload2.getBrokerForwardPublishPayload());
 	}
 }

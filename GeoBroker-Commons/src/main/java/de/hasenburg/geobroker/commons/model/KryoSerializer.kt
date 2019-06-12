@@ -103,8 +103,9 @@ class KryoSerializer {
                     override fun read(kryo: Kryo, input: Input,
                                       aClass: Class<BrokerForwardDisconnectPayload>): BrokerForwardDisconnectPayload? {
                         val clientIdentifier = kryo.readObjectOrNull(input, String::class.java) ?: return null
-                        val disconnectPayload = kryo.readObjectOrNull(input, DISCONNECTPayload::class.java)
-                                ?: return null ?: return null
+                        val disconnectPayload =
+                                kryo.readObjectOrNull(input, DISCONNECTPayload::class.java) ?: return null
+                                        ?: return null
                         return BrokerForwardDisconnectPayload(clientIdentifier, disconnectPayload)
                     }
                 })
@@ -125,15 +126,23 @@ class KryoSerializer {
             override fun write(kryo: Kryo, output: Output, o: BrokerForwardPublishPayload) {
                 kryo.writeObjectOrNull(output, o.publishPayload, PUBLISHPayload::class.java)
                 kryo.writeObjectOrNull(output, o.publisherLocation, Location::class.java)
-                kryo.writeObjectOrNull(output, o.subscriberClientIdentifier, String::class.java)
+                for (subscriberClientIdentifier in o.subscriberClientIdentifiers) {
+                    kryo.writeObjectOrNull(output, subscriberClientIdentifier, String::class.java)
+                }
             }
 
             override fun read(kryo: Kryo, input: Input,
                               aClass: Class<BrokerForwardPublishPayload>): BrokerForwardPublishPayload? {
                 val publishPayload = kryo.readObjectOrNull(input, PUBLISHPayload::class.java) ?: return null
                 val location = kryo.readObjectOrNull(input, Location::class.java) ?: return null
-                val subscriberClientIdentifier = kryo.readObjectOrNull(input, String::class.java) ?: return null
-                return BrokerForwardPublishPayload(publishPayload, subscriberClientIdentifier, location)
+                val subscriberClientIdentifiers = mutableListOf<String>()
+                while (!input.eof()) {
+                    val sci = kryo.readObjectOrNull(input, String::class.java)
+                    if (sci != null) {
+                        subscriberClientIdentifiers.add(sci)
+                    }
+                }
+                return BrokerForwardPublishPayload(publishPayload, subscriberClientIdentifiers, location)
             }
         })
         kryo.register(BrokerForwardSubscribePayload::class.java, object : Serializer<BrokerForwardSubscribePayload>() {
@@ -159,8 +168,8 @@ class KryoSerializer {
                     override fun read(kryo: Kryo, input: Input,
                                       aClass: Class<BrokerForwardUnsubscribePayload>): BrokerForwardUnsubscribePayload? {
                         val clientIdentifier = kryo.readObjectOrNull(input, String::class.java) ?: return null
-                        val unsubscribePayload = kryo.readObjectOrNull(input, UNSUBSCRIBEPayload::class.java)
-                                ?: return null
+                        val unsubscribePayload =
+                                kryo.readObjectOrNull(input, UNSUBSCRIBEPayload::class.java) ?: return null
                         return BrokerForwardUnsubscribePayload(clientIdentifier, unsubscribePayload)
                     }
                 })
@@ -303,8 +312,8 @@ class KryoSerializer {
         when (controlPacketType) {
             ControlPacketType.CONNACK -> o = kryo.readObjectOrNull(input, CONNACKPayload::class.java) ?: return null
             ControlPacketType.CONNECT -> o = kryo.readObjectOrNull(input, CONNECTPayload::class.java) ?: return null
-            ControlPacketType.DISCONNECT -> o = kryo.readObjectOrNull(input, DISCONNECTPayload::class.java)
-                    ?: return null
+            ControlPacketType.DISCONNECT -> o =
+                    kryo.readObjectOrNull(input, DISCONNECTPayload::class.java) ?: return null
             ControlPacketType.PINGREQ -> o = kryo.readObjectOrNull(input, PINGREQPayload::class.java) ?: return null
             ControlPacketType.PINGRESP -> o = kryo.readObjectOrNull(input, PINGRESPPayload::class.java) ?: return null
             ControlPacketType.PUBACK -> o = kryo.readObjectOrNull(input, PUBACKPayload::class.java) ?: return null
@@ -312,18 +321,18 @@ class KryoSerializer {
             ControlPacketType.SUBACK -> o = kryo.readObjectOrNull(input, SUBACKPayload::class.java) ?: return null
             ControlPacketType.SUBSCRIBE -> o = kryo.readObjectOrNull(input, SUBSCRIBEPayload::class.java) ?: return null
             ControlPacketType.UNSUBACK -> o = kryo.readObjectOrNull(input, UNSUBACKPayload::class.java) ?: return null
-            ControlPacketType.UNSUBSCRIBE -> o = kryo.readObjectOrNull(input, UNSUBSCRIBEPayload::class.java)
-                    ?: return null
-            ControlPacketType.BrokerForwardDisconnect -> o = kryo.readObjectOrNull(input,
-                    BrokerForwardDisconnectPayload::class.java) ?: return null
-            ControlPacketType.BrokerForwardPingreq -> o = kryo.readObjectOrNull(input,
-                    BrokerForwardPingreqPayload::class.java) ?: return null
-            ControlPacketType.BrokerForwardPublish -> o = kryo.readObjectOrNull(input,
-                    BrokerForwardPublishPayload::class.java) ?: return null
-            ControlPacketType.BrokerForwardSubscribe -> o = kryo.readObjectOrNull(input,
-                    BrokerForwardSubscribePayload::class.java) ?: return null
-            ControlPacketType.BrokerForwardUnsubscribe -> o = kryo.readObjectOrNull(input,
-                    BrokerForwardUnsubscribePayload::class.java) ?: return null
+            ControlPacketType.UNSUBSCRIBE -> o =
+                    kryo.readObjectOrNull(input, UNSUBSCRIBEPayload::class.java) ?: return null
+            ControlPacketType.BrokerForwardDisconnect -> o =
+                    kryo.readObjectOrNull(input, BrokerForwardDisconnectPayload::class.java) ?: return null
+            ControlPacketType.BrokerForwardPingreq -> o =
+                    kryo.readObjectOrNull(input, BrokerForwardPingreqPayload::class.java) ?: return null
+            ControlPacketType.BrokerForwardPublish -> o =
+                    kryo.readObjectOrNull(input, BrokerForwardPublishPayload::class.java) ?: return null
+            ControlPacketType.BrokerForwardSubscribe -> o =
+                    kryo.readObjectOrNull(input, BrokerForwardSubscribePayload::class.java) ?: return null
+            ControlPacketType.BrokerForwardUnsubscribe -> o =
+                    kryo.readObjectOrNull(input, BrokerForwardUnsubscribePayload::class.java) ?: return null
             else -> return null
         }
         return o

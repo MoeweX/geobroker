@@ -8,7 +8,7 @@ class BrokerForwardPublishPayload : AbstractPayload {
 
     val publishPayload: PUBLISHPayload
     val publisherLocation: Location // needed in case of matching at the subscriber
-    var subscriberClientIdentifier: String // needed in case of matching at the publisher
+    var subscriberClientIdentifiers: List<String> // needed in case of matching at the publisher
 
     /**
      * This constructor is used in case of matching at the subscriber
@@ -16,27 +16,27 @@ class BrokerForwardPublishPayload : AbstractPayload {
     constructor(publishPayload: PUBLISHPayload, publisherLocation: Location) : super() {
         this.publishPayload = publishPayload
         this.publisherLocation = publisherLocation
-        this.subscriberClientIdentifier = "empty"
+        this.subscriberClientIdentifiers = emptyList()
     }
 
     /**
      * This constructor is used in case of matching at the publisher
      */
-    constructor(publishPayload: PUBLISHPayload, subscriberClientIdentifier: String) : super() {
+    constructor(publishPayload: PUBLISHPayload, subscriberClientIdentifiers: List<String>) : super() {
         this.publishPayload = publishPayload
         this.publisherLocation = Location.undefined()
-        this.subscriberClientIdentifier = subscriberClientIdentifier
+        this.subscriberClientIdentifiers = subscriberClientIdentifiers
     }
 
     /**
      * This constructor is used by [de.hasenburg.geobroker.commons.model.KryoSerializer] as kryo does not know
      * which kind of matching we are doing.
      */
-    constructor(publishPayload: PUBLISHPayload, subscriberClientIdentifier: String,
+    constructor(publishPayload: PUBLISHPayload, subscriberClientIdentifiers: List<String>,
                 publisherLocation: Location) : super() {
         this.publishPayload = publishPayload
         this.publisherLocation = publisherLocation
-        this.subscriberClientIdentifier = subscriberClientIdentifier
+        this.subscriberClientIdentifiers = subscriberClientIdentifiers
     }
 
     /*****************************************************************
@@ -51,7 +51,7 @@ class BrokerForwardPublishPayload : AbstractPayload {
 
         if (publishPayload != other.publishPayload) return false
         if (publisherLocation != other.publisherLocation) return false
-        if (subscriberClientIdentifier != other.subscriberClientIdentifier) return false
+        if (subscriberClientIdentifiers != other.subscriberClientIdentifiers) return false
 
         return true
     }
@@ -59,13 +59,13 @@ class BrokerForwardPublishPayload : AbstractPayload {
     override fun hashCode(): Int {
         var result = publishPayload.hashCode()
         result = 31 * result + publisherLocation.hashCode()
-        result = 31 * result + subscriberClientIdentifier.hashCode()
+        result = 31 * result + subscriberClientIdentifiers.hashCode()
         return result
     }
 
     override fun toString(): String {
-        return "BrokerForwardPublishPayload(publishPayload=$publishPayload, publisherLocation=$publisherLocation, " +
-                "subscriberClientIdentifier='$subscriberClientIdentifier')"
+        return "BrokerForwardPublishPayload(publishPayload=$publishPayload, publisherLocation=$publisherLocation, " + "subscriberClientIdentifiers=$subscriberClientIdentifiers)"
     }
+
 
 }

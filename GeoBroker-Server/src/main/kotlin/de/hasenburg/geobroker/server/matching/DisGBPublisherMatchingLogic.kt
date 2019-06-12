@@ -243,12 +243,15 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
             reasonCode = ReasonCode.NotConnected
         } else {
             // get subscriptions that have a geofence containing the publisher location
-            val subscriptionIdResults = topicAndGeofenceMapper.getSubscriptionIds(payload.topic, publisherLocation, clientDirectory)
+            val subscriptionIdResults =
+                    topicAndGeofenceMapper.getSubscriptionIds(payload.topic, publisherLocation, clientDirectory)
 
             // only keep subscription if subscriber location is insider message geofence
             val subscriptionIds = subscriptionIdResults.filter { subId ->
                 payload.geofence.contains(clientDirectory.getClientLocation(subId.left)!!)
             }
+
+            val remoteClientIds = mutableMapOf<String, MutableList<String>>()
 
             // publish message to remaining subscribers
             for (subscriptionId in subscriptionIds) {
@@ -259,17 +262,13 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
                         logger.warn("A Subscriber disconnected before being able to publish an outstanding message")
                     subscriber.remote -> {
                         logger.debug("Client {} is a remote subscriber", subscriber.clientIdentifier)
-                        // remote client -> send to his broker
+                        // remote client -> must be send to his broker
                         val otherBrokerId: String? =
                                 brokerAreaManager.getOtherBrokerContainingLocation(subscriber.location)?.brokerId
-                        otherBrokerId.let {
+                        if (otherBrokerId != null) {
                             logger.debug("""|Client ${subscriber.clientIdentifier} is connected to broker $otherBrokerId,
-                                            |thus forwarding the published message (topic = ${payload.topic} to it""".trimMargin())
-                            // send message to BrokerCommunicator who takes care of the rest
-                            ZMQProcess_BrokerCommunicator.generatePULLSocketMessage(otherBrokerId,
-                                    InternalBrokerMessage(ControlPacketType.BrokerForwardPublish,
-                                            BrokerForwardPublishPayload(payload, subscriber.clientIdentifier)),
-                                    kryo).send(brokers)
+                                            |thus forwarding the published message (topic = ${payload.topic}) to it""".trimMargin())
+                            remoteClientIds.getOrPut(otherBrokerId) { mutableListOf() }.add(subscriber.clientIdentifier)
                         }
                     }
                     else -> {
@@ -281,6 +280,16 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
                         toPublish.getZMsg(kryo).send(clients)
                     }
                 }
+
+            }
+
+            // forward message to remote brokers together with all their subscribers
+            for ((otherBrokerId, subscribers) in remoteClientIds) {
+                // send message to BrokerCommunicator who takes care of the rest
+                ZMQProcess_BrokerCommunicator.generatePULLSocketMessage(otherBrokerId,
+                        InternalBrokerMessage(ControlPacketType.BrokerForwardPublish,
+                                BrokerForwardPublishPayload(payload, subscribers)),
+                        kryo).send(brokers)
             }
 
             reasonCode = if (subscriptionIds.isEmpty()) {
@@ -440,31 +449,32 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
      * Publishes a message to local clients that originates from a client connected to another broker.
      *
      * As the other broker already did the matching, we can just deliver it instead of doing the matching again (in
-     * case the client exists)
+     * case the clients exists)
      */
     override fun processBrokerForwardPublish(message: InternalServerMessage, clients: Socket, brokers: Socket,
                                              kryo: KryoSerializer) {
         val payload = message.payload.getBrokerForwardPublishPayload() ?: return
-        var reasonCode = ReasonCode.Success
+        val reasonCode = ReasonCode.Success
 
         // the id is determined by ZeroMQ based on the first frame, so here it is the id of the forwarding broker
         val otherBrokerId = message.clientIdentifier
         logger.trace("Processing BrokerForwardPublish from broker {}", otherBrokerId)
 
         // validate that target client is connected
-        if (clientDirectory.clientExists(payload.subscriberClientIdentifier)) {
-            // TODO only send one message to other brokers for all matching clients to reduce inter-node traffic
-            logger.debug("Sending a message that was matched by broker $otherBrokerId to Client {}",
-                    payload.subscriberClientIdentifier)
-            val toPublish = InternalServerMessage(payload.subscriberClientIdentifier,
-                    ControlPacketType.PUBLISH,
-                    payload.publishPayload)
-            logger.trace("Publishing $toPublish")
-            toPublish.getZMsg(kryo).send(clients)
-        } else {
-            logger.warn("Another broker matched a message for client {}, but he is not connected",
-                    payload.subscriberClientIdentifier)
-            reasonCode = ReasonCode.NotConnected
+        for (subscriberClientIdentifier in payload.subscriberClientIdentifiers) {
+            if (clientDirectory.clientExists(subscriberClientIdentifier)) {
+                logger.debug("Sending a message that was matched by broker $otherBrokerId to Client {}",
+                        subscriberClientIdentifier)
+                val toPublish = InternalServerMessage(subscriberClientIdentifier,
+                        ControlPacketType.PUBLISH,
+                        payload.publishPayload)
+                logger.trace("Publishing $toPublish")
+                toPublish.getZMsg(kryo).send(clients)
+            } else {
+                logger.warn("Another broker matched a message for client {}, but he is not connected",
+                        subscriberClientIdentifier)
+                // TODO we could now change the reason code to something like partial success
+            }
         }
 
         val response = InternalServerMessage(otherBrokerId, ControlPacketType.PUBACK, PUBACKPayload(reasonCode))
