@@ -8,7 +8,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.InputStreamReader;
 
 public class Configuration {
@@ -65,7 +64,7 @@ public class Configuration {
 
 			return parseToml(c, toml);
 		} catch (Exception e) {
-			logger.fatal("Could not configuration", e);
+			logger.fatal("Could not read configuration", e);
 		}
 		System.exit(1);
 		return null; // WHY DO I NEED YOU?
@@ -83,7 +82,7 @@ public class Configuration {
 
 			return parseToml(c, toml);
 		} catch (Exception e) {
-			logger.fatal("Could not internal configuration", e);
+			logger.fatal("Could not load internal configuration", e);
 		}
 		System.exit(1);
 		return null; // WHY DO I NEED YOU?
@@ -111,6 +110,7 @@ public class Configuration {
 					c.brokerCommunicators.longValue()));
 		}
 
+		String logLocation = "logs/" + c.brokerId + ".log";
 		return c;
 	}
 

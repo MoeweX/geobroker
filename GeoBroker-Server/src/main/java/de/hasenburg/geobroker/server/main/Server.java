@@ -34,7 +34,8 @@ public class Server {
 
 		ServerLifecycle lifecycle = new ServerLifecycle(logic);
 
-		logger.info("Starting lifecycle");
+		logger.info("Starting lifecycle of broker {}", configuration.getBrokerId());
+		logger.info("Config: {}", configuration.toString());
 		lifecycle.run(configuration);
 		logger.info("End of lifecycle reached, shutting down");
 

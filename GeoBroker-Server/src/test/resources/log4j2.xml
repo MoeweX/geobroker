@@ -4,7 +4,7 @@
         <Console name="Console" target="SYSTEM_OUT">
             <PatternLayout pattern="%highlight{%d{HH:mm:ss.SSS} [%-15t] %-5level %-30c{2} - %msg%n}"/>
         </Console>
-        <File name="File" fileName="logs/server.log" append="false">
+        <File name="File" fileName="logs/test_server.log" append="false">
             <PatternLayout pattern="%highlight{%d{HH:mm:ss.SSS} [%-15t] %-5level %-30c{2} - %msg%n}"/>
         </File>
     </Appenders>
