@@ -96,6 +96,7 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 
 			Socket clientsSocket = sockets.get(PROCESSOR_INDEX);
 			Socket brokersSocket = sockets.get(BROKER_COMMUNICATOR_INDEX);
+			logger.trace("Processing message with ControlPacketType {}", message.getControlPacketType());
 			switch (message.getControlPacketType()) {
 				// TODO supply payload and client idea rather than then whole message (which explicitly cannot be null)
 				case CONNECT:
@@ -134,6 +135,7 @@ class ZMQProcess_MessageProcessor extends ZMQProcess {
 				default:
 					logger.warn("Cannot process message {}", message.toString());
 			}
+			logger.trace("Message successfully processed");
 		} else {
 			logger.warn("Received an incompatible message: {}", msg);
 		}

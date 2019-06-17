@@ -43,12 +43,14 @@ class ZMQProcess_Server extends ZMQProcess {
 		Socket[] socketArray = new Socket[2];
 
 		Socket frontend = context.createSocket(SocketType.ROUTER);
+		frontend.setHWM(10000);
 		frontend.bind("tcp://" + ip + ":" + port);
 		frontend.setIdentity(identity.getBytes());
 		frontend.setSendTimeOut(1);
 		socketArray[FRONTEND_INDEX] = frontend;
 
 		Socket backend = context.createSocket(SocketType.DEALER);
+		backend.setHWM(10000);
 		backend.bind("inproc://" + identity);
 		// backend.setIdentity(identity.getBytes()); TODO test whether we can do this
 		backend.setSendTimeOut(1);
