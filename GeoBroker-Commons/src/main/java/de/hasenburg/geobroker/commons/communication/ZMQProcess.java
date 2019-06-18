@@ -40,83 +40,87 @@ public abstract class ZMQProcess implements Runnable {
 
 	@Override
 	public void run() {
-		// check whether init was called
-		if (context == null) {
-			logger.fatal("ZMQProcess with identity {} started before init was called, shutting down", identity);
-			System.exit(1);
-		}
+		try {
+			// check whether init was called
+			if (context == null) {
+				logger.fatal("ZMQProcess with identity {} started before init was called, shutting down", identity);
+				System.exit(1);
+			}
 
-		// set thread name
-		Thread.currentThread().setName(identity);
+			// set thread name
+			Thread.currentThread().setName(identity);
 
-		// get other sockets (UDF)
-		sockets = bindAndConnectSockets(context);
+			// get other sockets (UDF)
+			sockets = bindAndConnectSockets(context);
 
-		// register them at poller
-		poller = context.createPoller(sockets.size() + 1); // +1 as we'll add the control later
-		sockets.forEach(s -> poller.register(s, ZMQ.Poller.POLLIN)); // add sockets at poller index 0 to sockets.size()
+			// register them at poller
+			poller = context.createPoller(sockets.size() + 1); // +1 as we'll add the control later
+			sockets.forEach(s -> poller.register(s, ZMQ.Poller.POLLIN)); // add sockets at poller index 0 to sockets.size()
 
-		// add control socket
-		int zmqControlIndex = ZMQControlUtility.connectWithPoller(context, poller, identity);
+			// add control socket
+			int zmqControlIndex = ZMQControlUtility.connectWithPoller(context, poller, identity);
 
-		long pollTime = 0; // in ns
-		long processingTime = 0; // in ns
-		long newTime;
-		long oldTime;
+			long pollTime = 0; // in ns
+			long processingTime = 0; // in ns
+			long newTime;
+			long oldTime;
 
-		// poll all sockets
-		while (!Thread.currentThread().isInterrupted()) {
-			logger.trace("Waiting {}s for a message", TIMEOUT_SECONDS);
-			oldTime = System.nanoTime();
+			// poll all sockets
+			while (!Thread.currentThread().isInterrupted()) {
+				logger.trace("Waiting {}s for a message", TIMEOUT_SECONDS);
+				oldTime = System.nanoTime();
 
-			poller.poll(TIMEOUT_SECONDS * 1000);
+				poller.poll(TIMEOUT_SECONDS * 1000);
 
-			newTime = System.nanoTime();
-			pollTime += newTime - oldTime;
-			oldTime = System.nanoTime();
+				newTime = System.nanoTime();
+				pollTime += newTime - oldTime;
+				oldTime = System.nanoTime();
 
-			if (poller.pollin(zmqControlIndex)) {
-				Pair<ZMQControlUtility.ZMQControlCommand, ZMsg> pair = ZMQControlUtility.getCommandAndMsg(poller,
-						zmqControlIndex);
-				if (ZMQControlUtility.ZMQControlCommand.KILL.equals(pair.getLeft())) {
-					break; // break out of while loop, time to shut down
+				if (poller.pollin(zmqControlIndex)) {
+					Pair<ZMQControlUtility.ZMQControlCommand, ZMsg> pair = ZMQControlUtility.getCommandAndMsg(poller,
+							zmqControlIndex);
+					if (ZMQControlUtility.ZMQControlCommand.KILL.equals(pair.getLeft())) {
+						break; // break out of while loop, time to shut down
+					} else {
+						processZMQControlCommandOtherThanKill(pair.getLeft(), pair.getRight());
+					}
 				} else {
-					processZMQControlCommandOtherThanKill(pair.getLeft(), pair.getRight());
-				}
-			} else {
-				// poll each socket
-				for (int socketIndex = 0; socketIndex < sockets.size(); socketIndex++) {
-					if (poller.pollin(socketIndex)) {
-						ZMsg msg = ZMsg.recvMsg(sockets.get(socketIndex));
+					// poll each socket
+					for (int socketIndex = 0; socketIndex < sockets.size(); socketIndex++) {
+						if (poller.pollin(socketIndex)) {
+							ZMsg msg = ZMsg.recvMsg(sockets.get(socketIndex));
 
-						// process the ZMsg (UDF)
-						processZMsg(socketIndex, msg);
+							// process the ZMsg (UDF)
+							processZMsg(socketIndex, msg);
 
-						// do not poll other sockets when we got a message, restart while loop
-						break;
+							// do not poll other sockets when we got a message, restart while loop
+							break;
+						}
 					}
 				}
+
+				newTime = System.nanoTime();
+				processingTime += newTime - oldTime;
+
+				// add utilization roughly every 10 seconds
+				if (pollTime + processingTime >= measurementInterval * 1000000000L) {
+					double utilization = processingTime / (processingTime + pollTime + 0.0);
+					utilization = Math.round(utilization * 1000.0) / 10.0;
+					utilizationCalculated(utilization);
+					pollTime = 0;
+					processingTime = 0;
+				}
 			}
 
-			newTime = System.nanoTime();
-			processingTime += newTime - oldTime;
+			// destroy sockets as we are shutting down
+			sockets.forEach(s -> context.destroySocket(s));
+			context.destroySocket(poller.getSocket(zmqControlIndex));
 
-			// add utilization roughly every 10 seconds
-			if (pollTime + processingTime >= measurementInterval * 1000000000L) {
-				double utilization = processingTime / (processingTime + pollTime + 0.0);
-				utilization = Math.round(utilization * 1000.0) / 10.0;
-				utilizationCalculated(utilization);
-				pollTime = 0;
-				processingTime = 0;
-			}
+			// UDF for shutdown completed
+			shutdownCompleted();
+		} catch (Exception e) {
+			logger.fatal("ZMQProcess died due to an unhandled exception!", e);
 		}
-
-		// destroy sockets as we are shutting down
-		sockets.forEach(s -> context.destroySocket(s));
-		context.destroySocket(poller.getSocket(zmqControlIndex));
-
-		// UDF for shutdown completed
-		shutdownCompleted();
 	}
 
 	protected abstract List<Socket> bindAndConnectSockets(ZContext context);

@@ -1,12 +1,12 @@
 # server information
 [server]
-brokerId = "Paris"
-port = 5558
+brokerId = "Frankfurt"
+port = 5559
 granularity = 5
 messageProcessors = 2
 
     [server.mode]
     name = "disgb_subscriberMatching"
-    brokerAreaFilePath = "src/test/resources/disgb_scenario.json"
+    brokerAreaFilePath = "GeoBroker-Server/src/main/resources/jfsb/disgb_jfsb.json"
     brokerCommunicators = 2
 

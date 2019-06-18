@@ -23,21 +23,28 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
                                      private val topicAndGeofenceMapper: TopicAndGeofenceMapper,
                                      private val brokerAreaManager: BrokerAreaManager) : IMatchingLogic {
 
-    override fun processCONNECT(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer) {
+    override fun processCONNECT(message: InternalServerMessage, clients: Socket, brokers: Socket,
+                                kryo: KryoSerializer) {
         val payload = message.payload.getCONNECTPayload() ?: return
 
-        if (!handleResponsibility(message.clientIdentifier, payload.location, clients, kryo)) {
+        if (!payload.location.isUndefined && !handleResponsibility(message.clientIdentifier,
+                        payload.location,
+                        clients,
+                        kryo)) {
             return  // we are not responsible, client has been notified
+        } else if (payload.location.isUndefined) {
+            logger.warn("Client with an undefined location connected to broker.")
         }
 
-        val response = connectClientAtLocalBroker(message.clientIdentifier, payload.location, clientDirectory,
-                logger, kryo)
+        val response =
+                connectClientAtLocalBroker(message.clientIdentifier, payload.location, clientDirectory, logger, kryo)
 
         logger.trace("Sending response $response")
         response.getZMsg(kryo).send(clients)
     }
 
-    override fun processDISCONNECT(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer) {
+    override fun processDISCONNECT(message: InternalServerMessage, clients: Socket, brokers: Socket,
+                                   kryo: KryoSerializer) {
         val payload = message.payload.getDISCONNECTPayload() ?: return
 
         val success = clientDirectory.removeClient(message.clientIdentifier)
@@ -49,7 +56,8 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
         logger.debug("Disconnected client {}, code {}", message.clientIdentifier, payload.reasonCode)
     }
 
-    override fun processPINGREQ(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer) {
+    override fun processPINGREQ(message: InternalServerMessage, clients: Socket, brokers: Socket,
+                                kryo: KryoSerializer) {
         val payload = message.payload.getPINGREQPayload() ?: return
 
         // check whether client has moved to another broker area
@@ -63,15 +71,15 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
                 logger,
                 kryo)
 
-        val response = InternalServerMessage(message.clientIdentifier,
-                ControlPacketType.PINGRESP,
-                PINGRESPPayload(reasonCode))
+        val response =
+                InternalServerMessage(message.clientIdentifier, ControlPacketType.PINGRESP, PINGRESPPayload(reasonCode))
 
         logger.trace("Sending response $response")
         response.getZMsg(kryo).send(clients)
     }
 
-    override fun processSUBSCRIBE(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer) {
+    override fun processSUBSCRIBE(message: InternalServerMessage, clients: Socket, brokers: Socket,
+                                  kryo: KryoSerializer) {
         val payload = message.payload.getSUBSCRIBEPayload() ?: return
 
         val reasonCode = subscribeAtLocalBroker(message.clientIdentifier,
@@ -82,15 +90,15 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
                 logger,
                 kryo)
 
-        val response = InternalServerMessage(message.clientIdentifier,
-                ControlPacketType.SUBACK,
-                SUBACKPayload(reasonCode))
+        val response =
+                InternalServerMessage(message.clientIdentifier, ControlPacketType.SUBACK, SUBACKPayload(reasonCode))
 
         logger.trace("Sending response $response")
         response.getZMsg(kryo).send(clients)
     }
 
-    override fun processUNSUBSCRIBE(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer) {
+    override fun processUNSUBSCRIBE(message: InternalServerMessage, clients: Socket, brokers: Socket,
+                                    kryo: KryoSerializer) {
         val payload = message.payload.getUNSUBSCRIBEPayload() ?: return
 
         val reasonCode = unsubscribeAtLocalBroker(message.clientIdentifier,
@@ -100,15 +108,15 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
                 logger,
                 kryo)
 
-        val response = InternalServerMessage(message.clientIdentifier,
-                ControlPacketType.UNSUBACK,
-                UNSUBACKPayload(reasonCode))
+        val response =
+                InternalServerMessage(message.clientIdentifier, ControlPacketType.UNSUBACK, UNSUBACKPayload(reasonCode))
 
         logger.trace("Sending response $response")
         response.getZMsg(kryo).send(clients)
     }
 
-    override fun processPUBLISH(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer) {
+    override fun processPUBLISH(message: InternalServerMessage, clients: Socket, brokers: Socket,
+                                kryo: KryoSerializer) {
         val reasonCode: ReasonCode
         val payload = message.payload.getPUBLISHPayload() ?: return
         val publisherLocation = clientDirectory.getClientLocation(message.clientIdentifier)
@@ -127,7 +135,8 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
                 // send message to BrokerCommunicator who takes care of the rest
                 ZMQProcess_BrokerCommunicator.generatePULLSocketMessage(otherBroker.brokerId,
                         InternalBrokerMessage(ControlPacketType.BrokerForwardPublish,
-                                BrokerForwardPublishPayload(payload, publisherLocation)), kryo).send(brokers)
+                                BrokerForwardPublishPayload(payload, publisherLocation)),
+                        kryo).send(brokers)
 
             }
 
@@ -154,9 +163,8 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
 
         }
 
-        val response = InternalServerMessage(message.clientIdentifier,
-                ControlPacketType.PUBACK,
-                PUBACKPayload(reasonCode))
+        val response =
+                InternalServerMessage(message.clientIdentifier, ControlPacketType.PUBACK, PUBACKPayload(reasonCode))
 
         // send response to publisher
         logger.trace("Sending response with reason code $reasonCode")
@@ -168,19 +176,23 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
      * Broker Forward Methods
      ****************************************************************/
 
-    override fun processBrokerForwardDisconnect(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer) {
+    override fun processBrokerForwardDisconnect(message: InternalServerMessage, clients: Socket, brokers: Socket,
+                                                kryo: KryoSerializer) {
         logger.warn("Unsupported operation, message is discarded")
     }
 
-    override fun processBrokerForwardPingreq(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer) {
+    override fun processBrokerForwardPingreq(message: InternalServerMessage, clients: Socket, brokers: Socket,
+                                             kryo: KryoSerializer) {
         logger.warn("Unsupported operation, message is discarded")
     }
 
-    override fun processBrokerForwardSubscribe(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer) {
+    override fun processBrokerForwardSubscribe(message: InternalServerMessage, clients: Socket, brokers: Socket,
+                                               kryo: KryoSerializer) {
         logger.warn("Unsupported operation, message is discarded")
     }
 
-    override fun processBrokerForwardUnsubscribe(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer) {
+    override fun processBrokerForwardUnsubscribe(message: InternalServerMessage, clients: Socket, brokers: Socket,
+                                                 kryo: KryoSerializer) {
         logger.warn("Unsupported operation, message is discarded")
     }
 
@@ -190,12 +202,15 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
      * As the other broker tells us about this message, we are responding to the other broker rather than responding
      * to the original client.
      */
-    override fun processBrokerForwardPublish(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer) {
+    override fun processBrokerForwardPublish(message: InternalServerMessage, clients: Socket, brokers: Socket,
+                                             kryo: KryoSerializer) {
         val payload = message.payload.getBrokerForwardPublishPayload() ?: return
 
         // the id is determined by ZeroMQ based on the first frame, so here it is the id of the forwarding broker
         val otherBrokerId = message.clientIdentifier
-        logger.trace("Processing BrokerForwardPublish from broker {}", otherBrokerId)
+        logger.debug("Processing BrokerForwardPublish from broker {}, message is {}",
+                otherBrokerId,
+                payload.publishPayload.content)
 
         val reasonCode = publishMessageToLocalClients(payload.publisherLocation,
                 payload.publishPayload,
@@ -225,7 +240,8 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
      *
      * @return true, if this broker is responsible, otherwise false
      */
-    private fun handleResponsibility(clientIdentifier: String, clientLocation: Location, clients: Socket, kryo: KryoSerializer): Boolean {
+    private fun handleResponsibility(clientIdentifier: String, clientLocation: Location, clients: Socket,
+                                     kryo: KryoSerializer): Boolean {
         if (!brokerAreaManager.checkIfOurAreaContainsLocation(clientLocation)) {
             // get responsible broker
             val repBroker = brokerAreaManager.getOtherBrokerContainingLocation(clientLocation)

@@ -6,10 +6,13 @@ import de.hasenburg.geobroker.commons.model.spatial.Location
 import de.hasenburg.geobroker.server.main.Configuration
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory
 import org.apache.commons.lang3.tuple.ImmutablePair
+import org.apache.logging.log4j.LogManager
 
 import java.util.*
 import java.util.stream.Collectors
 import java.util.stream.Stream
+
+private val logger = LogManager.getLogger()
 
 /**
  * The [TopicAndGeofenceMapper] maps provided topics and geofences to subscription ids. Thus, it helps to identify
@@ -40,6 +43,7 @@ class TopicAndGeofenceMapper(configuration: Configuration) {
     /**
      * Gets all subscription ids for clients that subscribed to the given [Topic] and that have subscribed to a
      * [Geofence] that intersects with the raster entry that contains the publisher's current [Location].
+     * If the location is undefined, the returned set is empty.
      *
      * Important!!!
      * When using this method, you have to run an additional contains check for the corresponding
@@ -50,6 +54,11 @@ class TopicAndGeofenceMapper(configuration: Configuration) {
      * @return see above
      */
     fun getPotentialSubscriptionIds(topic: Topic, publisherLocation: Location): Set<ImmutablePair<String, Int>> {
+        if (publisherLocation.isUndefined) {
+            logger.warn("Cannot get subscription ids for topic {} as the given publisher location is undefined", topic)
+            return emptySet()
+        }
+
         // get TopicLevel that match Topic
         val matchingTopicLevels = getMatchingTopicLevels(topic)
 

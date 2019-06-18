@@ -7,6 +7,6 @@ messageProcessors = 2
 
     [server.mode]
     name = "disgb_publisherMatching"
-    brokerAreaFilePath = "disgb_scenario.json"
+    brokerAreaFilePath = "src/test/resources/disgb_scenario.json"
     brokerCommunicators = 2
 

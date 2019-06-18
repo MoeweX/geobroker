@@ -11,6 +11,6 @@ messageProcessors = 1
 
     [server.mode]
     name = "disgb_subscriberMatching"
-    brokerAreaFilePath = "connect_and_disconnect.json"
+    brokerAreaFilePath = "src/test/resources/connect_and_disconnect.json"
     brokerCommunicators = 1
 

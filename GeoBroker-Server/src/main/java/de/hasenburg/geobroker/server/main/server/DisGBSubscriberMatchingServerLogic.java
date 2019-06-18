@@ -78,7 +78,7 @@ public class DisGBSubscriberMatchingServerLogic implements IServerLogic {
 
 		while (keepRunning.get()) {
 			logger.info(clientDirectory.toString());
-			Utility.sleepNoLog(2000, 0);
+			Utility.sleepNoLog(200000, 0);
 		}
 	}
 

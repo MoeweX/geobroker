@@ -27,8 +27,14 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
                                 kryo: KryoSerializer) {
         val payload = message.payload.getCONNECTPayload() ?: return
 
-        if (!handleResponsibility(message.clientIdentifier, payload.location, clients, brokers, kryo)) {
+        if (!payload.location.isUndefined && !handleResponsibility(message.clientIdentifier,
+                        payload.location,
+                        clients,
+                        brokers,
+                        kryo)) {
             return  // we are not responsible, client has been notified
+        } else if (payload.location.isUndefined) {
+            logger.warn("Client with an undefined location connected to broker.")
         }
 
         val response =
