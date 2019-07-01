@@ -9,8 +9,11 @@ import de.hasenburg.geobroker.commons.communication.ZMQProcessManager;
 import de.hasenburg.geobroker.commons.model.KryoSerializer;
 import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
 import de.hasenburg.geobroker.commons.model.message.ReasonCode;
+import de.hasenburg.geobroker.commons.model.message.Topic;
 import de.hasenburg.geobroker.commons.model.message.payloads.CONNECTPayload;
 import de.hasenburg.geobroker.commons.model.message.payloads.DISCONNECTPayload;
+import de.hasenburg.geobroker.commons.model.message.payloads.SUBSCRIBEPayload;
+import de.hasenburg.geobroker.commons.model.spatial.Geofence;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -105,6 +108,14 @@ public class SimpleClient {
 
 		// receive one message
 		InternalClientMessage response = client.receiveInternalClientMessage();
+		logger.info("Received server answer: {}", response);
+
+		clientMessage = new InternalClientMessage(ControlPacketType.SUBSCRIBE,
+				new SUBSCRIBEPayload(new Topic("test"), Geofence.circle(Location.random(), 2.0)));
+		client.sendInternalClientMessage(clientMessage);
+
+		// receive one message
+		response = client.receiveInternalClientMessage();
 		logger.info("Received server answer: {}", response);
 
 		// wait 5 seconds

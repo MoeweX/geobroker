@@ -6,6 +6,7 @@ import com.amazonaws.services.s3.model.S3Object;
 import com.moandjiezana.toml.Toml;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
 
 import java.io.File;
 import java.io.InputStreamReader;
@@ -25,6 +26,7 @@ public class Configuration {
 	private Integer port = 5559;
 	private Integer granularity = 1;
 	private Integer messageProcessors = 1;
+	private String logConfFile = null;
 
 	private Mode mode = Mode.single;
 
@@ -98,6 +100,7 @@ public class Configuration {
 		c.granularity = Math.toIntExact(toml_server.getLong("granularity", c.granularity.longValue()));
 		c.messageProcessors = Math.toIntExact(toml_server.getLong("messageProcessors",
 				c.messageProcessors.longValue()));
+		c.logConfFile = toml_server.getString("logConfFile", c.logConfFile);
 
 		// server mode specific information
 		Toml toml_server_mode = toml_server.getTable("mode");
@@ -110,7 +113,20 @@ public class Configuration {
 					c.brokerCommunicators.longValue()));
 		}
 
-		String logLocation = "logs/" + c.brokerId + ".log";
+		// finished if no other conf is set
+		if (c.logConfFile == null) {
+			return c;
+		}
+
+		// update conf file
+		File conf = new File(c.logConfFile);
+		logger.info("Updating log config to {}", conf.getAbsolutePath());
+		LoggerContext context = (LoggerContext) LogManager.getContext(false);
+
+		// this will force a reconfiguration
+		context.setConfigLocation(conf.toURI());
+		logger.info("Configuration updated");
+
 		return c;
 	}
 

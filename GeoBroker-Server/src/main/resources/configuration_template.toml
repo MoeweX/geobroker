@@ -4,6 +4,7 @@ brokerId = "broker"
 port = 5559
 granularity = 5
 messageProcessors = 1
+# logConfFile = "./test-log.xml" # specify another config file to be used
 
     # server mode specific information (only one should be uncommented)
     [server.mode]

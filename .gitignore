@@ -6,4 +6,5 @@ benchmarking_results/
 latest_benchmark_client_results/
 *.log
 out/
+test-log.xml
 configuration.toml

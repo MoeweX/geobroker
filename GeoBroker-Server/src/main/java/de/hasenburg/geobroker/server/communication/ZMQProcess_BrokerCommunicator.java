@@ -13,6 +13,7 @@ import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.Socket;
 import org.zeromq.ZMsg;
 
+import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -66,14 +67,19 @@ public class ZMQProcess_BrokerCommunicator extends ZMQProcess {
 		// bind dealer sockets
 		int i = SOCKET_OFFSET;
 		for (BrokerInfo brokerInfo : otherBrokerInfos) {
-			Socket dealer = context.createSocket(SocketType.DEALER);
-			// ok because only one dealer is communicating with each target broker
-			dealer.setIdentity(identity.getBytes());
-			String targetBrokerAddress = "tcp://" + brokerInfo.getIp() + ":" + brokerInfo.getPort();
-			logger.debug("Connecting to {} at {}", brokerInfo.getBrokerId(), targetBrokerAddress);
-			dealer.connect(targetBrokerAddress);
-			socketArray[i] = dealer;
-			i++;
+			try {
+				Socket dealer = context.createSocket(SocketType.DEALER);
+				// ok because only one dealer is communicating with each target broker
+				dealer.setIdentity(identity.getBytes());
+				String targetBrokerAddress = "tcp://" + brokerInfo.getIp() + ":" + brokerInfo.getPort();
+				logger.debug("Connecting to {} at {}", brokerInfo.getBrokerId(), targetBrokerAddress);
+				dealer.connect(targetBrokerAddress);
+				socketArray[i] = dealer;
+				i++;
+			} catch (IllegalArgumentException e) {
+				logger.fatal("Cannot connect to broker {} due to {}", brokerInfo, e.getMessage(), e);
+				System.exit(1);
+			}
 		}
 
 		return Arrays.asList(socketArray);
