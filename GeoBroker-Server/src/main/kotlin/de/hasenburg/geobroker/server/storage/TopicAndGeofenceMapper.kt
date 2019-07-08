@@ -65,10 +65,8 @@ class TopicAndGeofenceMapper(configuration: Configuration) {
         // get subscription ids from raster for publisher location
         val subscriptionIds = HashSet<ImmutablePair<String, Int>>()
         for (matchingTopicLevel in matchingTopicLevels) {
-            val tmp = matchingTopicLevel.raster.getSubscriptionIdsInRasterEntryForPublisherLocation(publisherLocation)
-            for (set in tmp.values) {
-                subscriptionIds.addAll(set)
-            }
+            subscriptionIds.addAll(matchingTopicLevel.raster.getSubscriptionIdsInRasterEntryForPublisherLocation(
+                    publisherLocation))
         }
 
         return subscriptionIds
