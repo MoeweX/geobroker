@@ -178,6 +178,36 @@ class TopicAndGeofenceMapperTest {
     }
 
     @Test
+    fun testWorld() {
+        mapper = TopicAndGeofenceMapper(Configuration(1, 1))
+
+        // prepare
+        val top = Topic("a")
+        val l1 = Location(40.1, 116.3)
+        val g1 = Geofence.circle(l1, 1.5)
+        val t1 = ImmutablePair("t1", 1)
+        val l2 = Location(73.1, 105.3)
+        val g2 = Geofence.circle(l2, 1.5)
+        val t2 = ImmutablePair("t2", 1)
+        val w = Geofence.world()
+        val t3 = ImmutablePair("t3", 1)
+
+        // put
+        mapper.putSubscriptionId(t1, top, g1)
+        mapper.putSubscriptionId(t2, top, g2)
+        mapper.putSubscriptionId(t3, top, w)
+
+        // tests
+        assertTrue(mapper.getPotentialSubscriptionIds(top, l1).contains(t1))
+        assertFalse(mapper.getPotentialSubscriptionIds(top, l1).contains(t2))
+        assertTrue(mapper.getPotentialSubscriptionIds(top, l1).contains(t3))
+
+        assertFalse(mapper.getPotentialSubscriptionIds(top, l2).contains(t1))
+        assertTrue(mapper.getPotentialSubscriptionIds(top, l2).contains(t2))
+        assertTrue(mapper.getPotentialSubscriptionIds(top, l2).contains(t3))
+    }
+
+    @Test
     fun randomTest() {
         val td = ClientDirectory()
 

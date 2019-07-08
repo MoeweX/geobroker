@@ -10,7 +10,11 @@ import java.util.concurrent.atomic.AtomicInteger
 
 class RasterEntry(val index: Location, degreeStep: Double) {
 
-    val rasterEntryBox: Geofence // let's buffer this
+    // TODO O: it might be faster to use Geofence.rectangle(), especially when later using the geofence
+    val rasterEntryBox: Geofence = Geofence.polygon(listOf(index,
+            Location(index.lat + degreeStep, index.lon),
+            Location(index.lat + degreeStep, index.lon + degreeStep),
+            Location(index.lat, index.lon + degreeStep))) // let's buffer this
 
     private val existingSubscriptionIds = ConcurrentHashMap<String, MutableSet<ImmutablePair<String, Int>>>()
     private val numSubscriptionIds = AtomicInteger(0)
@@ -22,19 +26,6 @@ class RasterEntry(val index: Location, degreeStep: Double) {
      */
     val allSubscriptionIds: Map<String, Set<ImmutablePair<String, Int>>>
         get() = existingSubscriptionIds
-
-    init {
-        // TODO O: it might be faster to use Geofence.rectangle(), especially when later using the geofence
-        this.rasterEntryBox = Geofence.polygon(Arrays.asList(index,
-                // south west
-                Location(index.lat + degreeStep, index.lon),
-                // north west
-                Location(index.lat + degreeStep, index.lon + degreeStep),
-                // north east
-                Location(index.lat, index.lon + degreeStep)
-                // south east
-        ))
-    }
 
     override fun toString(): String {
         return "RasterEntry{index=$index}"

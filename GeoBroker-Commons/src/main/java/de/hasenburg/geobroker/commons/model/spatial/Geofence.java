@@ -175,5 +175,27 @@ public class Geofence{
 
 		Location justIn = new Location(45.87, 2.3);
 		logger.info(parisArea.contains(justIn));
+
+		logger.info("Contains check Benchmark");
+		Geofence world = Geofence.world();
+		long amount = 10000000;
+
+		long time = System.nanoTime();
+		for (int i = 0; i < amount; i++) {
+			berlinArea.contains(berlin);
+		}
+		logger.info("{} berlin in circle checks per ms", amount * 1000 * 1000 / (System.nanoTime() - time));
+
+		time = System.nanoTime();
+		for (int i = 0; i < amount; i++) {
+			berlinArea.contains(paris);
+		}
+		logger.info("{} berlin out circle checks per ms", amount * 1000 * 1000 / (System.nanoTime() - time));
+
+		time = System.nanoTime();
+		for (int i = 0; i < amount; i++) {
+			world.contains(berlin);
+		}
+		logger.info("{} world checks per ms", amount * 1000 * 1000 / (System.nanoTime() - time));
 	}
 }

@@ -7,6 +7,8 @@ import org.apache.commons.lang3.tuple.ImmutablePair
 import org.apache.logging.log4j.LogManager
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.math.floor
+import kotlin.math.roundToLong
 
 private val logger = LogManager.getLogger()
 
@@ -25,7 +27,9 @@ private val logger = LogManager.getLogger()
 class Raster(val granularity: Int) {
 
     private val rasterEntries = ConcurrentHashMap<Location, RasterEntry>()
-    val degreeStep: Double // = 1 / granularity
+    private val worldSubscriptionIds = ConcurrentHashMap<String, MutableSet<ImmutablePair<String, Int>>>()
+
+    private val degreeStep: Double // = 1 / granularity
 
     val numberOfExistingRasterEntries: Int
         get() = rasterEntries.size
@@ -49,6 +53,12 @@ class Raster(val granularity: Int) {
      * @param subscriptionId - the subscriptionId to be added
      */
     fun putSubscriptionIdIntoRasterEntries(geofence: Geofence, subscriptionId: ImmutablePair<String, Int>) {
+        // add to worldSubscriptionIds if geofence is world
+        if (geofence == Geofence.world()) {
+            worldSubscriptionIds.getOrPut(subscriptionId.left) { ConcurrentHashMap.newKeySet() }.add(subscriptionId)
+            return
+        }
+
         // get all RasterEntries to which the id should be added
         val viableRasterEntries = calculateIndexLocations(geofence)
 
@@ -65,6 +75,12 @@ class Raster(val granularity: Int) {
      * @param subscriptionId - the subscription id to be removed
      */
     fun removeSubscriptionIdFromRasterEntries(geofence: Geofence, subscriptionId: ImmutablePair<String, Int>) {
+        // remove from worldSubscriptionIds if geofence is world
+        if (geofence == Geofence.world()) {
+            worldSubscriptionIds[subscriptionId.left]?.remove(subscriptionId)
+            return
+        }
+
         // get all RasterEntries from which the id should be removed
         val viableRasterEntries = calculateIndexLocations(geofence)
 
@@ -92,15 +108,26 @@ class Raster(val granularity: Int) {
 
     /**
      * Returns all subscriptionIds that are in the fitting [RasterEntry]. In case no subscription ids exist, the
-     * returned Map is empty.
+     * returned Set is empty.
+     *
+     * Also returns all world subscription ids as the publisher location is in all of these.
      *
      * @param location - the location that determines which [RasterEntry] fits
-     * @return a Map containing all fitting subscriptionIds; client -> set of subscription ids
+     * @return a set containing all fitting subscriptionIds
      */
-    fun getSubscriptionIdsInRasterEntryForPublisherLocation(
-            location: Location): Map<String, Set<ImmutablePair<String, Int>>> {
+    fun getSubscriptionIdsInRasterEntryForPublisherLocation(location: Location): Set<ImmutablePair<String, Int>> {
         val index = calculateIndexLocation(location)
-        return rasterEntries[index]?.allSubscriptionIds ?: emptyMap()
+
+        //@formatter:off
+        val result = rasterEntries[index]
+            ?.allSubscriptionIds
+            ?.flatMap { (k, v) -> v }
+            ?.toMutableSet() ?: mutableSetOf()
+        //@formatter:on
+
+        result.addAll(worldSubscriptionIds.flatMap { (k, v) -> v })
+
+        return result
     }
 
     /*****************************************************************
@@ -114,8 +141,8 @@ class Raster(val granularity: Int) {
      * @return - the index
      */
     private fun calculateIndexLocation(location: Location): Location {
-        val latIndex = Math.floor(location.lat * granularity) / granularity
-        val lonIndex = Math.floor(location.lon * granularity) / granularity
+        val latIndex = floor(location.lat * granularity) / granularity
+        val lonIndex = floor(location.lon * granularity) / granularity
 
         return Location(latIndex, lonIndex)
     }
@@ -138,8 +165,8 @@ class Raster(val granularity: Int) {
         while (northEastIndex.lat - lat > -0.000000001) {
             var lon = southWestIndex.lon
             while (northEastIndex.lon - lon > -0.000000001) {
-                lat = Math.round(lat * granularity) / granularity.toDouble()
-                lon = Math.round(lon * granularity) / granularity.toDouble()
+                lat = (lat * granularity).roundToLong() / granularity.toDouble()
+                lon = (lon * granularity).roundToLong() / granularity.toDouble()
                 val index = Location(lat, lon)
                 val re = rasterEntries.getOrPut(index) { RasterEntry(index, degreeStep) }
                 rasterEntriesToCheckForIntersection.add(re)
@@ -148,10 +175,11 @@ class Raster(val granularity: Int) {
             lat += degreeStep
         }
 
-        // if geofence is a rectangle, we can collect the indices
-        if (geofence.isRectangle) {
-            return rasterEntriesToCheckForIntersection
-        }
+//        // if geofence is a rectangle, we can collect the indices
+//        // doing the isRectangle check is too expensive with spatial4j to be worth it
+//        if (geofence.isRectangle) {
+//            return rasterEntriesToCheckForIntersection
+//        }
 
         // remove raster entries whose box is disjoint with the actual geofence
         rasterEntriesToCheckForIntersection.removeIf { re -> re.rasterEntryBox.disjoint(geofence) }
