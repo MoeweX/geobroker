@@ -54,6 +54,10 @@ public class BrokerAreaManager {
 		return ownArea.intersects(messageGeofence);
 	}
 
+	public List<BrokerInfo> getAllBrokers() {
+		return otherAreas.stream().map(area -> area.getResponsibleBroker()).collect(Collectors.toList());
+	}
+
 	public @Nullable BrokerInfo getOtherBrokerContainingLocation(Location clientLocation) {
 		for (BrokerArea area : otherAreas) {
 			if (area.ContainsLocation(clientLocation)) {

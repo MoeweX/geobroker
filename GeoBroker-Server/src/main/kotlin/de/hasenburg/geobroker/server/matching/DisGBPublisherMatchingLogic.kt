@@ -253,8 +253,12 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
                     topicAndGeofenceMapper.getSubscriptionIds(payload.topic, publisherLocation, clientDirectory)
 
             // only keep subscription if subscriber location is insider message geofence
-            val subscriptionIds = subscriptionIdResults.filter { subId ->
-                payload.geofence.contains(clientDirectory.getClientLocation(subId.left)!!)
+            val subscriptionIds = if (payload.geofence.isUndefined) {
+                subscriptionIdResults.toList()
+            } else {
+                subscriptionIdResults.filter { subId ->
+                    payload.geofence.contains(clientDirectory.getClientLocation(subId.left)!!)
+                }
             }
 
             val remoteClientIds = mutableMapOf<String, MutableList<String>>()

@@ -146,8 +146,12 @@ fun publishMessageToLocalClients(publisherLocation: Location, publishPayload: PU
 
 
     // only keep subscription if subscriber location is insider message geofence
-    val subscriptionIds = subscriptionIdResults.filter { subId ->
-        publishPayload.geofence.contains(clientDirectory.getClientLocation(subId.left)!!)
+    val subscriptionIds = if (publishPayload.geofence.isUndefined) {
+        subscriptionIdResults.toList()
+    } else {
+        subscriptionIdResults.filter { subId ->
+            publishPayload.geofence.contains(clientDirectory.getClientLocation(subId.left)!!)
+        }
     }
 
     // publish message to remaining subscribers

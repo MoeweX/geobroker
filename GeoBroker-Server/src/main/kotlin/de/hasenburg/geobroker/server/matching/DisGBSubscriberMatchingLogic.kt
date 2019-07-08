@@ -127,7 +127,11 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
         } else {
 
             // find other brokers whose broker area intersects with the message geofence
-            val otherBrokers = brokerAreaManager.getOtherBrokersIntersectingWithGeofence(payload.geofence)
+            val otherBrokers = if (payload.geofence.isUndefined) {
+                brokerAreaManager.allBrokers
+            } else {
+                brokerAreaManager.getOtherBrokersIntersectingWithGeofence(payload.geofence)
+            }
             for (otherBroker in otherBrokers) {
                 logger.debug("Broker area of {} intersects with message from client {}",
                         otherBroker.brokerId,
@@ -140,10 +144,9 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
 
             }
 
-
             var ourReasonCode = ReasonCode.NoMatchingSubscribers
             // check if own broker area intersects with the message geofence
-            if (brokerAreaManager.checkOurAreaForGeofenceIntersection(payload.geofence)) {
+            if (payload.geofence.isUndefined || brokerAreaManager.checkOurAreaForGeofenceIntersection(payload.geofence)) {
                 ourReasonCode = publishMessageToLocalClients(publisherLocation,
                         payload,
                         clientDirectory,
