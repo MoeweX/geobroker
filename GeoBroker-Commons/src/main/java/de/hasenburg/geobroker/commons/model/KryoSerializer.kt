@@ -62,7 +62,7 @@ class KryoSerializer {
                 val lat = kryo.readObjectOrNull(input, Double::class.javaPrimitiveType!!) ?: return null
                 val lon = kryo.readObjectOrNull(input, Double::class.javaPrimitiveType!!) ?: return null
                 return if (lat == -1000.0 && lon == -1000.0) {
-                    Location(true)
+                    Location.undefined()
                 } else {
                     Location(lat, lon)
                 }

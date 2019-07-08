@@ -25,8 +25,8 @@ public class Location {
 		this.point = point;
 	}
 
-	public Location(boolean undefined) {
-		this.undefined = undefined;
+	private Location() {
+		this.undefined = true;
 		this.point = null;
 	}
 
@@ -44,7 +44,7 @@ public class Location {
 	 * Creates an undefined location, i.e., one that does not have a point and is not contained in any geofence.
 	 */
 	public static Location undefined() {
-		return new Location(true);
+		return new Location();
 	}
 
 	/**
@@ -134,12 +134,20 @@ public class Location {
 		return point;
 	}
 
-	public double getLat() {
-		return point.getLat();
+	public Double getLat() {
+		if (!isUndefined()) {
+			return point.getLat();
+		} else {
+			return null;
+		}
 	}
 
-	public double getLon() {
-		return point.getLon();
+	public Double getLon() {
+		if (!isUndefined()) {
+			return point.getLon();
+		} else {
+			return null;
+		}
 	}
 
 	public String getWKTString() {

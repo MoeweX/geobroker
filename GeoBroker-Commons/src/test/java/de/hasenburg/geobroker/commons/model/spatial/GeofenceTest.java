@@ -22,25 +22,34 @@ public class GeofenceTest {
 		byte[] bytes = kryo.write(fence);
 		Geofence fence2 = kryo.read(bytes, Geofence.class);
 		assertEquals(fence, fence2);
-		logger.info("Geofences {} and {} still equal after JSON stuff", fence, fence2);
+		logger.info("Geofences {} and {} still equal after Byte stuff", fence, fence2);
 	}
 
 	@Test
-	public void toAndFromJsonCircle() {
+	public void toAndFromByteUndefined() {
+		Geofence fence1 = Geofence.undefined();
+		byte[] bytes = kryo.write(fence1);
+		Geofence fence2 = kryo.read(bytes, Geofence.class);
+		assertEquals(fence1, fence2);
+		logger.info("Geofences {} and {} still equal after Byte stuff", fence1, fence2);
+	}
+
+	@Test
+	public void toAndFromByteCircle() {
 		Geofence fence = Geofence.circle(Location.random(), 1.4);
 		byte[] bytes = kryo.write(fence);
 		Geofence fence2 = kryo.read(bytes, Geofence.class);
 		assertEquals(fence, fence2);
-		logger.info("Geofences {} and {} still equal after JSON stuff", fence, fence2);
+		logger.info("Geofences {} and {} still equal after Byte stuff", fence, fence2);
 	}
 
 	@Test
-	public void toAndFromJsonCircle2() {
+	public void toAndFromByteCircle2() {
 		Geofence fence = Geofence.circle(new Location(40.007499, 116.320013), 0.1);
 		byte[] bytes = kryo.write(fence);
 		Geofence fence2 = kryo.read(bytes, Geofence.class);
 		assertEquals(fence, fence2);
-		logger.info("Geofences {} and {} still equal after JSON stuff", fence, fence2);
+		logger.info("Geofences {} and {} still equal after Byte stuff", fence, fence2);
 	}
 
 	@Test
@@ -48,10 +57,12 @@ public class GeofenceTest {
 		Geofence fence = berlinRectangle();
 		Geofence fence2 = berlinRectangle();
 		Geofence fence3 = berlinTriangle();
+		Geofence fence4 = Geofence.undefined();
 		assertEquals(fence, fence2);
 		logger.info("Geofences {} and {} equal", fence, fence2);
 		assertNotEquals(fence, fence3);
 		logger.info("Geofences {} and {} do not equal", fence, fence3);
+		assertEquals(fence4, Geofence.undefined());
 	}
 
 	@Test
@@ -60,6 +71,7 @@ public class GeofenceTest {
 		Location hamburg = new Location(53.511, 9.9937);
 		assertTrue(berlinRectangle().contains(berlin));
 		assertFalse(berlinRectangle().contains(hamburg));
+		assertFalse(Geofence.undefined().contains(berlin));
 		logger.info("Geofence contains Berlin but not Hamburg");
 	}
 
@@ -74,6 +86,7 @@ public class GeofenceTest {
 	public void testDisjoint() {
 		assertTrue(berlinRectangle().disjoint(datelineRectangle()));
 		assertFalse(berlinRectangle().disjoint(berlinTriangle()));
+		assertFalse(berlinRectangle().disjoint(Geofence.undefined()));
 		logger.info("Disjoint calculation works properly");
 	}
 
