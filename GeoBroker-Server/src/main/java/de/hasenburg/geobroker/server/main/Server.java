@@ -1,9 +1,6 @@
 package de.hasenburg.geobroker.server.main;
 
-import de.hasenburg.geobroker.server.main.server.DisGBSubscriberMatchingServerLogic;
-import de.hasenburg.geobroker.server.main.server.IServerLogic;
-import de.hasenburg.geobroker.server.main.server.ServerLifecycle;
-import de.hasenburg.geobroker.server.main.server.SingleGeoBrokerServerLogic;
+import de.hasenburg.geobroker.server.main.server.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -26,7 +23,7 @@ public class Server {
 			logic = new DisGBSubscriberMatchingServerLogic();
 		} else if (Configuration.Mode.disgb_publisherMatching.equals(configuration.getMode())) {
 			logger.info("GeoBroker is configured to run geo-distributed (publisher matching)");
-			logic = new DisGBSubscriberMatchingServerLogic();
+			logic = new DisGBPublisherMatchingServerLogic();
 		} else {
 			logger.info("GeoBroker is configured to run standalone");
 			logic = new SingleGeoBrokerServerLogic();
