@@ -49,21 +49,23 @@ class TopicAndGeofenceMapper(configuration: Configuration) {
      * When using this method, you have to run an additional contains check for the corresponding
      * geofences and the given [publisherLocation] if you want 100% accurate results.
      *
+     * Note: while unlikely, the returned list might contain some duplicates
+     *
      * @param topic - see above
      * @param publisherLocation - see above
      * @return see above
      */
-    fun getPotentialSubscriptionIds(topic: Topic, publisherLocation: Location): Set<ImmutablePair<String, Int>> {
+    fun getPotentialSubscriptionIds(topic: Topic, publisherLocation: Location): List<ImmutablePair<String, Int>> {
         if (publisherLocation.isUndefined) {
             logger.warn("Cannot get subscription ids for topic {} as the given publisher location is undefined", topic)
-            return emptySet()
+            return emptyList()
         }
 
         // get TopicLevel that match Topic
         val matchingTopicLevels = getMatchingTopicLevels(topic)
 
         // get subscription ids from raster for publisher location
-        val subscriptionIds = HashSet<ImmutablePair<String, Int>>()
+        val subscriptionIds = mutableListOf<ImmutablePair<String, Int>>()
         for (matchingTopicLevel in matchingTopicLevels) {
             subscriptionIds.addAll(matchingTopicLevel.raster.getSubscriptionIdsInRasterEntryForPublisherLocation(
                     publisherLocation))
@@ -76,6 +78,8 @@ class TopicAndGeofenceMapper(configuration: Configuration) {
      * Gets all subscription ids for clients that subscribed to the given [Topic] and that have subscribed to a
      * [Geofence] which contains the publisher's current [Location].
      *
+     * Note: while unlikely, the returned list might contain some duplicates
+     *
      * @param topic - see above
      * @param publisherLocation - see above
      * @param clientDirectory - used to get the subscription geofences that are needed for the final contains check,
@@ -83,10 +87,10 @@ class TopicAndGeofenceMapper(configuration: Configuration) {
      * @return see above
      */
     fun getSubscriptionIds(topic: Topic, publisherLocation: Location,
-                           clientDirectory: ClientDirectory): Set<ImmutablePair<String, Int>> {
+                           clientDirectory: ClientDirectory): List<ImmutablePair<String, Int>> {
         return getPotentialSubscriptionIds(topic, publisherLocation).filter { subId ->
             clientDirectory.getSubscription(subId.left, topic)?.geofence?.contains(publisherLocation) ?: false
-        }.toSet()
+        }
     }
 
     /**

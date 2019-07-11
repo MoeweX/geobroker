@@ -112,20 +112,23 @@ class Raster(val granularity: Int) {
      *
      * Also returns all world subscription ids as the publisher location is in all of these.
      *
+     * Note: while unlikely, the returned list might contain some duplicates
+     *
      * @param location - the location that determines which [RasterEntry] fits
      * @return a set containing all fitting subscriptionIds
      */
-    fun getSubscriptionIdsInRasterEntryForPublisherLocation(location: Location): Set<ImmutablePair<String, Int>> {
+    fun getSubscriptionIdsInRasterEntryForPublisherLocation(location: Location): List<ImmutablePair<String, Int>> {
         val index = calculateIndexLocation(location)
 
-        //@formatter:off
-        val result = rasterEntries[index]
-            ?.allSubscriptionIds
-            ?.flatMap { (k, v) -> v }
-            ?.toMutableSet() ?: mutableSetOf()
-        //@formatter:on
+        val result = mutableListOf<ImmutablePair<String, Int>>()
 
-        result.addAll(worldSubscriptionIds.flatMap { (k, v) -> v })
+        for (rasterEntry in rasterEntries[index]?.allSubscriptionIds?.values ?: emptyList()) {
+            result.addAll(rasterEntry)
+        }
+
+        for (worldIds in worldSubscriptionIds.values) {
+            result.addAll(worldIds)
+        }
 
         return result
     }
