@@ -20,7 +20,7 @@ public class Geofence{
 
 	// TODO increase size a little bit so that we do not miss any due to rounding issues
 	// we need it most times anyways, so let's buffer it //
-	final Rectangle boundingBox;
+	public final Rectangle boundingBox;
 
 	private Geofence(Shape shape) {
 		this.shape = shape;
@@ -130,6 +130,10 @@ public class Geofence{
 	/*****************************************************************
 	 * Getters and String
 	 ****************************************************************/
+
+	public Shape getShapeObject() {
+		return this.shape;
+	}
 
 	public String getWKTString() {
 		ShapeWriter writer = GEO.getFormats().getWktWriter();
