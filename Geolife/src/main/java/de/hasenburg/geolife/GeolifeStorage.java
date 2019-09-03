@@ -27,10 +27,10 @@ public class GeolifeStorage {
 	 * CONFIGURATION
 	 ****************************************************************/
 
-	private static final Integer[] GRANULARITY = {100, 50, 25, 10, 1};
+	private static final Integer[] GRANULARITY = {10};
 
 	private static final int GEOLIFE_START_INDEX = 1;
-	private static final Integer[] GEOLIFE_STOP_INDEX = {1, 10, 100, 250, 500, 750, 1000};
+	private static final Integer[] GEOLIFE_STOP_INDEX = {10};
 
 	private static final double GEOFENCE_SIZE = 0.01; // in degree
 
@@ -39,7 +39,7 @@ public class GeolifeStorage {
 	private static final String[] UPDATE_PUBLISH_OPS = {"99,1", "1,1", "1,10", "1,99"};
 	// update operations before doing publish operations
 
-	private static final int EXPERIMENT_TIME = 60 * 15; // sec
+	private static final int EXPERIMENT_TIME = 15; // sec
 
 	/*****************************************************************
 	 * END CONFIGURATION
