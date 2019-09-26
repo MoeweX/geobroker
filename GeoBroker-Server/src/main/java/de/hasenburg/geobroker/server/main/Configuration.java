@@ -16,7 +16,11 @@ public class Configuration {
 	private static final Logger logger = LogManager.getLogger();
 
 	enum Mode {
-		single, disgb_subscriberMatching, disgb_publisherMatching
+		single, disgb_subscriberMatching, disgb_publisherMatching, other
+	}
+
+	enum OtherMode {
+		single_noGeo
 	}
 
 	private final static String S3_BUCKET_NAME = "geobroker";
@@ -29,6 +33,7 @@ public class Configuration {
 	private String logConfFile = null;
 
 	private Mode mode = Mode.single;
+	private OtherMode otherMode = null;
 
 	// disgb specific
 	private String brokerAreaFilePath = "defaultBrokerAreas.json";
@@ -111,6 +116,11 @@ public class Configuration {
 			c.brokerAreaFilePath = toml_server_mode.getString("brokerAreaFilePath", c.brokerAreaFilePath);
 			c.brokerCommunicators = Math.toIntExact(toml_server_mode.getLong("brokerCommunicators",
 					c.brokerCommunicators.longValue()));
+
+			// other modes
+			if (c.mode == Mode.other) {
+				c.otherMode = OtherMode.valueOf(toml_server_mode.getString("otherMode"));
+			}
 		}
 
 		// finished if no other conf is set
@@ -118,7 +128,7 @@ public class Configuration {
 			return c;
 		}
 
-		// update conf file
+		// update log conf file
 		File conf = new File(c.logConfFile);
 		logger.info("Updating log config to {}", conf.getAbsolutePath());
 		LoggerContext context = (LoggerContext) LogManager.getContext(false);
@@ -171,6 +181,13 @@ public class Configuration {
 	 */
 	public Integer getBrokerCommunicators() {
 		return brokerCommunicators;
+	}
+
+	/**
+	 * This fields only has a meaning when {@link #getMode()} == Mode.other.
+	 */
+	public OtherMode getOtherMode() {
+		return otherMode;
 	}
 
 	@Override

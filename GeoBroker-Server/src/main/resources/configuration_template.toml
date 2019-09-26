@@ -20,3 +20,7 @@ messageProcessors = 1
 #    brokerAreaFilePath = "brokerAreas_template.json"
 #    brokerCommunicators = 1
 
+#    [server.mode]
+#    mode = "other"
+#    otherMode = "single_noGeo"
+
