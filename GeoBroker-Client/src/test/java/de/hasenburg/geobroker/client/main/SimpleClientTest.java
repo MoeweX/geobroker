@@ -15,7 +15,7 @@ public class SimpleClientTest {
 	@Test
 	public void startupTearDown() {
 		ZMQProcessManager processManager = new ZMQProcessManager();
-		SimpleClient simpleClient = new SimpleClient("test", "localhost", 1, processManager);
+		SimpleClient simpleClient = new SimpleClient("localhost", 1, processManager, "test");
 		Utility.sleepNoLog(1000, 0);
 		logger.info(processManager.getContext().getSockets());
 		simpleClient.tearDownClient();

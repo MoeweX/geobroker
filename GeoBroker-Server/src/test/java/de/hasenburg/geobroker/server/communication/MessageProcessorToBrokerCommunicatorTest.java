@@ -3,36 +3,43 @@ package de.hasenburg.geobroker.server.communication;
 import de.hasenburg.geobroker.commons.communication.ZMQProcessManager;
 import de.hasenburg.geobroker.commons.model.BrokerInfo;
 import de.hasenburg.geobroker.commons.model.KryoSerializer;
-import de.hasenburg.geobroker.commons.model.message.ControlPacketType;
+import de.hasenburg.geobroker.commons.model.message.PayloadKt;
 import de.hasenburg.geobroker.commons.model.message.ReasonCode;
-import de.hasenburg.geobroker.commons.model.message.payloads.CONNACKPayload;
-import de.hasenburg.geobroker.commons.model.message.payloads.CONNECTPayload;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
 import de.hasenburg.geobroker.server.distribution.IDistributionLogic;
 import de.hasenburg.geobroker.server.matching.IMatchingLogic;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Test;
 import org.zeromq.SocketType;
+import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.Socket;
 import org.zeromq.ZMsg;
 
 import java.util.Collections;
 
+import static de.hasenburg.geobroker.commons.model.message.Payload.*;
 import static org.junit.Assert.assertEquals;
 
-@SuppressWarnings({"OptionalGetWithoutIsPresent", "ConstantConditions"})
+@SuppressWarnings({"ConstantConditions"})
 public class MessageProcessorToBrokerCommunicatorTest {
 
 	private static final Logger logger = LogManager.getLogger();
 	public KryoSerializer kryo = new KryoSerializer();
+	ZMQProcessManager processManager = new ZMQProcessManager();
+
+	@After
+	public void after() {
+		processManager.tearDown(5000);
+	}
 
 	@Test
 	public void test() {
 		String ourBrokerId = "ourBroker";
 
-		ZMQProcessManager processManager = new ZMQProcessManager();
 
 		// as TestDistributionLogic does not really send, does not matter what is put here as long as socket can be created
 		BrokerInfo brokerInfo = new BrokerInfo("targetBroker", "localhost", 5559);
@@ -53,17 +60,16 @@ public class MessageProcessorToBrokerCommunicatorTest {
 
 		// create a socket that sends to the message processor, the message will simply be forwarded to the broker communicator
 		Socket req = processManager.getContext().createSocket(SocketType.DEALER);
-		req.bind("inproc://" + ZMQProcess_Server.getServerIdentity(ourBrokerId)); // as this is where the message processor connects to
+		req.bind("inproc://" +
+				ZMQProcess_Server.getServerIdentity(ourBrokerId)); // as this is where the message processor connects to
 
-		new InternalServerMessage("clientOrigin",
-				ControlPacketType.CONNECT,
-				new CONNECTPayload(Location.random())).getZMsg(kryo).send(req);
+		PayloadKt.payloadToZMsg(new CONNECTPayload(Location.random()), kryo, "clientOrigin").send(req);
 
 		// wait for response
 		ZMsg msg = ZMsg.recvMsg(req);
-		InternalServerMessage response = InternalServerMessage.buildMessage(msg, kryo).get();
-		logger.info("Received response" + response);
-		assertEquals(ReasonCode.Success, response.getPayload().getCONNACKPayload().getReasonCode());
+		CONNACKPayload payload = (CONNACKPayload) PayloadKt.transformZMsgWithId(msg, kryo).component2();
+		logger.info("Received response" + payload);
+		assertEquals(ReasonCode.Success, payload.getReasonCode());
 
 		assertEquals(1, messageProcessor.getNumberOfProcessedMessages());
 		assertEquals(1, brokerCommunicator.getNumberOfProcessedMessages());
@@ -72,78 +78,98 @@ public class MessageProcessorToBrokerCommunicatorTest {
 	class TestMatchingLogic implements IMatchingLogic {
 
 		@Override
-		public void processCONNECT(InternalServerMessage message, Socket clients, Socket brokers, KryoSerializer kryo) {
-			logger.info("Received message " + message);
-
-			assertEquals(ControlPacketType.CONNECT, message.getControlPacketType());
+		public void processCONNECT(@NotNull String clientIdentifier, @NotNull CONNECTPayload payload,
+								   @NotNull ZMQ.Socket clients, @NotNull ZMQ.Socket brokers,
+								   @NotNull KryoSerializer kryo) {
+			logger.info("Received payload " + payload);
 
 			// just send whatever message
-			InternalBrokerMessage ibm = new InternalBrokerMessage(ControlPacketType.CONNECT,
-					new CONNECTPayload(Location.random()));
-			ZMsg msg = ZMQProcess_BrokerCommunicator.generatePULLSocketMessage("targetBroker", ibm, kryo);
+			CONNECTPayload connectPayload = new CONNECTPayload(Location.random());
+			ZMsg msg = ZMQProcess_BrokerCommunicator.generatePULLSocketMessage("targetBroker",
+					PayloadKt.payloadToZMsg(connectPayload, kryo, null));
 			logger.info("Sending message {} to broker communicator", msg);
 			msg.send(brokers);
 
 			// respond
-			msg = new InternalServerMessage(message.getClientIdentifier(),
-					ControlPacketType.CONNACK,
-					new CONNACKPayload(ReasonCode.Success)).getZMsg(kryo);
+			msg = PayloadKt.payloadToZMsg(new CONNACKPayload(ReasonCode.Success), kryo, clientIdentifier);
+
 			logger.info("Sent message back to main test routine {}", msg);
 			msg.send(clients);
 		}
 
 		@Override
-		public void processDISCONNECT(InternalServerMessage message, Socket clients, Socket brokers, KryoSerializer kryo) {
-			processCONNECT(message, clients, brokers, kryo);
+		public void processDISCONNECT(@NotNull String clientIdentifier, @NotNull DISCONNECTPayload payload,
+									  @NotNull ZMQ.Socket clients, @NotNull ZMQ.Socket brokers,
+									  @NotNull KryoSerializer kryo) {
+			logger.warn("Unsupported operation, message is discarded");
 		}
 
 		@Override
-		public void processPINGREQ(InternalServerMessage message, Socket clients, Socket brokers, KryoSerializer kryo) {
-			processCONNECT(message, clients, brokers, kryo);
+		public void processPINGREQ(@NotNull String clientIdentifier, @NotNull PINGREQPayload payload,
+								   @NotNull ZMQ.Socket clients, @NotNull ZMQ.Socket brokers,
+								   @NotNull KryoSerializer kryo) {
+			logger.warn("Unsupported operation, message is discarded");
 		}
 
 		@Override
-		public void processSUBSCRIBE(InternalServerMessage message, Socket clients, Socket brokers, KryoSerializer kryo) {
-			processCONNECT(message, clients, brokers, kryo);
+		public void processSUBSCRIBE(@NotNull String clientIdentifier, @NotNull SUBSCRIBEPayload payload,
+									 @NotNull ZMQ.Socket clients, @NotNull ZMQ.Socket brokers,
+									 @NotNull KryoSerializer kryo) {
+			logger.warn("Unsupported operation, message is discarded");
 		}
 
 		@Override
-		public void processUNSUBSCRIBE(InternalServerMessage message, Socket clients, Socket brokers, KryoSerializer kryo) {
-			processCONNECT(message, clients, brokers, kryo);
+		public void processUNSUBSCRIBE(@NotNull String clientIdentifier, @NotNull UNSUBSCRIBEPayload payload,
+									   @NotNull ZMQ.Socket clients, @NotNull ZMQ.Socket brokers,
+									   @NotNull KryoSerializer kryo) {
+			logger.warn("Unsupported operation, message is discarded");
 		}
 
 		@Override
-		public void processPUBLISH(InternalServerMessage message, Socket clients, Socket brokers, KryoSerializer kryo) {
-			processCONNECT(message, clients, brokers, kryo);
+		public void processPUBLISH(@NotNull String clientIdentifier, @NotNull PUBLISHPayload payload,
+								   @NotNull ZMQ.Socket clients, @NotNull ZMQ.Socket brokers,
+								   @NotNull KryoSerializer kryo) {
+			logger.warn("Unsupported operation, message is discarded");
 		}
 
 		@Override
-		public void processBrokerForwardPublish(InternalServerMessage message, Socket clients, Socket brokers, KryoSerializer kryo) {
-			processCONNECT(message, clients, brokers, kryo);
+		public void processBrokerForwardDisconnect(@NotNull String otherBrokerId,
+												   @NotNull BrokerForwardDisconnectPayload payload,
+												   @NotNull ZMQ.Socket clients, @NotNull ZMQ.Socket brokers,
+												   @NotNull KryoSerializer kryo) {
+			logger.warn("Unsupported operation, message is discarded");
 		}
 
 		@Override
-		public void processBrokerForwardDisconnect(@NotNull InternalServerMessage message, @NotNull Socket clients,
-												   @NotNull Socket brokers, KryoSerializer kryo) {
-			processCONNECT(message, clients, brokers, kryo);
+		public void processBrokerForwardPingreq(@NotNull String otherBrokerId,
+												@NotNull BrokerForwardPingreqPayload payload,
+												@NotNull ZMQ.Socket clients, @NotNull ZMQ.Socket brokers,
+												@NotNull KryoSerializer kryo) {
+			logger.warn("Unsupported operation, message is discarded");
 		}
 
 		@Override
-		public void processBrokerForwardPingreq(@NotNull InternalServerMessage message, @NotNull Socket clients,
-												@NotNull Socket brokers, KryoSerializer kryo) {
-			processCONNECT(message, clients, brokers, kryo);
+		public void processBrokerForwardSubscribe(@NotNull String otherBrokerId,
+												  @NotNull BrokerForwardSubscribePayload payload,
+												  @NotNull ZMQ.Socket clients, @NotNull ZMQ.Socket brokers,
+												  @NotNull KryoSerializer kryo) {
+			logger.warn("Unsupported operation, message is discarded");
 		}
 
 		@Override
-		public void processBrokerForwardSubscribe(@NotNull InternalServerMessage message, @NotNull Socket clients,
-												  @NotNull Socket brokers, KryoSerializer kryo) {
-			processCONNECT(message, clients, brokers, kryo);
+		public void processBrokerForwardUnsubscribe(@NotNull String otherBrokerId,
+													@NotNull BrokerForwardUnsubscribePayload payload,
+													@NotNull ZMQ.Socket clients, @NotNull ZMQ.Socket brokers,
+													@NotNull KryoSerializer kryo) {
+			logger.warn("Unsupported operation, message is discarded");
 		}
 
 		@Override
-		public void processBrokerForwardUnsubscribe(@NotNull InternalServerMessage message, @NotNull Socket clients,
-													@NotNull Socket brokers, KryoSerializer kryo) {
-			processCONNECT(message, clients, brokers, kryo);
+		public void processBrokerForwardPublish(@NotNull String otherBrokerId,
+												@NotNull BrokerForwardPublishPayload payload,
+												@NotNull ZMQ.Socket clients, @NotNull ZMQ.Socket brokers,
+												@NotNull KryoSerializer kryo) {
+			logger.warn("Unsupported operation, message is discarded");
 		}
 	}
 

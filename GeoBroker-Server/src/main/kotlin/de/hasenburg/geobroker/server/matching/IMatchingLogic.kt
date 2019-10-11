@@ -1,15 +1,9 @@
 package de.hasenburg.geobroker.server.matching
 
 import de.hasenburg.geobroker.commons.model.KryoSerializer
-import de.hasenburg.geobroker.commons.model.message.ControlPacketType
-import de.hasenburg.geobroker.commons.model.message.ReasonCode
-import de.hasenburg.geobroker.commons.model.message.Topic
-import de.hasenburg.geobroker.commons.model.message.payloads.CONNACKPayload
-import de.hasenburg.geobroker.commons.model.message.payloads.DISCONNECTPayload
-import de.hasenburg.geobroker.commons.model.message.payloads.PUBLISHPayload
+import de.hasenburg.geobroker.commons.model.message.*
 import de.hasenburg.geobroker.commons.model.spatial.Geofence
 import de.hasenburg.geobroker.commons.model.spatial.Location
-import de.hasenburg.geobroker.server.communication.InternalServerMessage
 import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory
 import org.apache.commons.lang3.tuple.ImmutablePair
@@ -24,32 +18,38 @@ import org.zeromq.ZMQ.Socket
  */
 interface IMatchingLogic {
 
-    fun processCONNECT(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer)
+    fun processCONNECT(clientIdentifier: String, payload: Payload.CONNECTPayload, clients: Socket, brokers: Socket,
+                       kryo: KryoSerializer)
 
-    fun processDISCONNECT(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer)
+    fun processDISCONNECT(clientIdentifier: String, payload: Payload.DISCONNECTPayload, clients: Socket,
+                          brokers: Socket, kryo: KryoSerializer)
 
-    fun processPINGREQ(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer)
+    fun processPINGREQ(clientIdentifier: String, payload: Payload.PINGREQPayload, clients: Socket, brokers: Socket,
+                       kryo: KryoSerializer)
 
-    fun processSUBSCRIBE(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer)
+    fun processSUBSCRIBE(clientIdentifier: String, payload: Payload.SUBSCRIBEPayload, clients: Socket, brokers: Socket,
+                         kryo: KryoSerializer)
 
-    fun processUNSUBSCRIBE(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer)
+    fun processUNSUBSCRIBE(clientIdentifier: String, payload: Payload.UNSUBSCRIBEPayload, clients: Socket,
+                           brokers: Socket, kryo: KryoSerializer)
 
-    fun processPUBLISH(message: InternalServerMessage, clients: Socket, brokers: Socket, kryo: KryoSerializer)
+    fun processPUBLISH(clientIdentifier: String, payload: Payload.PUBLISHPayload, clients: Socket, brokers: Socket,
+                       kryo: KryoSerializer)
 
-    fun processBrokerForwardDisconnect(message: InternalServerMessage, clients: Socket, brokers: Socket,
-                                       kryo: KryoSerializer)
+    fun processBrokerForwardDisconnect(otherBrokerId: String, payload: Payload.BrokerForwardDisconnectPayload,
+                                       clients: Socket, brokers: Socket, kryo: KryoSerializer)
 
-    fun processBrokerForwardPingreq(message: InternalServerMessage, clients: Socket, brokers: Socket,
-                                    kryo: KryoSerializer)
+    fun processBrokerForwardPingreq(otherBrokerId: String, payload: Payload.BrokerForwardPingreqPayload,
+                                    clients: Socket, brokers: Socket, kryo: KryoSerializer)
 
-    fun processBrokerForwardSubscribe(message: InternalServerMessage, clients: Socket, brokers: Socket,
-                                      kryo: KryoSerializer)
+    fun processBrokerForwardSubscribe(otherBrokerId: String, payload: Payload.BrokerForwardSubscribePayload,
+                                      clients: Socket, brokers: Socket, kryo: KryoSerializer)
 
-    fun processBrokerForwardUnsubscribe(message: InternalServerMessage, clients: Socket, brokers: Socket,
-                                        kryo: KryoSerializer)
+    fun processBrokerForwardUnsubscribe(otherBrokerId: String, payload: Payload.BrokerForwardUnsubscribePayload,
+                                        clients: Socket, brokers: Socket, kryo: KryoSerializer)
 
-    fun processBrokerForwardPublish(message: InternalServerMessage, clients: Socket, brokers: Socket,
-                                    kryo: KryoSerializer)
+    fun processBrokerForwardPublish(otherBrokerId: String, payload: Payload.BrokerForwardPublishPayload,
+                                    clients: Socket, brokers: Socket, kryo: KryoSerializer)
 
 }
 
@@ -57,41 +57,46 @@ interface IMatchingLogic {
  * Common Matching Tasks
  ****************************************************************/
 
-fun connectClientAtLocalBroker(clientIdentifier: String, location: Location, clientDirectory: ClientDirectory,
-                               logger: Logger, kryo: KryoSerializer): InternalServerMessage {
+fun connectClientAtLocalBroker(clientIdentifier: String,
+                               location: Location,
+                               clientDirectory: ClientDirectory,
+                               logger: Logger): Payload {
 
     val success = clientDirectory.addClient(clientIdentifier, location)
 
-    if (success) {
+    return if (success) {
         logger.debug("Created client {}, acknowledging.", clientIdentifier)
-        return InternalServerMessage(clientIdentifier, ControlPacketType.CONNACK, CONNACKPayload(ReasonCode.Success))
+        Payload.CONNACKPayload(ReasonCode.Success)
     } else {
         logger.debug("Client {} already exists, so protocol error. Disconnecting.", clientIdentifier)
         clientDirectory.removeClient(clientIdentifier)
-        return InternalServerMessage(clientIdentifier,
-                ControlPacketType.DISCONNECT,
-                DISCONNECTPayload(ReasonCode.ProtocolError))
+        Payload.DISCONNECTPayload(ReasonCode.ProtocolError)
     }
 }
 
-fun updateClientLocationAtLocalBroker(clientIdentifier: String, location: Location, clientDirectory: ClientDirectory,
-                                      logger: Logger, kryo: KryoSerializer): ReasonCode {
+fun updateClientLocationAtLocalBroker(clientIdentifier: String,
+                                      location: Location,
+                                      clientDirectory: ClientDirectory,
+                                      logger: Logger): ReasonCode {
 
     val success = clientDirectory.updateClientLocation(clientIdentifier, location)
-    if (success) {
+    return if (success) {
         logger.debug("Updated location of {} to {}", clientIdentifier, location)
 
-        return ReasonCode.LocationUpdated
+        ReasonCode.LocationUpdated
     } else {
         logger.debug("Client {} is not connected", clientIdentifier)
-        return ReasonCode.NotConnected
+        ReasonCode.NotConnected
     }
 
 }
 
-fun subscribeAtLocalBroker(clientIdentifier: String, clientDirectory: ClientDirectory,
-                           topicAndGeofenceMapper: TopicAndGeofenceMapper, topic: Topic, geofence: Geofence,
-                           logger: Logger, kryo: KryoSerializer): ReasonCode {
+fun subscribeAtLocalBroker(clientIdentifier: String,
+                           clientDirectory: ClientDirectory,
+                           topicAndGeofenceMapper: TopicAndGeofenceMapper,
+                           topic: Topic,
+                           geofence: Geofence,
+                           logger: Logger): ReasonCode {
 
     val subscribed: ImmutablePair<ImmutablePair<String, Int>, Geofence>? =
             clientDirectory.checkIfSubscribed(clientIdentifier, topic, geofence)
@@ -101,19 +106,21 @@ fun subscribeAtLocalBroker(clientIdentifier: String, clientDirectory: ClientDire
 
     val subscriptionId = clientDirectory.updateSubscription(clientIdentifier, topic, geofence)
 
-    if (subscriptionId == null) {
+    return if (subscriptionId == null) {
         logger.debug("Client {} is not connected", clientIdentifier)
-        return ReasonCode.NotConnected
+        ReasonCode.NotConnected
     } else {
         topicAndGeofenceMapper.putSubscriptionId(subscriptionId, topic, geofence)
         logger.debug("Client {} subscribed to topic {} and geofence {}", clientIdentifier, topic, geofence)
-        return ReasonCode.GrantedQoS0
+        ReasonCode.GrantedQoS0
     }
 }
 
-fun unsubscribeAtLocalBroker(clientIdentifier: String, clientDirectory: ClientDirectory,
-                             topicAndGeofenceMapper: TopicAndGeofenceMapper, topic: Topic, logger: Logger,
-                             kryo: KryoSerializer): ReasonCode {
+fun unsubscribeAtLocalBroker(clientIdentifier: String,
+                             clientDirectory: ClientDirectory,
+                             topicAndGeofenceMapper: TopicAndGeofenceMapper,
+                             topic: Topic,
+                             logger: Logger): ReasonCode {
     var reasonCode = ReasonCode.Success
 
     // unsubscribe from client directory -> get subscription id
@@ -134,7 +141,7 @@ fun unsubscribeAtLocalBroker(clientIdentifier: String, clientDirectory: ClientDi
 /**
  * @param publisherLocation - the location of the publisher
  */
-fun publishMessageToLocalClients(publisherLocation: Location, publishPayload: PUBLISHPayload,
+fun publishMessageToLocalClients(publisherLocation: Location, publishPayload: Payload.PUBLISHPayload,
                                  clientDirectory: ClientDirectory, topicAndGeofenceMapper: TopicAndGeofenceMapper,
                                  clients: Socket, logger: Logger, kryo: KryoSerializer): ReasonCode {
 
@@ -154,16 +161,16 @@ fun publishMessageToLocalClients(publisherLocation: Location, publishPayload: PU
     for (subscriptionId in subscriptionIds) {
         val subscriberClientIdentifier = subscriptionId.left
         logger.debug("Client {} is a subscriber", subscriberClientIdentifier)
-        val toPublish = InternalServerMessage(subscriberClientIdentifier, ControlPacketType.PUBLISH, publishPayload)
+        val toPublish = payloadToZMsg(publishPayload, kryo, subscriberClientIdentifier)
         logger.trace("Publishing $toPublish")
-        toPublish.getZMsg(kryo).send(clients)
+        toPublish.send(clients)
     }
 
-    if (subscriptionIds.isEmpty()) {
+    return if (subscriptionIds.isEmpty()) {
         logger.debug("No subscriber exists.")
-        return ReasonCode.NoMatchingSubscribers
+        ReasonCode.NoMatchingSubscribers
     } else {
-        return ReasonCode.Success
+        ReasonCode.Success
     }
 
 }

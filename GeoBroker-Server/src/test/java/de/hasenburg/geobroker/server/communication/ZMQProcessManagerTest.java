@@ -38,18 +38,18 @@ public class ZMQProcessManagerTest {
 		ZMQProcessStarter.runZMQProcess_MessageProcessor(pm, "test", 2, matchingLogic, 0);
 		Utility.sleepNoLog(100, 0);
 		assertTrue(pm.getIncompleteZMQProcesses()
-					 .containsAll(Arrays.asList(ZMQProcess_MessageProcessor.getMessageProcessorIdentity("test", 1),
-							 ZMQProcess_MessageProcessor.getMessageProcessorIdentity("test", 2))));
+					 .containsAll(Arrays.asList(ZMQProcess_MessageProcessorKt.getMessageProcessorIdentity("test", 1),
+							 ZMQProcess_MessageProcessorKt.getMessageProcessorIdentity("test", 2))));
 		logger.info("Started two message processor processes");
 		Utility.sleepNoLog(100, 0);
 
 		logger.info("Sending kill to processes");
 		// kill 1
-		pm.sendCommandToZMQProcess(ZMQProcess_MessageProcessor.getMessageProcessorIdentity("test", 1), ZMQControlUtility.ZMQControlCommand.KILL);
+		pm.sendCommandToZMQProcess(ZMQProcess_MessageProcessorKt.getMessageProcessorIdentity("test", 1), ZMQControlUtility.ZMQControlCommand.KILL);
 
 		Utility.sleepNoLog(100, 0);
-		assertFalse(pm.getIncompleteZMQProcesses().contains(ZMQProcess_MessageProcessor.getMessageProcessorIdentity("test", 1)));
-		assertTrue(pm.getIncompleteZMQProcesses().contains(ZMQProcess_MessageProcessor.getMessageProcessorIdentity("test", 2)));
+		assertFalse(pm.getIncompleteZMQProcesses().contains(ZMQProcess_MessageProcessorKt.getMessageProcessorIdentity("test", 1)));
+		assertTrue(pm.getIncompleteZMQProcesses().contains(ZMQProcess_MessageProcessorKt.getMessageProcessorIdentity("test", 2)));
 		logger.info("Killed first message processor processes");
 
 		// tear down

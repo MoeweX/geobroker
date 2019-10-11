@@ -47,4 +47,9 @@ public class BrokerInfo {
 	public int hashCode() {
 		return Objects.hash(brokerId, ip, port);
 	}
+
+	@Override
+	public String toString() {
+		return("BrokerInfo for " + brokerId);
+	}
 }
