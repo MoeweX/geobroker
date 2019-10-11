@@ -28,7 +28,7 @@ public class ZMQProcessStarter {
 				number,
 				matchingLogic,
 				numberOfBrokerCommunicators);
-		processManager.submitZMQProcess(ZMQProcess_MessageProcessor.getMessageProcessorIdentity(brokerId, number),
+		processManager.submitZMQProcess(ZMQProcess_MessageProcessorKt.getMessageProcessorIdentity(brokerId, number),
 				zmqProcess);
 		return zmqProcess;
 	}

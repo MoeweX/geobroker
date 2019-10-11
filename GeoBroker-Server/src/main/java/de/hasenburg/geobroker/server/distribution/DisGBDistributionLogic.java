@@ -1,19 +1,19 @@
 package de.hasenburg.geobroker.server.distribution;
 
 import de.hasenburg.geobroker.commons.model.KryoSerializer;
-import de.hasenburg.geobroker.commons.model.message.payloads.AbstractPayload;
-import de.hasenburg.geobroker.commons.model.message.payloads.BrokerForwardPublishPayload;
-import de.hasenburg.geobroker.server.communication.InternalBrokerMessage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.ZMQ.Socket;
 import org.zeromq.ZMsg;
+import de.hasenburg.geobroker.commons.model.message.Payload;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static de.hasenburg.geobroker.commons.model.message.Payload.*;
+
 /**
- * As any {@link AbstractPayload} does not have an id, this class simply counts outgoing and ingoing (acknowledged)
+ * As any {@link Payload} does not have an id, this class simply counts outgoing and ingoing (acknowledged)
  * messages.
  *
  * An alternative to adding an ID to every payload would be to add an ID only to BrokerForward payloads, e.g., {@link
@@ -31,7 +31,7 @@ public class DisGBDistributionLogic implements IDistributionLogic {
 	 *
 	 * Also increments the not acknowledged counter by 1.
 	 *
-	 * @param msg - this should equal an {@link InternalBrokerMessage}
+	 * @param msg - this should equal the ZMsg of a {@link Payload}
 	 * @param broker - socket that can be used to communicate with the other broker.
 	 * @param targetBrokerId - id of the other broker we are sending this message to
 	 */
