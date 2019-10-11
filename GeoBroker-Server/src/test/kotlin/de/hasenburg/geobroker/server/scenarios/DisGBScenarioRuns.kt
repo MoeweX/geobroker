@@ -2,7 +2,6 @@ package de.hasenburg.geobroker.server.scenarios
 
 import de.hasenburg.geobroker.client.main.SimpleClient
 import de.hasenburg.geobroker.commons.communication.ZMQProcessManager
-import de.hasenburg.geobroker.commons.model.message.Payload
 import de.hasenburg.geobroker.commons.model.message.Payload.*
 import de.hasenburg.geobroker.commons.model.message.ReasonCode
 import de.hasenburg.geobroker.commons.model.message.Topic
@@ -118,7 +117,7 @@ class DisGBScenarioRuns {
         assertTrue(mg3.contains(cl3))
     }
 
-    //TODO !! @Test
+    @Test
     fun subscriberMatchingScenario() {
         val paris = DisGBSubscriberMatchingServerLogic()
         val berlin = DisGBSubscriberMatchingServerLogic()
@@ -206,7 +205,7 @@ class DisGBScenarioRuns {
         assertEquals(0, berlinCD.numberOfClients)
     }
 
-    //TODO !! @Test
+    @Test
     fun publisherMatchingScenario() {
         val paris = DisGBPublisherMatchingServerLogic()
         val berlin = DisGBPublisherMatchingServerLogic()
@@ -496,7 +495,7 @@ class DisGBScenarioRuns {
     private fun sendCONNECT(client: SimpleClient, l: Location, disconnect: Boolean = false) {
 
         client.send(CONNECTPayload(l))
-        val responsePayload = client.receiveWithTimeout(100)
+        val responsePayload = client.receiveWithTimeout(1000)
 
         if (!disconnect) {
             assertEquals(CONNACKPayload(ReasonCode.Success), responsePayload)
@@ -513,7 +512,7 @@ class DisGBScenarioRuns {
     private fun sendPINGREQ(client: SimpleClient, l: Location,
                             expectedReasonCode: ReasonCode = ReasonCode.LocationUpdated) {
         client.send(PINGREQPayload(l))
-        val payload = client.receiveWithTimeout(100)
+        val payload = client.receiveWithTimeout(1000)
 
         if (payload is PINGRESPPayload) {
             assertEquals(expectedReasonCode, payload.reasonCode)
@@ -525,7 +524,7 @@ class DisGBScenarioRuns {
     private fun sendSUBSCRIBE(client: SimpleClient, t: Topic, g: Geofence,
                               expectedReasonCode: ReasonCode = ReasonCode.GrantedQoS0) {
         client.send(SUBSCRIBEPayload(t, g))
-        val payload = client.receiveWithTimeout(100)
+        val payload = client.receiveWithTimeout(1000)
 
         if (payload is SUBACKPayload) {
             assertEquals(expectedReasonCode, payload.reasonCode)
@@ -536,7 +535,7 @@ class DisGBScenarioRuns {
 
     private fun sendUNSUBSCRIBE(client: SimpleClient, t: Topic, expectedReasonCode: ReasonCode = ReasonCode.Success) {
         client.send(UNSUBSCRIBEPayload(t))
-        val payload = client.receiveWithTimeout(100)
+        val payload = client.receiveWithTimeout(1000)
 
         if (payload is UNSUBACKPayload) {
             assertEquals(expectedReasonCode, payload.reasonCode)
