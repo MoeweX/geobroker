@@ -8,3 +8,5 @@ latest_benchmark_client_results/
 out/
 test-log.xml
 configuration.toml
+wasReceived.txt
+wasSent.txt

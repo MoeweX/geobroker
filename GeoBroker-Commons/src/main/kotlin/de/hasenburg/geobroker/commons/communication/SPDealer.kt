@@ -92,7 +92,7 @@ class SPDealer(val ip: String = "localhost", val port: Int = 5559) {
         while (isActive) {
             oldTime = System.nanoTime()
 
-            val objects = poller.poll(100)
+            val objects = poller.poll(1000)
 
             newTime = System.nanoTime()
             pollTime += newTime - oldTime
@@ -118,7 +118,7 @@ class SPDealer(val ip: String = "localhost", val port: Int = 5559) {
                 processingTime = 0
             }
         }
-        logger.info("Job is not active anymore, shutting down.")
+        logger.debug("Job is not active anymore, shutting down.")
     }
 
     /**
@@ -145,8 +145,8 @@ class SPDealer(val ip: String = "localhost", val port: Int = 5559) {
             indexMap[thingId] = index
         }
         msg.send(socketList[index], false) // send via correct socket
-        wasSent.send(ZMsgTP(msg.addFirst(thingId), System.currentTimeMillis())) // add to wasSent channel
         logger.trace("Send message $msg for $thingId to target socket")
+        wasSent.send(ZMsgTP(msg.addFirst(thingId), System.currentTimeMillis())) // add to wasSent channel
     }
 
     /**
@@ -162,8 +162,8 @@ class SPDealer(val ip: String = "localhost", val port: Int = 5559) {
                 if (msg == null) {
                     logger.warn("Received a null message")
                 } else {
-                    wasReceived.send(ZMsgTP(msg.addFirst(thingId), System.currentTimeMillis()))
                     logger.trace("Received message for client {}", thingId)
+                    wasReceived.send(ZMsgTP(msg.addFirst(thingId), System.currentTimeMillis()))
                 }
                 return // we already found the correct dealer socket, so return
             }

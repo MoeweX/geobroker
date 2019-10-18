@@ -9,15 +9,10 @@
         </File>
     </Appenders>
     <Loggers>
-        <Root level="debug" additivity="false">
+        <Root level="info" additivity="false">
             <AppenderRef ref="Console"/>
             <AppenderRef ref="File"/>
         </Root>
-        <Logger name="de.hasenburg.geobroker.server.matching.IMatchingLogic" level="debug"
-                additivity="false">
-            <AppenderRef ref="Console"/>
-            <AppenderRef ref="File"/>
-        </Logger>
         <Logger name="de.hasenburg.geobroker.server.matching.DisGBAtSubscriberMatchingLogic" level="debug"
                 additivity="false">
             <AppenderRef ref="Console"/>
