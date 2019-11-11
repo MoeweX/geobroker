@@ -12,7 +12,6 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import org.apache.logging.log4j.LogManager
 import org.zeromq.ZMsg
-import sun.security.pkcs11.wrapper.CK_C_INITIALIZE_ARGS
 import java.io.File
 import java.lang.NumberFormatException
 import kotlin.math.floor
@@ -110,13 +109,13 @@ private suspend fun processFile(startTime: Long, toSent: Channel<ZMsg>, file: Fi
         try {
             val timestamp = split[0].toLong()
             while (System.currentTimeMillis() < (startTime + timestamp)) {
-                delay(2)
+                delay(1)
             }
 
             // time reached
             val behindSchedule = System.currentTimeMillis() - (startTime + timestamp)
             if (behindSchedule > 10) {
-                logger.warn("We are ${behindSchedule}ms behind schedule!")
+                logger.warn("[$clientId] We are ${behindSchedule}ms behind schedule with ${split[3]}!")
             }
             // send if valid line
             createZMsg(clientId, i, split, kryo)?.let { toSent.send(it) } ?: logger.warn("Empty ZMsg for $line")
@@ -129,6 +128,7 @@ private suspend fun processFile(startTime: Long, toSent: Channel<ZMsg>, file: Fi
     delay(5000)
     toSent.send(payloadToZMsg(Payload.DISCONNECTPayload(ReasonCode.NormalDisconnection), kryo, clientId))
     logger.debug("[$clientId] Sent disconnect")
+    delay(5000)
 }
 
 private fun createZMsg(clientId: String, messageNumber: Int, split: List<String>, kryo: KryoSerializer): ZMsg? {

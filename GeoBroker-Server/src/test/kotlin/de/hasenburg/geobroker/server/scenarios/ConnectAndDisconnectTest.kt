@@ -63,7 +63,7 @@ class ConnectAndDisconnectTest {
         client.send(DISCONNECTPayload(ReasonCode.NormalDisconnection))
 
         // check whether disconnected and no more messages received
-        sleepNoLog(1, 0)
+        sleepNoLog(5, 0)
         assertEquals(0, serverLogic.clientDirectory.numberOfClients.toLong())
     }
 
