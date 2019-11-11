@@ -20,7 +20,7 @@
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>
-                    <outputDirectory>../out/</outputDirectory>
+                    <outputDirectory>out/</outputDirectory>
                 </configuration>
                 <executions>
                     <execution>
