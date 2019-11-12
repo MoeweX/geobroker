@@ -1,5 +1,9 @@
 package de.hasenburg.geobroker.client.main
 
+import com.xenomachina.argparser.ArgParser
+import com.xenomachina.argparser.InvalidArgumentException
+import com.xenomachina.argparser.default
+import com.xenomachina.argparser.mainBody
 import de.hasenburg.geobroker.commons.communication.SPDealer
 import de.hasenburg.geobroker.commons.communication.ZMsgTP
 import de.hasenburg.geobroker.commons.model.KryoSerializer
@@ -11,6 +15,7 @@ import de.hasenburg.geobroker.commons.model.spatial.Location
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import org.apache.logging.log4j.LogManager
+import org.apache.logging.log4j.core.LoggerContext
 import org.zeromq.ZMsg
 import java.io.File
 import java.lang.NumberFormatException
@@ -19,24 +24,33 @@ import kotlin.math.floor
 private val logger = LogManager.getLogger()
 
 fun main(args: Array<String>) {
-    val dir: File = if (args.size == 1) {
-        File(args[0])
-    } else {
-        File("GeoBroker-Client/src/main/resources/multifile")
-    }
-    logger.info("Looking for files at ${dir.absolutePath}")
+    // configuration
+    val conf = mainBody { ArgParser(args).parseInto(::ConfMultiFile) }
 
-    val spd = SPDealer()
-    val fileList = dir.listFiles()?.filter { f -> f.extension == "csv" } ?: emptyList()
+    if (conf.logConfFile != "") {
+        // update log conf file
+        val logConf = File(conf.logConfFile)
+        logger.info("Updating log config to {}", logConf.absolutePath)
+        val context = LogManager.getContext(false) as LoggerContext
+
+        // this will force a reconfiguration
+        context.configLocation = logConf.toURI()
+        logger.info("Configuration updated")
+    }
+
+    logger.info("Looking for files at ${conf.dir.absolutePath}")
+
+    val spd = SPDealer(conf.serverIp, conf.serverPort)
+    val fileList = conf.dir.listFiles()?.filter { f -> f.extension == "csv" } ?: emptyList()
 
     logger.info("Using ${fileList.size} files")
 
     runBlocking {
         launch(Dispatchers.IO) {
-            writeChannelInputToFileBlocking(spd.wasSent, File(dir.absolutePath + "/wasSent.txt"))
+            writeChannelInputToFileBlocking(spd.wasSent, File(conf.dir.absolutePath + "/wasSent.txt"))
         }
         launch(Dispatchers.IO) {
-            writeChannelInputToFileBlocking(spd.wasReceived, File(dir.absolutePath + "/wasReceived.txt"))
+            writeChannelInputToFileBlocking(spd.wasReceived, File(conf.dir.absolutePath + "/wasReceived.txt"))
         }
 
         launch(Dispatchers.Default) {
@@ -175,4 +189,30 @@ private fun generatePayload(thingId: String, tupleNr: Int, topic: String, payloa
         builder.append("+")
     }
     return builder.toString()
+}
+
+class ConfMultiFile(parser: ArgParser) {
+    val dir by parser
+            .storing("-d", "--dir", help = "local directory containing the input files") { File(this) }
+            .default(File("GeoBroker-Client/src/main/resources/multifile"))
+            .addValidator {
+                if (!value.exists()) {
+                    throw InvalidArgumentException("Directory $value does not exist")
+                }
+                if (!value.isDirectory) {
+                    throw InvalidArgumentException("$value is not a directory")
+                }
+            }
+
+    val serverIp by parser
+            .storing("-i", "--ip-address", help = "ip address of the GeoBroker server") { this }
+            .default("localhost")
+
+    val serverPort by parser
+            .storing("-p", "--port", help = "port of the GeoBroker server") { this.toInt() }
+            .default(5559)
+
+    val logConfFile by parser
+            .storing("-l", "--log-config", help = "config file for log4j") { this }
+            .default("")
 }
