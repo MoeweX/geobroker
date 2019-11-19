@@ -27,9 +27,9 @@ fun main(args: Array<String>) {
     // configuration
     val conf = mainBody { ArgParser(args).parseInto(::ConfMultiFile) }
 
-    if (conf.logConfFile != "") {
+    conf.logConfFile?.let {
         // update log conf file
-        val logConf = File(conf.logConfFile)
+        val logConf = File(it)
         logger.info("Updating log config to {}", logConf.absolutePath)
         val context = LogManager.getContext(false) as LoggerContext
 
@@ -214,5 +214,5 @@ class ConfMultiFile(parser: ArgParser) {
 
     val logConfFile by parser
             .storing("-l", "--log-config", help = "config file for log4j") { this }
-            .default("")
+            .default<String?>(null)
 }
