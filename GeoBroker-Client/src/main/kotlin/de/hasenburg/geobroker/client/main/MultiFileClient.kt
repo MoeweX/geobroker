@@ -218,6 +218,6 @@ class ConfMultiFile(parser: ArgParser) {
             .default<String?>(null)
 
     val socketHWM by parser
-            .storing("-hw","--high-watermark",help="high water mark for each individual zmq socket") { this.toInt() }
+            .storing("-w", "--high-watermark", help = "high water mark for each individual zmq socket") { this.toInt() }
             .default(1000)
 }
