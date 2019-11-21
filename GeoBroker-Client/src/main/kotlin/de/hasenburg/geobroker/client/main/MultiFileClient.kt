@@ -12,18 +12,17 @@ import de.hasenburg.geobroker.commons.model.message.Payload.PINGREQPayload
 import de.hasenburg.geobroker.commons.model.message.Payload.SUBSCRIBEPayload
 import de.hasenburg.geobroker.commons.model.spatial.Geofence
 import de.hasenburg.geobroker.commons.model.spatial.Location
-import de.hasenburg.geobroker.commons.sleep
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
+import me.tongfei.progressbar.ProgressBar
+import me.tongfei.progressbar.ProgressBarStyle
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.core.LoggerContext
 import org.zeromq.ZMsg
 import java.io.File
-import java.lang.NumberFormatException
 import kotlin.math.floor
-import me.tongfei.progressbar.*;
 
 private val logger = LogManager.getLogger()
 
@@ -53,7 +52,6 @@ fun main(args: Array<String>) {
     val pbAddToMax: Channel<Long> = Channel(Channel.UNLIMITED);
     val pbStep: Channel<Long> = Channel(Channel.UNLIMITED);
 
-
     runBlocking {
         launch(Dispatchers.IO) {
             writeChannelInputToFileBlocking(spd.wasSent, File(conf.dir.absolutePath + "/wasSent.txt"))
@@ -64,8 +62,7 @@ fun main(args: Array<String>) {
 
         launch(Dispatchers.Default) {
             startFileProcessingBlocking(System.currentTimeMillis() + 1000, spd.toSent, fileList, pbAddToMax, pbStep)
-            // we are done
-            // close the sent and received channels
+            // we are done. closes spd.toSent and spd.wasReceived
             spd.shutdown()
             // close the progress bar channels
             pbAddToMax.close()
@@ -98,7 +95,8 @@ suspend fun writeChannelInputToFileBlocking(
 }
 
 suspend fun startFileProcessingBlocking(startTime: Long, toSent: SendChannel<ZMsg>,
-                                        fileList: List<File>, pbAddToMax: SendChannel<Long>, pbStep: SendChannel<Long>) = coroutineScope {
+                                        fileList: List<File>, pbAddToMax: SendChannel<Long>,
+                                        pbStep: SendChannel<Long>) = coroutineScope {
 
     // every file is processed in its own coroutine
     for (file in fileList) {
@@ -111,20 +109,19 @@ suspend fun startFileProcessingBlocking(startTime: Long, toSent: SendChannel<ZMs
 suspend fun displayProgressBarBlocking(addToMax: ReceiveChannel<Long>, step: ReceiveChannel<Long>) {
     var maxSteps = 0L;
     val pb = ProgressBar("Sent Messages", maxSteps, ProgressBarStyle.ASCII)
-    for(message in step) {
-
+    for (message in step) {
         // First check if there are any new messages in the addToMax channel
         // This means that the maxHint will only be updated after a message has been sent
-        if(!addToMax.isEmpty) {
+        if (!addToMax.isEmpty) {
             maxSteps += addToMax.receive();
             pb.maxHint(maxSteps)
         }
-
         pb.stepBy(message)
     }
 }
 
-private suspend fun processFile(startTime: Long, toSent: SendChannel<ZMsg>, file: File, pbAddToMax: SendChannel<Long>, pbStep: SendChannel<Long>) {
+private suspend fun processFile(startTime: Long, toSent: SendChannel<ZMsg>, file: File, pbAddToMax: SendChannel<Long>,
+                                pbStep: SendChannel<Long>) {
     val clientId = file.nameWithoutExtension
     val lines = file.readLines()
     val kryo = KryoSerializer()
@@ -231,30 +228,30 @@ private fun generatePayload(thingId: String, tupleNr: Int, topic: String, payloa
 
 class ConfMultiFile(parser: ArgParser) {
     val dir by parser
-            .storing("-d", "--dir", help = "local directory containing the input files") { File(this) }
-            .default(File("GeoBroker-Client/src/main/resources/multifile"))
-            .addValidator {
-                if (!value.exists()) {
-                    throw InvalidArgumentException("Directory $value does not exist")
-                }
-                if (!value.isDirectory) {
-                    throw InvalidArgumentException("$value is not a directory")
-                }
+        .storing("-d", "--dir", help = "local directory containing the input files") { File(this) }
+        .default(File("GeoBroker-Client/src/main/resources/multifile"))
+        .addValidator {
+            if (!value.exists()) {
+                throw InvalidArgumentException("Directory $value does not exist")
             }
+            if (!value.isDirectory) {
+                throw InvalidArgumentException("$value is not a directory")
+            }
+        }
 
     val serverIp by parser
-            .storing("-i", "--ip-address", help = "ip address of the GeoBroker server")
-            .default("localhost")
+        .storing("-i", "--ip-address", help = "ip address of the GeoBroker server")
+        .default("localhost")
 
     val serverPort by parser
-            .storing("-p", "--port", help = "port of the GeoBroker server") { this.toInt() }
-            .default(5559)
+        .storing("-p", "--port", help = "port of the GeoBroker server") { this.toInt() }
+        .default(5559)
 
     val logConfFile by parser
-            .storing("-l", "--log-config", help = "config file for log4j")
-            .default<String?>(null)
+        .storing("-l", "--log-config", help = "config file for log4j")
+        .default<String?>(null)
 
     val socketHWM by parser
-            .storing("-w", "--high-watermark", help = "high water mark for each individual zmq socket") { this.toInt() }
-            .default(1000)
+        .storing("-w", "--high-watermark", help = "high water mark for each individual zmq socket") { this.toInt() }
+        .default(1000)
 }
