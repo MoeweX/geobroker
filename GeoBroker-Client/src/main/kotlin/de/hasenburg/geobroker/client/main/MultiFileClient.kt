@@ -12,14 +12,18 @@ import de.hasenburg.geobroker.commons.model.message.Payload.PINGREQPayload
 import de.hasenburg.geobroker.commons.model.message.Payload.SUBSCRIBEPayload
 import de.hasenburg.geobroker.commons.model.spatial.Geofence
 import de.hasenburg.geobroker.commons.model.spatial.Location
+import de.hasenburg.geobroker.commons.sleep
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.channels.SendChannel
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.core.LoggerContext
 import org.zeromq.ZMsg
 import java.io.File
 import java.lang.NumberFormatException
 import kotlin.math.floor
+import me.tongfei.progressbar.*;
 
 private val logger = LogManager.getLogger()
 
@@ -45,6 +49,11 @@ fun main(args: Array<String>) {
 
     logger.info("Using ${fileList.size} files")
 
+    // Channels for the progress bar
+    val pbAddToMax: Channel<Long> = Channel(Channel.UNLIMITED);
+    val pbStep: Channel<Long> = Channel(Channel.UNLIMITED);
+
+
     runBlocking {
         launch(Dispatchers.IO) {
             writeChannelInputToFileBlocking(spd.wasSent, File(conf.dir.absolutePath + "/wasSent.txt"))
@@ -54,9 +63,17 @@ fun main(args: Array<String>) {
         }
 
         launch(Dispatchers.Default) {
-            startFileProcessingBlocking(System.currentTimeMillis() + 1000, spd.toSent, fileList)
+            startFileProcessingBlocking(System.currentTimeMillis() + 1000, spd.toSent, fileList, pbAddToMax, pbStep)
             // we are done
+            // close the sent and received channels
             spd.shutdown()
+            // close the progress bar channels
+            pbAddToMax.close()
+            pbStep.close()
+
+        }
+        launch(Dispatchers.Default) {
+            displayProgressBarBlocking(pbAddToMax, pbStep)
         }
     }
 
@@ -81,21 +98,38 @@ suspend fun writeChannelInputToFileBlocking(
 }
 
 suspend fun startFileProcessingBlocking(startTime: Long, toSent: Channel<ZMsg>,
-                                        fileList: List<File>) = coroutineScope {
+                                        fileList: List<File>, pbAddToMax: SendChannel<Long>, pbStep: SendChannel<Long>) = coroutineScope {
 
     // every file is processed in its own coroutine
     for (file in fileList) {
-        launch { processFile(startTime, toSent, file) }
+        launch { processFile(startTime, toSent, file, pbAddToMax, pbStep) }
     }
 
     // the coroutineScope only returns when the processFile coroutines end
 }
 
-private suspend fun processFile(startTime: Long, toSent: Channel<ZMsg>, file: File) {
+suspend fun displayProgressBarBlocking(addToMax: ReceiveChannel<Long>, step: ReceiveChannel<Long>) {
+    var maxSteps = 0L;
+    val pb = ProgressBar("Sent Messages", maxSteps, ProgressBarStyle.ASCII)
+    for(message in step) {
+
+        // First check if there are any new messages in the addToMax channel
+        // This means that the maxHint will only be updated after a message has been sent
+        if(!addToMax.isEmpty) {
+            maxSteps += addToMax.receive();
+            pb.maxHint(maxSteps)
+        }
+
+        pb.stepBy(message)
+    }
+}
+
+private suspend fun processFile(startTime: Long, toSent: Channel<ZMsg>, file: File, pbAddToMax: SendChannel<Long>, pbStep: SendChannel<Long>) {
     val clientId = file.nameWithoutExtension
     val lines = file.readLines()
     val kryo = KryoSerializer()
 
+    pbAddToMax.send((lines.size - 1).toLong());
 
     // line counting
     var previousPercent = 0.0f
@@ -119,6 +153,9 @@ private suspend fun processFile(startTime: Long, toSent: Channel<ZMsg>, file: Fi
         }
         // Update the percentage.
         previousPercent = percent
+
+        // Update the progress bar
+        pbStep.send(1L);
 
         val split = line.split(";")
         try {
