@@ -118,6 +118,7 @@ suspend fun displayProgressBarBlocking(addToMax: ReceiveChannel<Long>, step: Rec
         }
         pb.stepBy(message)
     }
+    pb.close()
 }
 
 private suspend fun processFile(startTime: Long, toSent: SendChannel<ZMsg>, file: File, pbAddToMax: SendChannel<Long>,
