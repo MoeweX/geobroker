@@ -40,7 +40,7 @@ fun main(args: Array<String>) {
 
     logger.info("Looking for files at ${conf.dir.absolutePath}")
 
-    val spd = SPDealer(conf.serverIp, conf.serverPort)
+    val spd = SPDealer(conf.serverIp, conf.serverPort, conf.socketHWM)
     val fileList = conf.dir.listFiles()?.filter { f -> f.extension == "csv" } ?: emptyList()
 
     logger.info("Using ${fileList.size} files")
@@ -206,7 +206,7 @@ class ConfMultiFile(parser: ArgParser) {
             }
 
     val serverIp by parser
-            .storing("-i", "--ip-address", help = "ip address of the GeoBroker server") { this }
+            .storing("-i", "--ip-address", help = "ip address of the GeoBroker server")
             .default("localhost")
 
     val serverPort by parser
@@ -214,6 +214,10 @@ class ConfMultiFile(parser: ArgParser) {
             .default(5559)
 
     val logConfFile by parser
-            .storing("-l", "--log-config", help = "config file for log4j") { this }
+            .storing("-l", "--log-config", help = "config file for log4j")
             .default<String?>(null)
+
+    val socketHWM by parser
+            .storing("-hw","--high-watermark",help="high water mark for each individual zmq socket") { this.toInt() }
+            .default(1000)
 }
