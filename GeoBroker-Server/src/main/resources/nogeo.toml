@@ -1,0 +1,11 @@
+# server information
+[server]
+brokerId = "broker_nogeo"
+port = 5559
+granularity = 5
+messageProcessors = 2
+
+    [server.mode]
+    name = "other"
+    otherMode = "single_noGeo"
+

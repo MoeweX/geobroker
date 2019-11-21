@@ -58,9 +58,17 @@ suspend fun writeChannelInputToFileBlocking(
     val writer = output.bufferedWriter()
     writer.write("timestamp;msg\n")
 
-    for (zMsgTP in channel) {
-        writer.write("${zMsgTP.timestamp}\t${zMsgTP.msg.transformZMsgWithId(kryo).toString().replace("+", "")}\n")
-    } // ends when channel is closed
+    if (output.absolutePath.contains("wasReceived")) {
+        for (zMsgTP in channel) {
+            val message = "${zMsgTP.timestamp}\t${zMsgTP.msg.transformZMsgWithId(kryo).toString().replace("+", "")}\n"
+            writer.write(message)
+            logger.info("Received $message")
+        } // ends when channel is closed
+    } else {
+        for (zMsgTP in channel) {
+            writer.write("${zMsgTP.timestamp}\t${zMsgTP.msg.transformZMsgWithId(kryo).toString().replace("+", "")}\n")
+        } // ends when channel is closed
+    }
     writer.close()
     logger.info("Channel was closed for file $output, shutting down")
 }

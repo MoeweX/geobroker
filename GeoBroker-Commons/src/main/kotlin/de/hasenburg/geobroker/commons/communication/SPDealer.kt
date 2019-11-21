@@ -9,6 +9,7 @@ import org.zeromq.ZContext
 import org.zeromq.ZMQ
 import org.zeromq.ZMQ.Socket
 import org.zeromq.ZMsg
+import java.lang.RuntimeException
 import kotlin.math.roundToInt
 
 private val logger = LogManager.getLogger()
@@ -22,7 +23,7 @@ private val logger = LogManager.getLogger()
  *
  * [ObsoleteCoroutinesApi] necessary, as the [SPDealer] uses its own ThreadPool and the API is being changed, soon.
  */
-class SPDealer(val ip: String = "localhost", val port: Int = 5559) {
+class SPDealer(val ip: String = "localhost", val port: Int = 5559, val socketHWM: Int = 1000) {
 
     // constants
     private val measurementInterval: Long = 10 // in seconds
@@ -37,6 +38,7 @@ class SPDealer(val ip: String = "localhost", val port: Int = 5559) {
     private val zContext = ZContext(1)
     private val poller = zContext.createPoller(1)
     private val puller = zContext.createSocket(SocketType.PULL).also {
+        it.hwm = socketHWM
         it.bind(pullSocketAddress)
         poller.register(it, ZMQ.Poller.POLLIN)
     }
@@ -49,16 +51,17 @@ class SPDealer(val ip: String = "localhost", val port: Int = 5559) {
         get() = socketList.size
 
     // thread pool (has to be closed on shutdown, coroutine API changes incoming)
-    private val threadPool = newFixedThreadPoolContext(2, "SPDealerPool")
+    private val poolToSent = newSingleThreadContext("SPDealer-toSent")
+    private val poolSendAndReceive = newSingleThreadContext("SPDealer-sendAndReceive")
 
     // shutdown error handler and job
     private val eh = CoroutineExceptionHandler { _, e ->
         logger.error("Unknown Exception, shutting down SPDealer", e)
         shutdown()
     }
-    private val job = GlobalScope.launch(eh + threadPool) {
-        launch { processToSendBlocking() }
-        launch { sendAndReceiveBlocking() }
+    private val job = GlobalScope.launch(eh) {
+        launch(eh + poolToSent) { processToSendBlocking() }
+        launch(eh + poolSendAndReceive) { sendAndReceiveBlocking() }
     }
     val isActive: Boolean
         get() = job.isActive
@@ -66,7 +69,8 @@ class SPDealer(val ip: String = "localhost", val port: Int = 5559) {
     fun shutdown() {
         job.cancel()
         zContext.destroy()
-        threadPool.close()
+        poolToSent.close()
+        poolSendAndReceive.close()
         toSent.close()
         wasSent.close()
         wasReceived.close()
@@ -87,12 +91,18 @@ class SPDealer(val ip: String = "localhost", val port: Int = 5559) {
         var newTime: Long
         var oldTime: Long
 
+        val shutdownThreshold = socketHWM / 1.2
+
         logger.info("Started communication with target socket at $ip:$port")
 
         while (isActive) {
             oldTime = System.nanoTime()
 
             val objects = poller.poll(1000)
+            if (objects > shutdownThreshold) {
+                logger.fatal("Load is to high, will run out of memory. Try increasing socketHWM (is $socketHWM) or decrease the load.")
+                shutdown()
+            }
 
             newTime = System.nanoTime()
             pollTime += newTime - oldTime
@@ -100,8 +110,10 @@ class SPDealer(val ip: String = "localhost", val port: Int = 5559) {
 
             if (objects > 0) {
                 if (poller.pollin(0)) {
+                    // this sends the pull socket message on the appropriate dealer socket
                     onPullSocketMessage()
                 } else {
+                    // this receives a message from the appropriate dealer socket
                     onDealerSocketMessage()
                 }
             }
@@ -136,6 +148,7 @@ class SPDealer(val ip: String = "localhost", val port: Int = 5559) {
             logger.debug("Thing $thingId did not have a dealer socket yet, creating a new one")
             zContext.createSocket(SocketType.DEALER).also {
                 it.identity = thingId.toByteArray()
+                it.hwm = socketHWM
                 it.connect("tcp://$ip:$port")
                 poller.register(it, ZMQ.Poller.POLLIN)
                 socketList.add(it)
@@ -162,7 +175,6 @@ class SPDealer(val ip: String = "localhost", val port: Int = 5559) {
                 if (msg == null) {
                     logger.warn("Received a null message")
                 } else {
-                    logger.trace("Received message for client {}", thingId)
                     wasReceived.send(ZMsgTP(msg.addFirst(thingId), System.currentTimeMillis()))
                 }
                 return // we already found the correct dealer socket, so return

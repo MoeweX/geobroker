@@ -21,6 +21,6 @@ messageProcessors = 1
 #    brokerCommunicators = 1
 
 #    [server.mode]
-#    mode = "other"
+#    name = "other"
 #    otherMode = "single_noGeo"
 
