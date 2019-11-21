@@ -81,7 +81,7 @@ fun main(args: Array<String>) {
 }
 
 suspend fun writeChannelInputToFileBlocking(
-        channel: Channel<ZMsgTP>,
+        channel: ReceiveChannel<ZMsgTP>,
         output: File) = coroutineScope {
 
     val kryo = KryoSerializer()
@@ -97,7 +97,7 @@ suspend fun writeChannelInputToFileBlocking(
     logger.info("Channel was closed for file $output, shutting down")
 }
 
-suspend fun startFileProcessingBlocking(startTime: Long, toSent: Channel<ZMsg>,
+suspend fun startFileProcessingBlocking(startTime: Long, toSent: SendChannel<ZMsg>,
                                         fileList: List<File>, pbAddToMax: SendChannel<Long>, pbStep: SendChannel<Long>) = coroutineScope {
 
     // every file is processed in its own coroutine
@@ -124,7 +124,7 @@ suspend fun displayProgressBarBlocking(addToMax: ReceiveChannel<Long>, step: Rec
     }
 }
 
-private suspend fun processFile(startTime: Long, toSent: Channel<ZMsg>, file: File, pbAddToMax: SendChannel<Long>, pbStep: SendChannel<Long>) {
+private suspend fun processFile(startTime: Long, toSent: SendChannel<ZMsg>, file: File, pbAddToMax: SendChannel<Long>, pbStep: SendChannel<Long>) {
     val clientId = file.nameWithoutExtension
     val lines = file.readLines()
     val kryo = KryoSerializer()
