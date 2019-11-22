@@ -40,12 +40,10 @@ fun main(args: Array<String>) {
         context.configLocation = logConf.toURI()
         logger.info("Configuration updated")
     }
-
     logger.info("Looking for files at ${conf.dir.absolutePath}")
 
     val spd = SPDealer(conf.serverIp, conf.serverPort, conf.socketHWM)
     val fileList = conf.dir.listFiles()?.filter { f -> f.extension == "csv" } ?: emptyList()
-
     logger.info("Using ${fileList.size} files")
 
     // Channels for the progress bar
@@ -59,7 +57,9 @@ fun main(args: Array<String>) {
         launch(Dispatchers.IO) {
             writeChannelInputToFileBlocking(spd.wasReceived, File(conf.dir.absolutePath + "/wasReceived.txt"))
         }
-
+        launch(Dispatchers.Default) {
+            displayProgressBarBlocking(pbAddToMax, pbStep)
+        }
         launch(Dispatchers.Default) {
             startFileProcessingBlocking(System.currentTimeMillis() + 1000, spd.toSent, fileList, pbAddToMax, pbStep)
             // we are done. closes spd.toSent and spd.wasReceived
@@ -68,9 +68,6 @@ fun main(args: Array<String>) {
             pbAddToMax.close()
             pbStep.close()
 
-        }
-        launch(Dispatchers.Default) {
-            displayProgressBarBlocking(pbAddToMax, pbStep)
         }
     }
 
