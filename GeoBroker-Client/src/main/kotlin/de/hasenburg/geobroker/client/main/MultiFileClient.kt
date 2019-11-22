@@ -139,19 +139,6 @@ private suspend fun processFile(startTime: Long, toSent: SendChannel<ZMsg>, file
             continue; // header
         }
 
-        val percent = floor(i * 100f / lines.size).toFloat()
-        // Compute your percentage.
-        if (percent != previousPercent) {
-            // Output if different from the last time.
-            logger.debug("[$clientId] Processed ${percent.toInt()}% of all lines.")
-
-        }
-        // Update the percentage.
-        previousPercent = percent
-
-        // Update the progress bar
-        pbStep.send(1L);
-
         val split = line.split(";")
         try {
             val timestamp = split[0].toLong()
@@ -169,6 +156,9 @@ private suspend fun processFile(startTime: Long, toSent: SendChannel<ZMsg>, file
         } catch (e: NumberFormatException) {
             logger.warn("$line is not a valid line")
         }
+
+        // Update the progress bar
+        pbStep.send(1L);
     }
 
     // disconnect
