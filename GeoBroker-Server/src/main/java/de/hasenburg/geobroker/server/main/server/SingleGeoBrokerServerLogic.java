@@ -7,9 +7,12 @@ import de.hasenburg.geobroker.server.main.Configuration;
 import de.hasenburg.geobroker.server.matching.SingleGeoBrokerMatchingLogic;
 import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper;
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory;
+import io.prometheus.client.exporter.HTTPServer;
+import io.prometheus.client.hotspot.DefaultExports;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SingleGeoBrokerServerLogic implements IServerLogic {
@@ -20,6 +23,7 @@ public class SingleGeoBrokerServerLogic implements IServerLogic {
 	private SingleGeoBrokerMatchingLogic matchingLogic;
 	private ZMQProcessManager processManager;
 	private ClientDirectory clientDirectory;
+	private HTTPServer prometheusServer;
 
 	@Override
 	public void loadConfiguration(Configuration configuration) {
@@ -28,6 +32,15 @@ public class SingleGeoBrokerServerLogic implements IServerLogic {
 
 	@Override
 	public void initializeFields() {
+		//Prometheus Init
+		try {
+			prometheusServer = new HTTPServer(1234);
+		} catch (IOException e) {
+			logger.warn("Prometheus can't open an http server on port 1234", e);
+		}
+		// Expose stats about jvm
+		DefaultExports.initialize();
+
 		clientDirectory = new ClientDirectory();
 		TopicAndGeofenceMapper topicAndGeofenceMapper = new TopicAndGeofenceMapper(configuration);
 
@@ -65,6 +78,9 @@ public class SingleGeoBrokerServerLogic implements IServerLogic {
 	@Override
 	public void cleanUp() {
 		processManager.tearDown(2000);
+		if (prometheusServer != null){
+			prometheusServer.stop();
+		}
 		logger.info("Tear down completed");
 	}
 

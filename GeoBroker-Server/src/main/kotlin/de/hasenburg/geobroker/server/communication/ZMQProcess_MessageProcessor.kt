@@ -8,6 +8,7 @@ import de.hasenburg.geobroker.commons.model.KryoSerializer
 import de.hasenburg.geobroker.server.matching.IMatchingLogic
 import de.hasenburg.geobroker.commons.model.message.Payload
 import de.hasenburg.geobroker.commons.model.message.transformZMsgWithId
+import io.prometheus.client.Gauge
 import org.apache.logging.log4j.LogManager
 import org.zeromq.SocketType
 import org.zeromq.ZContext
@@ -17,6 +18,9 @@ import org.zeromq.ZMsg
 import kotlin.system.exitProcess
 
 private val logger = LogManager.getLogger()
+
+// Prometheus Gauge
+private val util = Gauge.build().name("geo_zmq_util").help("Utilization of ZMQ Process").register()
 
 /**
  * @param brokerId - identity should be the broker id this message processor is running on
@@ -159,6 +163,7 @@ class ZMQProcess_MessageProcessor(private val brokerId: String, private val numb
     }
 
     override fun utilizationCalculated(utilization: Double) {
+        util.set(utilization);
         logger.info("Current Utilization is {}%", utilization)
     }
 
