@@ -2,12 +2,17 @@ package de.hasenburg.geobroker.server.main;
 
 import de.hasenburg.geobroker.server.main.server.*;
 import de.hasenburg.geobroker.server.main.server.other.SingleNoGeoServerLogic;
+import io.prometheus.client.exporter.HTTPServer;
+import io.prometheus.client.hotspot.DefaultExports;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.io.IOException;
 
 public class Server {
 
 	private static final Logger logger = LogManager.getLogger();
+	private static HTTPServer prometheusServer;
 
 	public static void main(String[] args) {
 		Configuration configuration;
@@ -17,6 +22,16 @@ public class Server {
 		} else {
 			configuration = new Configuration(5, 2);
 		}
+
+		// TODO only start the server / default exports if specified in config file
+		//Prometheus Init
+		try {
+			prometheusServer = new HTTPServer(1234);
+		} catch (IOException e) {
+			logger.warn("Prometheus can't open an http server on port 1234", e);
+		}
+		// Expose stats about jvm
+		DefaultExports.initialize();
 
 		IServerLogic logic;
 		if (Configuration.Mode.disgb_subscriberMatching.equals(configuration.getMode())) {
@@ -46,6 +61,8 @@ public class Server {
 		lifecycle.run(configuration);
 		logger.info("End of lifecycle reached, shutting down");
 
+		if (prometheusServer != null){
+			prometheusServer.stop();
+		}
 	}
-
 }
