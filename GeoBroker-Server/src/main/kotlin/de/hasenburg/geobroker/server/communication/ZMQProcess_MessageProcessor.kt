@@ -19,9 +19,6 @@ import kotlin.system.exitProcess
 
 private val logger = LogManager.getLogger()
 
-// Prometheus Gauge
-private val util = Gauge.build().name("geo_zmq_util").help("Utilization of ZMQ Process").register()
-
 /**
  * @param brokerId - identity should be the broker id this message processor is running on
  * @param number - incrementing number for this message processor (as there might be many), starts with 1
@@ -31,6 +28,9 @@ class ZMQProcess_MessageProcessor(private val brokerId: String, private val numb
                                   private val matchingLogic: IMatchingLogic,
                                   private val numberOfBrokerCommunicators: Int) :
     ZMQProcess(getMessageProcessorIdentity(brokerId, number)) {
+
+    // Prometheus Gauge
+    private val util = Gauge.build().name("Geo_MessageProcessor_${brokerId}_${number}_util").help("Utilization of the ZMQ message processor with the broker #$brokerId, number #$number").register()
 
     private val kryo = KryoSerializer()
 
