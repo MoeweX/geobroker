@@ -7,8 +7,11 @@ Build with `docker build -t geobroker-client .`
 ## Usage
 
 ```bash
-# use custom files found at ./files
-docker run -v {$PWD}/files:/files -v {$PWD}/logs:/logs geobroker-client /files
+# To see a list of options
+docker run geobroker-client -h
+
+# you have to supply wich files to use (here via volume mounted at /files)
+docker run -v {$PWD}/files:/files -v {$PWD}/logs:/logs geobroker-client -d /files
 ```
 
 Helpful options:
