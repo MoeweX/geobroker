@@ -23,15 +23,19 @@ public class Server {
 			configuration = new Configuration(5, 2);
 		}
 
-		// TODO only start the server / default exports if specified in config file
-		//Prometheus Init
-		try {
-			prometheusServer = new HTTPServer(1234);
-		} catch (IOException e) {
-			logger.warn("Prometheus can't open an http server on port 1234", e);
+		// prometheus init if port has been set
+		if (configuration.getPrometheusPort() != -1) {
+			try {
+				prometheusServer = new HTTPServer(configuration.getPrometheusPort());
+				logger.info("Prometheus server started, reachable at port {}", configuration.getPrometheusPort());
+			} catch (IOException e) {
+				logger.warn("Prometheus can't start server at {}", configuration.getPrometheusPort(), e);
+			}
+			// Expose stats about jvm
+			DefaultExports.initialize();
+		} else {
+			logger.info("Starting without prometheus.");
 		}
-		// Expose stats about jvm
-		DefaultExports.initialize();
 
 		IServerLogic logic;
 		if (Configuration.Mode.disgb_subscriberMatching.equals(configuration.getMode())) {
@@ -61,8 +65,9 @@ public class Server {
 		lifecycle.run(configuration);
 		logger.info("End of lifecycle reached, shutting down");
 
-		if (prometheusServer != null){
+		if (prometheusServer != null) {
 			prometheusServer.stop();
+			logger.info("Stopped prometheus");
 		}
 	}
 }

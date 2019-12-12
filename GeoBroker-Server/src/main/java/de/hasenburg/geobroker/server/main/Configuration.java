@@ -31,6 +31,7 @@ public class Configuration {
 	private Integer granularity = 1;
 	private Integer messageProcessors = 1;
 	private String logConfFile = null;
+	private Integer prometheusPort = -1;
 
 	private Mode mode = Mode.single;
 	private OtherMode otherMode = null;
@@ -106,6 +107,7 @@ public class Configuration {
 		c.messageProcessors = Math.toIntExact(toml_server.getLong("messageProcessors",
 				c.messageProcessors.longValue()));
 		c.logConfFile = toml_server.getString("logConfFile", c.logConfFile);
+		c.prometheusPort = Math.toIntExact(toml_server.getLong("prometheusPort", -1L));
 
 		// server mode specific information
 		Toml toml_server_mode = toml_server.getTable("mode");
@@ -167,6 +169,10 @@ public class Configuration {
 
 	public Mode getMode() {
 		return mode;
+	}
+
+	public Integer getPrometheusPort() {
+		return prometheusPort;
 	}
 
 	/**
