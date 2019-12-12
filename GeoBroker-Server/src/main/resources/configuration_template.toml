@@ -5,10 +5,14 @@ port = 5559
 granularity = 5
 messageProcessors = 1
 # logConfFile = "./test-log.xml" # specify another config file to be used
+# prometheusPort = 1234 # use prometheus with given port; providing no port disables prometheus.
 
     # server mode specific information (only one should be uncommented)
     [server.mode]
     name = "single"
+
+#   [server.mode]
+#   name = "single_noGeo"
 
 #   [server.mode]
 #    name = "disgb_subscriberMatching"
@@ -20,7 +24,4 @@ messageProcessors = 1
 #    brokerAreaFilePath = "brokerAreas_template.json"
 #    brokerCommunicators = 1
 
-#    [server.mode]
-#    name = "other"
-#    otherMode = "single_noGeo"
 

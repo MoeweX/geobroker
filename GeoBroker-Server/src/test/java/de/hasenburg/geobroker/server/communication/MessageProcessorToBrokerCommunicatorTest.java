@@ -8,11 +8,13 @@ import de.hasenburg.geobroker.commons.model.message.ReasonCode;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
 import de.hasenburg.geobroker.server.distribution.IDistributionLogic;
 import de.hasenburg.geobroker.server.matching.IMatchingLogic;
+import io.prometheus.client.CollectorRegistry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.Test;
 import org.zeromq.SocketType;
 import org.zeromq.ZMQ;
@@ -30,6 +32,11 @@ public class MessageProcessorToBrokerCommunicatorTest {
 	private static final Logger logger = LogManager.getLogger();
 	public KryoSerializer kryo = new KryoSerializer();
 	ZMQProcessManager processManager = new ZMQProcessManager();
+
+	@Before
+	public void setUpTest() {
+		CollectorRegistry.defaultRegistry.clear();
+	}
 
 	@After
 	public void after() {

@@ -9,11 +9,12 @@ import de.hasenburg.geobroker.commons.model.spatial.Geofence
 import de.hasenburg.geobroker.commons.model.spatial.Location
 import de.hasenburg.geobroker.commons.setLogLevel
 import de.hasenburg.geobroker.commons.sleepNoLog
-import de.hasenburg.geobroker.server.main.Configuration
+import de.hasenburg.geobroker.server.main.readInternalConfiguration
 import de.hasenburg.geobroker.server.main.server.DisGBPublisherMatchingServerLogic
 import de.hasenburg.geobroker.server.main.server.DisGBSubscriberMatchingServerLogic
 import de.hasenburg.geobroker.server.main.server.IServerLogic
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory
+import io.prometheus.client.CollectorRegistry
 import org.apache.logging.log4j.Level
 import org.apache.logging.log4j.LogManager
 import org.junit.After
@@ -52,6 +53,8 @@ class DisGBScenarioRuns {
     @Before
     fun setUp() {
         setLogLevel(logger, Level.INFO)
+        CollectorRegistry.defaultRegistry.clear();
+
         clientProcessManager = ZMQProcessManager()
         clients = setupLocalhostClients(listOf(5558, 5558, 5559))
 
@@ -445,7 +448,7 @@ class DisGBScenarioRuns {
         val configurations = listOf(parisConf, berlinConf)
 
         for ((i, lifecycle) in listOf(paris, berlin).withIndex()) {
-            val c = Configuration.readInternalConfiguration(configurations[i])
+            val c = readInternalConfiguration(configurations[i])
             lifecycle.loadConfiguration(c)
             lifecycle.initializeFields()
             lifecycle.startServer()

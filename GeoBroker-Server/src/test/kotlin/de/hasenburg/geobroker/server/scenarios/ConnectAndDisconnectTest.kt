@@ -7,7 +7,6 @@ import de.hasenburg.geobroker.commons.model.message.ReasonCode
 import de.hasenburg.geobroker.commons.model.spatial.Geofence
 import de.hasenburg.geobroker.commons.model.spatial.Location
 import de.hasenburg.geobroker.commons.model.BrokerArea
-import de.hasenburg.geobroker.server.main.Configuration
 import de.hasenburg.geobroker.server.main.server.DisGBSubscriberMatchingServerLogic
 import org.apache.logging.log4j.LogManager
 import org.junit.After
@@ -18,6 +17,8 @@ import java.util.ArrayList
 import java.util.Random
 
 import de.hasenburg.geobroker.commons.model.message.Payload.*
+import de.hasenburg.geobroker.server.main.readInternalConfiguration
+import io.prometheus.client.CollectorRegistry
 import org.junit.Assert.*
 
 class ConnectAndDisconnectTest {
@@ -29,9 +30,10 @@ class ConnectAndDisconnectTest {
     @Before
     fun setUp() {
         logger.info("Running test setUp")
+        CollectorRegistry.defaultRegistry.clear();
 
         serverLogic = DisGBSubscriberMatchingServerLogic()
-        serverLogic.loadConfiguration(Configuration.readInternalConfiguration("connect_and_disconnect.toml"))
+        serverLogic.loadConfiguration(readInternalConfiguration("connect_and_disconnect.toml"))
         serverLogic.initializeFields()
         serverLogic.startServer()
 
