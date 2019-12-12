@@ -8,6 +8,7 @@ import de.hasenburg.geobroker.commons.model.message.ReasonCode
 import de.hasenburg.geobroker.commons.model.spatial.Location
 import de.hasenburg.geobroker.server.main.Configuration
 import de.hasenburg.geobroker.server.main.server.SingleGeoBrokerServerLogic
+import io.prometheus.client.CollectorRegistry
 import org.apache.logging.log4j.LogManager
 import org.junit.After
 import org.junit.Assert.*
@@ -23,6 +24,7 @@ class PingTest {
     @Before
     fun setUp() {
         logger.info("Running test setUp")
+        CollectorRegistry.defaultRegistry.clear();
 
         serverLogic = SingleGeoBrokerServerLogic()
         serverLogic.loadConfiguration(Configuration())

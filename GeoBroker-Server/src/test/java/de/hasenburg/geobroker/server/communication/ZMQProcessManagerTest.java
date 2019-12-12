@@ -4,12 +4,14 @@ import de.hasenburg.geobroker.commons.Utility;
 import de.hasenburg.geobroker.commons.communication.ZMQControlUtility;
 import de.hasenburg.geobroker.commons.communication.ZMQProcessManager;
 import de.hasenburg.geobroker.commons.exceptions.CommunicatorException;
-import de.hasenburg.geobroker.server.main.Configuration;
+import de.hasenburg.geobroker.server.main.*;
 import de.hasenburg.geobroker.server.matching.SingleGeoBrokerMatchingLogic;
 import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper;
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory;
+import io.prometheus.client.CollectorRegistry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -20,6 +22,11 @@ import static org.junit.Assert.assertTrue;
 public class ZMQProcessManagerTest {
 
 	private static final Logger logger = LogManager.getLogger();
+
+	@Before
+	public void setUpTest() {
+		CollectorRegistry.defaultRegistry.clear();
+	}
 
 	@Test
 	public void tearUpTearDown() throws CommunicatorException {

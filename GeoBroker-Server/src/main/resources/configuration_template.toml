@@ -12,6 +12,9 @@ messageProcessors = 1
     name = "single"
 
 #   [server.mode]
+#   name = "single_noGeo"
+
+#   [server.mode]
 #    name = "disgb_subscriberMatching"
 #    brokerAreaFilePath = "brokerAreas_template.json"
 #    brokerCommunicators = 1
@@ -21,7 +24,4 @@ messageProcessors = 1
 #    brokerAreaFilePath = "brokerAreas_template.json"
 #    brokerCommunicators = 1
 
-#    [server.mode]
-#    name = "other"
-#    otherMode = "single_noGeo"
 

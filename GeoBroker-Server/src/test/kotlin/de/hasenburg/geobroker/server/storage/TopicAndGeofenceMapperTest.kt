@@ -162,7 +162,7 @@ class TopicAndGeofenceMapperTest {
 
     @Test
     fun testPutAndThenGet() {
-        mapper = TopicAndGeofenceMapper(Configuration(25, 1))
+        mapper = TopicAndGeofenceMapper(Configuration(granularity = 25, messageProcessors = 1))
 
         // prepare
         val testId = ImmutablePair("test-client", 1)
@@ -179,7 +179,7 @@ class TopicAndGeofenceMapperTest {
 
     @Test
     fun testWorld() {
-        mapper = TopicAndGeofenceMapper(Configuration(1, 1))
+        mapper = TopicAndGeofenceMapper(Configuration(granularity = 1, messageProcessors = 1))
 
         // prepare
         val top = Topic("a")
@@ -211,7 +211,7 @@ class TopicAndGeofenceMapperTest {
     fun randomTest() {
         val td = ClientDirectory()
 
-        mapper = TopicAndGeofenceMapper(Configuration(10, 1))
+        mapper = TopicAndGeofenceMapper(Configuration(granularity = 10, messageProcessors = 1))
 
         // tested area
         val testedArea = Geofence.circle(Location(10.0, 10.0), 2.0)
@@ -282,7 +282,7 @@ class TopicAndGeofenceMapperTest {
         td.addClient("c", Location.undefined())
         val id = td.updateSubscription("c", Topic("t"), g)!!
 
-        mapper = TopicAndGeofenceMapper(Configuration(25, 1))
+        mapper = TopicAndGeofenceMapper(Configuration(granularity = 25, messageProcessors = 1))
         val pl = Location(9.55051768336062, 8.299518376483809)
         mapper.putSubscriptionId(id, Topic("t"), g)
 
