@@ -8,6 +8,7 @@ import de.hasenburg.geobroker.commons.model.KryoSerializer
 import de.hasenburg.geobroker.server.matching.IMatchingLogic
 import de.hasenburg.geobroker.commons.model.message.Payload
 import de.hasenburg.geobroker.commons.model.message.transformZMsgWithId
+import io.prometheus.client.Gauge
 import org.apache.logging.log4j.LogManager
 import org.zeromq.SocketType
 import org.zeromq.ZContext
@@ -27,6 +28,9 @@ class ZMQProcess_MessageProcessor(private val brokerId: String, private val numb
                                   private val matchingLogic: IMatchingLogic,
                                   private val numberOfBrokerCommunicators: Int) :
     ZMQProcess(getMessageProcessorIdentity(brokerId, number)) {
+
+    // Prometheus Gauge
+    private val util = Gauge.build().name("Geo_MessageProcessor_${brokerId}_${number}_util").help("Utilization of the ZMQ message processor with the broker #$brokerId, number #$number").register()
 
     private val kryo = KryoSerializer()
 
@@ -159,6 +163,7 @@ class ZMQProcess_MessageProcessor(private val brokerId: String, private val numb
     }
 
     override fun utilizationCalculated(utilization: Double) {
+        util.set(utilization);
         logger.info("Current Utilization is {}%", utilization)
     }
 
