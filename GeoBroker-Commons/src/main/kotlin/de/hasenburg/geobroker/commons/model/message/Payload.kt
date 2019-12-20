@@ -4,8 +4,14 @@ import de.hasenburg.geobroker.commons.model.BrokerInfo
 import de.hasenburg.geobroker.commons.model.KryoSerializer
 import de.hasenburg.geobroker.commons.model.spatial.Geofence
 import de.hasenburg.geobroker.commons.model.spatial.Location
+import kotlinx.serialization.*
+import kotlinx.serialization.cbor.Cbor
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonConfiguration
+import kotlinx.serialization.protobuf.ProtoBuf
 import org.apache.logging.log4j.LogManager
 import org.zeromq.ZMsg
+import kotlin.system.measureTimeMillis
 
 private val logger = LogManager.getLogger()
 
@@ -65,6 +71,78 @@ private enum class CPT {
     BrokerForwardSubscribe, //
     BrokerForwardUnsubscribe, //
     BrokerForwardPublish //
+}
+
+@Serializable
+sealed class Payload2 {
+    @Serializable
+    @SerialName("CONNACKPayload")
+    data class CONNACKPayload(val reasonCode: ReasonCode, val p: PINGRESPPayload = PINGRESPPayload(ReasonCode.GrantedQoS0)) : Payload2()
+    @Serializable
+    @SerialName("PINGRESPPayload")
+    data class PINGRESPPayload(val reasonCode: ReasonCode, val test: String? = null) : Payload2()
+}
+
+fun Payload2.toZMsg(json: Json) : ZMsg {
+    val string = json.stringify(Payload2.serializer(), this)
+    return ZMsg.newStringMsg(string)
+}
+
+fun ZMsg.toPayload(json: Json) : Payload2 {
+    return json.parse(Payload2.serializer(), this.popString().also { destroy() })
+}
+
+fun Payload2.toZMsg(cbor: Cbor) : ZMsg {
+    val bytes = cbor.dump(Payload2.serializer(), this)
+    return ZMsg().addFirst(bytes)
+}
+
+fun ZMsg.toPayload(cbor: Cbor) : Payload2 {
+    return cbor.load(Payload2.serializer(), this.pop().data.also { destroy() })
+}
+
+fun main() {
+
+    logger.info("Time {}", measureTimeMillis {
+
+        for (i in 0..0) {
+            val json = Json(JsonConfiguration.Stable)
+
+            val p1 = Payload2.PINGRESPPayload(ReasonCode.Success)
+            val msg = p1.toZMsg(json)
+            logger.info(msg)
+            val p2 = msg.toPayload(json)
+            assert(p1 == p2)
+        }
+    })
+
+
+    logger.info("Time {}", measureTimeMillis {
+
+        for (i in 0..0) {
+            val cbor = Cbor(encodeDefaults = false)
+
+            val p1 = Payload2.PINGRESPPayload(ReasonCode.Success)
+            val msg = p1.toZMsg(cbor)
+            logger.info(msg)
+            val p2 = msg.toPayload(cbor)
+            assert(p1 == p2)
+        }
+    })
+
+
+    logger.info("Time {}", measureTimeMillis {
+
+        for (i in 0..0) {
+            val kryo = KryoSerializer()
+
+            val p1 = Payload.PINGRESPPayload(ReasonCode.Success)
+            val msg = payloadToZMsg(p1, kryo)
+            logger.info(msg)
+            val p2 = msg.transformZMsg(kryo)
+            assert(p1 == p2)
+        }
+    })
 }
 
 /**

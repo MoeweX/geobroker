@@ -1,6 +1,7 @@
 package de.hasenburg.geobroker.commons.model.spatial;
 
 import de.hasenburg.geobroker.commons.Utility;
+import kotlinx.serialization.Serializable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.locationtech.spatial4j.io.ShapeWriter;

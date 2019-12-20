@@ -1,5 +1,8 @@
 package de.hasenburg.geobroker.commons.model.message
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 enum class ReasonCode {
     NormalDisconnection, //
     ProtocolError, //
