@@ -1,9 +1,11 @@
 package de.hasenburg.geobroker.commons.model.message
 
-import de.hasenburg.geobroker.commons.model.BrokerInfo
 import de.hasenburg.geobroker.commons.model.KryoSerializer
+import de.hasenburg.geobroker.commons.model.disgb.BrokerInfo
 import de.hasenburg.geobroker.commons.model.spatial.Geofence
+import de.hasenburg.geobroker.commons.model.spatial.GeofenceK
 import de.hasenburg.geobroker.commons.model.spatial.Location
+import de.hasenburg.geobroker.commons.model.spatial.LocationWrapper
 import kotlinx.serialization.*
 import kotlinx.serialization.cbor.Cbor
 import kotlinx.serialization.json.Json
@@ -76,73 +78,107 @@ private enum class CPT {
 @Serializable
 sealed class Payload2 {
     @Serializable
+    @SerialName("CONNECTPayload")
+    data class CONNECTPayload(val location: LocationWrapper) : Payload2()
+
+    @Serializable
     @SerialName("CONNACKPayload")
-    data class CONNACKPayload(val reasonCode: ReasonCode, val p: PINGRESPPayload = PINGRESPPayload(ReasonCode.GrantedQoS0)) : Payload2()
+    data class CONNACKPayload(val reasonCode: ReasonCode) : Payload2()
+
+    @Serializable
+    @SerialName("DISCONNECTPayload")
+    data class DISCONNECTPayload(val reasonCode: ReasonCode, val brokerInfo: BrokerInfo? = null) : Payload2()
+
+    @Serializable
+    @SerialName("PINGREQPayload")
+    data class PINGREQPayload(val location: LocationWrapper) : Payload2()
+
     @Serializable
     @SerialName("PINGRESPPayload")
     data class PINGRESPPayload(val reasonCode: ReasonCode, val test: String? = null) : Payload2()
+
+    @Serializable
+    @SerialName("SUBSCRIBEPayload")
+    data class SUBSCRIBEPayload(val topic: Topic, val geofence: GeofenceK) : Payload2()
+
+    @Serializable
+    @SerialName("SUBACKPayload")
+    data class SUBACKPayload(val reasonCode: ReasonCode) : Payload2()
+
+    @Serializable
+    @SerialName("UNSUBSCRIBEPayload")
+    data class UNSUBSCRIBEPayload(val topic: Topic) : Payload2()
+
+    @Serializable
+    @SerialName("UNSUBACKPayload")
+    data class UNSUBACKPayload(val reasonCode: ReasonCode) : Payload2()
+
+    @Serializable
+    @SerialName("PUBLISHPayload")
+    data class PUBLISHPayload(val topic: Topic, val geofence: GeofenceK, val content: String) : Payload2()
+
+    @Serializable
+    @SerialName("PUBACKPayload")
+    data class PUBACKPayload(val reasonCode: ReasonCode) : Payload2()
+
+    @Serializable
+    @SerialName("BrokerForwardDisconnectPayload")
+    data class BrokerForwardDisconnectPayload(val clientIdentifier: String,
+                                              val disconnectPayload: DISCONNECTPayload) : Payload2()
+
+    @Serializable
+    @SerialName("BrokerForwardPingreqPayload")
+    data class BrokerForwardPingreqPayload(val clientIdentifier: String,
+                                           val pingreqPayload: PINGREQPayload) : Payload2()
+
+    /**
+     * [publisherLocation] is needed in case of matching at the subscriber
+     * [subscriberClientIdentifiers] is needed in case of matching at the publisher
+     */
+    @Serializable
+    @SerialName("BrokerForwardPublishPayload")
+    data class BrokerForwardPublishPayload(val publishPayload: PUBLISHPayload,
+                                           val publisherLocation: LocationWrapper = LocationWrapper.Undefined,
+                                           val subscriberClientIdentifiers: List<String> = emptyList()) : Payload2()
+
+    @Serializable
+    @SerialName("BrokerForwardSubscribePayload")
+    data class BrokerForwardSubscribePayload(val clientIdentifier: String,
+                                             val subscribePayload: SUBSCRIBEPayload) : Payload2()
+
+    @Serializable
+    @SerialName("BrokerForwardUnsubscribePayload")
+    data class BrokerForwardUnsubscribePayload(val clientIdentifier: String,
+                                               val unsubscribePayload: UNSUBSCRIBEPayload) : Payload2()
 }
 
-fun Payload2.toZMsg(json: Json) : ZMsg {
-    val string = json.stringify(Payload2.serializer(), this)
-    return ZMsg.newStringMsg(string)
+fun Payload2.toZMsg(): ZMsg? {
+    return try {
+        ZMsg.newStringMsg(Json(JsonConfiguration.Stable).stringify(Payload2.serializer(), this))
+    } catch (e: SerializationException) {
+        logger.warn("Could not create ZMsg for payload {}", this, e)
+        null
+    }
 }
 
-fun ZMsg.toPayload(json: Json) : Payload2 {
-    return json.parse(Payload2.serializer(), this.popString().also { destroy() })
+fun ZMsg.toPayload(): Payload2? {
+    return try {
+        Json(JsonConfiguration.Stable).parse(Payload2.serializer(), this.popString().also { destroy() })
+    } catch (e: SerializationException) {
+        logger.warn("Could not create Payload for received ZMsg", e)
+        null
+    }
 }
 
-fun Payload2.toZMsg(cbor: Cbor) : ZMsg {
-    val bytes = cbor.dump(Payload2.serializer(), this)
-    return ZMsg().addFirst(bytes)
-}
-
-fun ZMsg.toPayload(cbor: Cbor) : Payload2 {
-    return cbor.load(Payload2.serializer(), this.pop().data.also { destroy() })
-}
-
-fun main() {
-
-    logger.info("Time {}", measureTimeMillis {
-
-        for (i in 0..0) {
-            val json = Json(JsonConfiguration.Stable)
-
-            val p1 = Payload2.PINGRESPPayload(ReasonCode.Success)
-            val msg = p1.toZMsg(json)
-            logger.info(msg)
-            val p2 = msg.toPayload(json)
-            assert(p1 == p2)
-        }
-    })
-
-
-    logger.info("Time {}", measureTimeMillis {
-
-        for (i in 0..0) {
-            val cbor = Cbor(encodeDefaults = false)
-
-            val p1 = Payload2.PINGRESPPayload(ReasonCode.Success)
-            val msg = p1.toZMsg(cbor)
-            logger.info(msg)
-            val p2 = msg.toPayload(cbor)
-            assert(p1 == p2)
-        }
-    })
-
-
-    logger.info("Time {}", measureTimeMillis {
-
-        for (i in 0..0) {
-            val kryo = KryoSerializer()
-
-            val p1 = Payload.PINGRESPPayload(ReasonCode.Success)
-            val msg = payloadToZMsg(p1, kryo)
-            logger.info(msg)
-            val p2 = msg.transformZMsg(kryo)
-            assert(p1 == p2)
-        }
-    })
+fun ZMsg.toPayloadAndId(): Pair<String, Payload2>? {
+    return try {
+        val clientIdentifier = this.popString()
+        val payload = this.toPayload()!!
+        Pair(clientIdentifier, payload)
+    } catch (e: Exception) {
+        logger.error("Could not create payload and id from ZMsg", e)
+        null
+    }
 }
 
 /**
