@@ -1,6 +1,6 @@
 package de.hasenburg.geobroker.server.storage.client
 
-import de.hasenburg.geobroker.commons.model.BrokerInfo
+import de.hasenburg.geobroker.commons.model.disgb.BrokerInfo
 import de.hasenburg.geobroker.server.matching.DisGBAtPublisherMatchingLogic
 import org.apache.commons.lang3.tuple.ImmutablePair
 import org.apache.logging.log4j.LogManager

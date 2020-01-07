@@ -1,5 +1,7 @@
 package de.hasenburg.geobroker.commons.model;
 
+import de.hasenburg.geobroker.commons.model.disgb.BrokerArea;
+import de.hasenburg.geobroker.commons.model.disgb.BrokerInfo;
 import de.hasenburg.geobroker.commons.model.spatial.Geofence;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
 import org.apache.logging.log4j.LogManager;
@@ -31,8 +33,8 @@ public class BrokerAreaTest {
 		Location out = new Location(30, 30);
 		BrokerArea brokerArea = new BrokerArea(brokerInfo, Geofence.circle(in, 10));
 
-		assertTrue(brokerArea.ContainsLocation(in));
-		assertFalse(brokerArea.ContainsLocation(out));
+		assertTrue(brokerArea.containsLocation(in));
+		assertFalse(brokerArea.containsLocation(out));
 	}
 
 	@Test
@@ -48,8 +50,8 @@ public class BrokerAreaTest {
 		assertNotEquals(otherBroker, brokerArea.getResponsibleBroker());
 
 		// use check method
-		assertTrue(brokerArea.CheckResponsibleBroker(responsibleBroker.getBrokerId()));
-		assertFalse(brokerArea.CheckResponsibleBroker(otherBroker.getBrokerId()));
+		assertTrue(brokerArea.hasResponsibleBroker(responsibleBroker.getBrokerId()));
+		assertFalse(brokerArea.hasResponsibleBroker(otherBroker.getBrokerId()));
 	}
 
 	@Test
@@ -60,7 +62,7 @@ public class BrokerAreaTest {
 		logger.info(brokerArea);
 
 		for (int i = 0; i < 100; i++) {
-			assertTrue(brokerArea.ContainsLocation(Location.random()));
+			assertTrue(brokerArea.containsLocation(Location.random()));
 		}
 	}
 

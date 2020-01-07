@@ -1,7 +1,7 @@
 package de.hasenburg.geobroker.server.distribution;
 
-import de.hasenburg.geobroker.commons.model.BrokerArea;
-import de.hasenburg.geobroker.commons.model.BrokerInfo;
+import de.hasenburg.geobroker.commons.model.disgb.BrokerArea;
+import de.hasenburg.geobroker.commons.model.disgb.BrokerInfo;
 import de.hasenburg.geobroker.commons.model.spatial.Geofence;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
 import org.apache.logging.log4j.LogManager;
@@ -47,7 +47,7 @@ public class BrokerAreaManager {
 	}
 
 	public boolean checkIfOurAreaContainsLocation(Location clientLocation) {
-		return ownArea.ContainsLocation(clientLocation);
+		return ownArea.containsLocation(clientLocation);
 	}
 
 	public boolean checkOurAreaForGeofenceIntersection(Geofence messageGeofence) {
@@ -56,7 +56,7 @@ public class BrokerAreaManager {
 
 	public @Nullable BrokerInfo getOtherBrokerContainingLocation(Location clientLocation) {
 		for (BrokerArea area : otherAreas) {
-			if (area.ContainsLocation(clientLocation)) {
+			if (area.containsLocation(clientLocation)) {
 				return area.getResponsibleBroker();
 			}
 		}
@@ -101,7 +101,7 @@ public class BrokerAreaManager {
 				int port = responsibleBroker.getInt("port");
 				String WKT = coveredArea.getString("WKT");
 				BrokerArea area = new BrokerArea(new BrokerInfo(brokerId, ip, port), new Geofence(WKT));
-				if (area.CheckResponsibleBroker(ownBrokerId)) {
+				if (area.hasResponsibleBroker(ownBrokerId)) {
 					ownArea = area;
 				} else {
 					otherAreas.add(area);

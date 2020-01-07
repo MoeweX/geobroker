@@ -3,10 +3,10 @@ package de.hasenburg.geobroker.server.scenarios
 import de.hasenburg.geobroker.client.main.SimpleClient
 import de.hasenburg.geobroker.commons.*
 import de.hasenburg.geobroker.commons.communication.ZMQProcessManager
+import de.hasenburg.geobroker.commons.model.disgb.BrokerArea
 import de.hasenburg.geobroker.commons.model.message.ReasonCode
 import de.hasenburg.geobroker.commons.model.spatial.Geofence
 import de.hasenburg.geobroker.commons.model.spatial.Location
-import de.hasenburg.geobroker.commons.model.BrokerArea
 import de.hasenburg.geobroker.server.main.server.DisGBSubscriberMatchingServerLogic
 import org.apache.logging.log4j.LogManager
 import org.junit.After
