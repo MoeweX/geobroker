@@ -10,13 +10,12 @@ import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * [clientIdentifier] must be unique
- *
- * @param remote - indicates whether the client is connected to another broker, so far only needed for
- * [DisGBAtPublisherMatchingLogic]
+ * [location] might be null, if none has been supplied yet
+ * [remote] indicates whether the client is connected to another broker, so far only needed for [DisGBAtPublisherMatchingLogic]
  */
-class Client(val clientIdentifier: String, location: Location, val remote: Boolean = false) {
+class Client(val clientIdentifier: String, location: Location?, val remote: Boolean = false) {
 
-    var location: Location = location
+    var location: Location? = location
         private set // prevent to be set by other classes
 
     var heartbeat: Long = 0
@@ -34,7 +33,7 @@ class Client(val clientIdentifier: String, location: Location, val remote: Boole
      * Locations
      ****************************************************************/
 
-    fun updateLocation(location: Location) {
+    fun updateLocation(location: Location?) {
         updateHeartbeat()
         this.location = location
     }

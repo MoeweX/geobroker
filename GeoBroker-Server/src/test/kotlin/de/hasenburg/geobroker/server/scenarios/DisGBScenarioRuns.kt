@@ -362,12 +362,12 @@ class DisGBScenarioRuns {
 
     private fun doConnect() {
         // forbidden connect
-        sendCONNECT(clients[0], Location.randomInGeofence(berlinArea), true)
+        sendCONNECT(clients[0], Location.randomInGeofence(berlinArea)!!, true)
 
         // correct connect
-        sendCONNECT(clients[0], Location.randomInGeofence(parisArea))
-        sendCONNECT(clients[1], Location.randomInGeofence(parisArea))
-        sendCONNECT(clients[2], Location.randomInGeofence(berlinArea))
+        sendCONNECT(clients[0], Location.randomInGeofence(parisArea)!!)
+        sendCONNECT(clients[1], Location.randomInGeofence(parisArea)!!)
+        sendCONNECT(clients[2], Location.randomInGeofence(berlinArea)!!)
     }
 
     private fun doPing() {

@@ -14,7 +14,7 @@ import kotlin.math.min
 private val logger = LogManager.getLogger()
 
 @Serializable
-class LocationK(@Serializable(with = PointWKTSerializer::class) @SerialName("wkt") val point: Point) {
+class Location(@Serializable(with = PointWKTSerializer::class) @SerialName("wkt") val point: Point) {
 
     /**
      * Creates a location with the given lat/lon coordinates.
@@ -34,8 +34,8 @@ class LocationK(@Serializable(with = PointWKTSerializer::class) @SerialName("wkt
      * @param distance - distance from starting location in km
      * @param direction - direction (0 - 360)
      */
-    fun locationInDistance(distance: Double, direction: Double): LocationK {
-        return LocationK(SpatialContextK.GEO.distCalc.pointOnBearing(this.point,
+    fun locationInDistance(distance: Double, direction: Double): Location {
+        return Location(SpatialContextK.GEO.distCalc.pointOnBearing(this.point,
                 distance * DistanceUtils.KM_TO_DEG,
                 direction,
                 SpatialContextK.GEO,
@@ -48,7 +48,7 @@ class LocationK(@Serializable(with = PointWKTSerializer::class) @SerialName("wkt
      * @param toL - the other location
      * @return distance in radians
      */
-    fun distanceRadiansTo(toL: LocationK): Double {
+    fun distanceRadiansTo(toL: Location): Double {
         return SpatialContextK.GEO.distCalc.distance(point, toL.point)
     }
 
@@ -58,7 +58,7 @@ class LocationK(@Serializable(with = PointWKTSerializer::class) @SerialName("wkt
      * @param toL - the other location
      * @return distance in km or -1 if one location is undefined
      */
-    fun distanceKmTo(toL: LocationK): Double {
+    fun distanceKmTo(toL: Location): Double {
         return distanceRadiansTo(toL) * DistanceUtils.DEG_TO_KM
     }
 
@@ -66,10 +66,10 @@ class LocationK(@Serializable(with = PointWKTSerializer::class) @SerialName("wkt
         /**
          * Creates a random location (Not inclusive of (-90, 0))
          */
-        fun random(): LocationK {
+        fun random(): Location {
             val random = Random()
             // there have been rounding errors
-            return LocationK(min((random.nextDouble() * -180.0) + 90.0, 90.0),
+            return Location(min((random.nextDouble() * -180.0) + 90.0, 90.0),
                     min((random.nextDouble() * -360.0) + 180.0, 180.0))
         }
 
@@ -79,8 +79,8 @@ class LocationK(@Serializable(with = PointWKTSerializer::class) @SerialName("wkt
          * @param geofence - may not be a geofence that crosses any datelines!!
          * @return a random location or null if the geofence crosses a dateline
          */
-        fun randomInGeofence(geofence: GeofenceK): LocationK? {
-            var result: LocationK
+        fun randomInGeofence(geofence: Geofence): Location? {
+            var result: Location
             var i = 0
             do {
                 // generate lat/lon in bounding box
@@ -88,7 +88,7 @@ class LocationK(@Serializable(with = PointWKTSerializer::class) @SerialName("wkt
                 val lon = randomDouble(geofence.boundingBoxSouthWest.lon, geofence.boundingBoxNorthEast.lon)
 
                 // create location and hope it is in geofence
-                result = LocationK(lat, lon)
+                result = Location(lat, lon)
             } while (!geofence.contains(result) && ++i < 1000)
 
             return if (geofence.contains(result)) {
@@ -110,7 +110,7 @@ class LocationK(@Serializable(with = PointWKTSerializer::class) @SerialName("wkt
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as LocationK
+        other as Location
 
         if (point.lat != other.point.lat) return false
 
@@ -131,12 +131,12 @@ class LocationK(@Serializable(with = PointWKTSerializer::class) @SerialName("wkt
  * Json Serialization
  ****************************************************************/
 
-fun LocationK.toJson(json: Json = Json(JsonConfiguration.Stable)): String {
-    return json.stringify(LocationK.serializer(), this)
+fun Location.toJson(json: Json = Json(JsonConfiguration.Stable)): String {
+    return json.stringify(Location.serializer(), this)
 }
 
-fun String.toLocation(json: Json = Json(JsonConfiguration.Stable)): LocationK {
-    return json.parse(LocationK.serializer(), this)
+fun String.toLocation(json: Json = Json(JsonConfiguration.Stable)): Location {
+    return json.parse(Location.serializer(), this)
 }
 
 object PointWKTSerializer : KSerializer<Point> {

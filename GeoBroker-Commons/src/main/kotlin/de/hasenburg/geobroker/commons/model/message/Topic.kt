@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
  * [topic] - individual topic levels must be separated by /, e.g., this/is/a/six/level/topic
  */
 @Serializable
-class Topic(val topic: String) {
+data class Topic(val topic: String) {
 
     val levelSpecifiers = topic.split("/").toTypedArray()
     val numberOfLevels = levelSpecifiers.size

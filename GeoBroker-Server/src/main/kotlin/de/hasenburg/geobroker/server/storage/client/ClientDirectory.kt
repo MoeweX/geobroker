@@ -36,7 +36,7 @@ class ClientDirectory {
      * @param remote - whether the client is a remote client (connected to another broker)
      * @return true, if added
      */
-    fun addClient(clientIdentifier: String, initialLocation: Location, remote: Boolean = false): Boolean {
+    fun addClient(clientIdentifier: String, initialLocation: Location?, remote: Boolean = false): Boolean {
         logger.trace("Connecting client {}, is remote: {}", clientIdentifier, remote)
         if (clients.containsKey(clientIdentifier)) {
             logger.warn("Tried to add client {}, but already existed", clientIdentifier)
@@ -66,7 +66,11 @@ class ClientDirectory {
         return true
     }
 
-    fun updateClientLocation(clientIdentifier: String, location: Location): Boolean {
+    /**
+     * Returns true if the location was updated and false if the [Client] with the given [clientIdentifier] did not
+     * exist.
+     */
+    fun updateClientLocation(clientIdentifier: String, location: Location?): Boolean {
         logger.trace("Updating client {} location to {}", clientIdentifier, location)
         val c = clients[clientIdentifier] ?: return false
 
@@ -74,6 +78,9 @@ class ClientDirectory {
         return true
     }
 
+    /**
+     * Returns the client's [Location] or null, if the client did not exist or it does not have a location.
+     */
     fun getClientLocation(clientIdentifier: String): Location? {
         logger.trace("Retrieving location of client {}", clientIdentifier)
         val c = clients[clientIdentifier] ?: return null

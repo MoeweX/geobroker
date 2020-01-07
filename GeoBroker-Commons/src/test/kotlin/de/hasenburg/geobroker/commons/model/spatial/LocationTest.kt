@@ -12,12 +12,12 @@ private val logger = LogManager.getLogger()
 
 class LocationTest {
 
-    private var location: LocationK = LocationK.random()
+    private var location: Location = Location.random()
     private val n = 100000
 
     @Before
     fun setUp() {
-        location = LocationK.random()
+        location = Location.random()
         Assert.assertNotNull(location)
     }
 
@@ -57,7 +57,7 @@ class LocationTest {
 
     @Test
     fun testLocationInDistance() {
-        val berlin = LocationK(52.5200, 13.4050)
+        val berlin = Location(52.5200, 13.4050)
 
         val l450m = berlin.locationInDistance(0.450, 45.0)
         logger.info(berlin.distanceKmTo(l450m))
@@ -78,8 +78,8 @@ class LocationTest {
 
     @Test
     fun testDistance() {
-        val location = LocationK(40.0, 40.0)
-        val location2 = LocationK(35.0, 35.0)
+        val location = Location(40.0, 40.0)
+        val location2 = Location(35.0, 35.0)
         logger.info(location.distanceKmTo(location2))
         Assert.assertTrue(location.distanceKmTo(location2) < 710.000)
         Assert.assertTrue(location.distanceKmTo(location2) > 700.000)
@@ -87,16 +87,16 @@ class LocationTest {
 
     @Test
     fun testDistanceBerlinHamburg() {
-        val berlin = LocationK(52.5200, 13.4050)
-        val hamburg = LocationK(53.511, 9.9937)
+        val berlin = Location(52.5200, 13.4050)
+        val hamburg = Location(53.511, 9.9937)
         logger.info(berlin.distanceKmTo(hamburg))
         Assert.assertEquals(253.375, berlin.distanceKmTo(hamburg), 0.5)
     }
 
     @Test
     fun testRandomInGeofence() {
-        val geofence = GeofenceK.circle(LocationK(30.0, 30.0), 3.0)
-        val l = LocationK.randomInGeofence(geofence)!!
+        val geofence = Geofence.circle(Location(30.0, 30.0), 3.0)
+        val l = Location.randomInGeofence(geofence)!!
         Assert.assertTrue(geofence.contains(l))
     }
 }

@@ -4,11 +4,12 @@ import de.hasenburg.geobroker.client.communication.ZMQProcess_SimpleClient
 import de.hasenburg.geobroker.commons.*
 import de.hasenburg.geobroker.commons.communication.ZMQControlUtility
 import de.hasenburg.geobroker.commons.communication.ZMQProcessManager
-import de.hasenburg.geobroker.commons.model.KryoSerializer
 import de.hasenburg.geobroker.commons.model.message.*
 import de.hasenburg.geobroker.commons.model.message.Payload.*
 import de.hasenburg.geobroker.commons.model.spatial.Geofence
 import de.hasenburg.geobroker.commons.model.spatial.Location
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonConfiguration
 import org.apache.logging.log4j.LogManager
 import org.zeromq.SocketType
 import org.zeromq.ZMQ
@@ -52,7 +53,7 @@ fun main() {
 class SimpleClient(address: String, port: Int, private val processManager: ZMQProcessManager,
                    val identity: String = "SimpleClient-" + System.nanoTime()) {
 
-    private val kryo = KryoSerializer()
+    private val json = Json(JsonConfiguration.Stable)
     private val orderSocket: ZMQ.Socket
 
     init {
@@ -72,7 +73,7 @@ class SimpleClient(address: String, port: Int, private val processManager: ZMQPr
 
     fun send(payload: Payload): ZMsg {
         val orderMessage = ZMsg.newStringMsg(ZMQProcess_SimpleClient.ORDERS.SEND.name)
-        val payloadMessage = payloadToZMsg(payload, kryo)
+        val payloadMessage = payload.toZMsg(json)
         repeat(payloadMessage.size) {
             orderMessage.add(payloadMessage.pop())
         }
@@ -87,7 +88,7 @@ class SimpleClient(address: String, port: Int, private val processManager: ZMQPr
         // send order
         orderMessage.send(orderSocket)
 
-        return ZMsg.recvMsg(orderSocket).transformZMsg(kryo)!! // was validated before order socket
+        return ZMsg.recvMsg(orderSocket).toPayload()!! // was validated before order socket
     }
 
     /**
@@ -104,7 +105,7 @@ class SimpleClient(address: String, port: Int, private val processManager: ZMQPr
         // check first frame as might be empty
         return if (ZMQProcess_SimpleClient.ORDERS.EMPTY.name == response.first!!.getString(ZMQ.CHARSET)) {
             null
-        } else response.transformZMsg(kryo)
+        } else response.toPayload()
 
     }
 

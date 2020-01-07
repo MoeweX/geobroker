@@ -10,7 +10,7 @@ class GeofenceTest {
 
     @Test
     fun toAndFromJson() {
-        val c1 = GeofenceK.circle(LocationK.random(), 10.0)
+        val c1 = Geofence.circle(Location.random(), 10.0)
         logger.info("Geofence 1: $c1")
         val j = c1.toJson()
         logger.info("Geofence as Json: $j")
@@ -21,7 +21,7 @@ class GeofenceTest {
 
     @Test
     fun toAndFromJsonCircle() {
-        val fence = GeofenceK.circle(LocationK.random(), 1.4)
+        val fence = Geofence.circle(Location.random(), 1.4)
         val json = fence.toJson()
         val fence2 = json.toGeofence()
         Assert.assertEquals(fence, fence2)
@@ -30,7 +30,7 @@ class GeofenceTest {
 
     @Test
     fun toAndFromJsonCircle2() {
-        val fence = GeofenceK.circle(LocationK(40.007499, 116.320013), 0.1)
+        val fence = Geofence.circle(Location(40.007499, 116.320013), 0.1)
         val json = fence.toJson()
         val fence2 = json.toGeofence()
         Assert.assertEquals(fence, fence2)
@@ -50,8 +50,8 @@ class GeofenceTest {
 
     @Test
     fun testContains() {
-        val berlin = LocationK(52.52, 13.405)
-        val hamburg = LocationK(53.511, 9.9937)
+        val berlin = Location(52.52, 13.405)
+        val hamburg = Location(53.511, 9.9937)
         Assert.assertTrue(berlinRectangle().contains(berlin))
         Assert.assertFalse(berlinRectangle().contains(hamburg))
         logger.info("Geofence contains Berlin but not Hamburg")
@@ -59,8 +59,8 @@ class GeofenceTest {
 
     @Test
     fun testContainsCircle() {
-        val l = LocationK.random()
-        val fence = GeofenceK.circle(l, 1.9)
+        val l = Location.random()
+        val fence = Geofence.circle(l, 1.9)
         Assert.assertTrue(fence.contains(l))
     }
 
@@ -81,43 +81,43 @@ class GeofenceTest {
     @Test
     fun testBoundingBoxBerlin() {
         val geofence = berlinRectangle()
-        Assert.assertEquals(LocationK(53.0, 13.0), geofence.boundingBoxNorthWest)
-        Assert.assertEquals(LocationK(53.0, 14.0), geofence.boundingBoxNorthEast)
-        Assert.assertEquals(LocationK(52.0, 14.0), geofence.boundingBoxSouthEast)
-        Assert.assertEquals(LocationK(52.0, 13.0), geofence.boundingBoxSouthWest)
+        Assert.assertEquals(Location(53.0, 13.0), geofence.boundingBoxNorthWest)
+        Assert.assertEquals(Location(53.0, 14.0), geofence.boundingBoxNorthEast)
+        Assert.assertEquals(Location(52.0, 14.0), geofence.boundingBoxSouthEast)
+        Assert.assertEquals(Location(52.0, 13.0), geofence.boundingBoxSouthWest)
         logger.info("Bounding box calculations work properly for Berlin")
     }
 
     @Test
     fun testBoundingBoxDateline() {
         val geofence = datelineRectangle()
-        Assert.assertEquals(LocationK(10.0, -10.0), geofence.boundingBoxNorthWest)
-        Assert.assertEquals(LocationK(10.0, 10.0), geofence.boundingBoxNorthEast)
-        Assert.assertEquals(LocationK(-9.0, 10.0), geofence.boundingBoxSouthEast)
-        Assert.assertEquals(LocationK(-9.0, -10.0), geofence.boundingBoxSouthWest)
+        Assert.assertEquals(Location(10.0, -10.0), geofence.boundingBoxNorthWest)
+        Assert.assertEquals(Location(10.0, 10.0), geofence.boundingBoxNorthEast)
+        Assert.assertEquals(Location(-9.0, 10.0), geofence.boundingBoxSouthEast)
+        Assert.assertEquals(Location(-9.0, -10.0), geofence.boundingBoxSouthWest)
         logger.info("Bounding box calculations work properly for Dateline")
     }
 
-    private fun datelineRectangle(): GeofenceK {
-        return GeofenceK.polygon(listOf(
-                LocationK(-9.0, 10.0),
-                LocationK(10.0, 10.0),
-                LocationK(10.0, -10.0),
-                LocationK(-9.0, -10.0)))
+    private fun datelineRectangle(): Geofence {
+        return Geofence.polygon(listOf(
+                Location(-9.0, 10.0),
+                Location(10.0, 10.0),
+                Location(10.0, -10.0),
+                Location(-9.0, -10.0)))
     }
 
-    private fun berlinRectangle(): GeofenceK {
-        return GeofenceK.polygon(listOf(
-                LocationK(53.0, 14.0),
-                LocationK(53.0, 13.0),
-                LocationK(52.0, 13.0),
-                LocationK(52.0, 14.0)))
+    private fun berlinRectangle(): Geofence {
+        return Geofence.polygon(listOf(
+                Location(53.0, 14.0),
+                Location(53.0, 13.0),
+                Location(52.0, 13.0),
+                Location(52.0, 14.0)))
     }
 
-    private fun berlinTriangle(): GeofenceK {
-        return GeofenceK.polygon(listOf(
-                LocationK(54.0, 12.0),
-                LocationK(52.0, 15.0),
-                LocationK(50.0, 12.0)))
+    private fun berlinTriangle(): Geofence {
+        return Geofence.polygon(listOf(
+                Location(54.0, 12.0),
+                Location(52.0, 15.0),
+                Location(50.0, 12.0)))
     }
 }

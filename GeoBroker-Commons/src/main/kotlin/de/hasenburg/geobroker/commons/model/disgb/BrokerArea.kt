@@ -16,8 +16,8 @@ data class BrokerArea(val responsibleBroker: BrokerInfo, val coveredArea: Geofen
         return responsibleBroker.brokerId == brokerId
     }
 
-    fun containsLocation(location: Location): Boolean {
-        return return coveredArea.contains(location)
+    fun containsLocation(location: Location?): Boolean {
+        return coveredArea.contains(location)
     }
 
     fun intersects(messageGeofence: Geofence): Boolean {

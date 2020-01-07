@@ -10,12 +10,11 @@ import org.apache.logging.log4j.LogManager
 import org.locationtech.spatial4j.shape.Rectangle
 import org.locationtech.spatial4j.shape.Shape
 import org.locationtech.spatial4j.shape.SpatialRelation
-import kotlin.system.measureTimeMillis
 
 private val logger = LogManager.getLogger()
 
 @Serializable
-class GeofenceK(@Serializable(with = ShapeWKTSerializer::class) @SerialName("wkt") private val shape: Shape) {
+class Geofence(@Serializable(with = ShapeWKTSerializer::class) @SerialName("wkt") private val shape: Shape) {
 
     fun isRectangle(): Boolean {
         return GEO.shapeFactory.getGeometryFrom(shape).isRectangle
@@ -25,19 +24,27 @@ class GeofenceK(@Serializable(with = ShapeWKTSerializer::class) @SerialName("wkt
      * Relationships
      ****************************************************************/
 
-    fun contains(location: LocationK): Boolean {
-        return shape.relate(location.point) == SpatialRelation.CONTAINS
+    /**
+     * Returns true if this geofence contains the given [location].
+     * Returns false if not or [location] == null.
+     */
+    fun contains(location: Location?): Boolean {
+        return if (location != null) {
+            shape.relate(location.point) == SpatialRelation.CONTAINS
+        } else {
+            false
+        }
     }
 
     /**
      * For us, intersects is an "intersection" but also something more specific such as "contains" or within.
      */
-    fun intersects(geofence: GeofenceK): Boolean {
+    fun intersects(geofence: Geofence): Boolean {
         val sr = shape.relate(geofence.shape)
         return sr == SpatialRelation.INTERSECTS || sr == SpatialRelation.CONTAINS || sr == SpatialRelation.WITHIN
     }
 
-    fun disjoint(geofence: GeofenceK): Boolean {
+    fun disjoint(geofence: Geofence): Boolean {
         return shape.relate(geofence.shape) == SpatialRelation.DISJOINT
     }
 
@@ -48,14 +55,14 @@ class GeofenceK(@Serializable(with = ShapeWKTSerializer::class) @SerialName("wkt
     val boundingBox: Rectangle
         get() = shape.boundingBox
 
-    val boundingBoxNorthWest: LocationK
-        get() = LocationK(boundingBox.maxY, boundingBox.minX)
-    val boundingBoxNorthEast: LocationK
-        get() = LocationK(boundingBox.maxY, boundingBox.maxX)
-    val boundingBoxSouthEast: LocationK
-        get() = LocationK(boundingBox.minY, boundingBox.maxX)
-    val boundingBoxSouthWest: LocationK
-        get() = LocationK(boundingBox.minY, boundingBox.minX)
+    val boundingBoxNorthWest: Location
+        get() = Location(boundingBox.maxY, boundingBox.minX)
+    val boundingBoxNorthEast: Location
+        get() = Location(boundingBox.maxY, boundingBox.maxX)
+    val boundingBoxSouthEast: Location
+        get() = Location(boundingBox.minY, boundingBox.maxX)
+    val boundingBoxSouthWest: Location
+        get() = Location(boundingBox.minY, boundingBox.minX)
 
     /**
      * See [Rectangle.getHeight], is the latitude distance in degree
@@ -75,16 +82,21 @@ class GeofenceK(@Serializable(with = ShapeWKTSerializer::class) @SerialName("wkt
 
     companion object {
 
-        fun circle(location: LocationK, radiusDegree: Double): GeofenceK {
-            return GeofenceK(GEO.shapeFactory.circle(location.point, radiusDegree))
+        fun circle(location: Location, radiusDegree: Double): Geofence {
+            return Geofence(GEO.shapeFactory.circle(location.point, radiusDegree))
         }
 
-        fun rectangle(southWest: Location, northEast: Location): GeofenceK {
-            return GeofenceK(GEO.shapeFactory.rect(southWest.point, northEast.point))
+        fun rectangle(southWest: Location, northEast: Location): Geofence {
+            return Geofence(GEO.shapeFactory.rect(southWest.point, northEast.point))
         }
 
-        fun world(): GeofenceK {
-            return GeofenceK(GEO.worldBounds)
+        fun world(): Geofence {
+            return Geofence(GEO.worldBounds)
+        }
+
+        fun fromWkt(wkt: String): Geofence {
+            val reader = GEO.formats.wktReader as CustomWKTReader
+            return Geofence(reader.parse(wkt) as Shape)
         }
 
         /**
@@ -94,7 +106,7 @@ class GeofenceK(@Serializable(with = ShapeWKTSerializer::class) @SerialName("wkt
          * @return a new geofence
          * @throws RuntimeShapeException if less than three [surroundingLocations]
          */
-        fun polygon(surroundingLocations: List<LocationK>): GeofenceK {
+        fun polygon(surroundingLocations: List<Location>): Geofence {
             if (surroundingLocations.size < 3) {
                 throw RuntimeShapeException("A geofence needs at least 3 locations")
             }
@@ -104,7 +116,7 @@ class GeofenceK(@Serializable(with = ShapeWKTSerializer::class) @SerialName("wkt
             }
             // close polygon
             polygonBuilder.pointLatLon(surroundingLocations[0].lat, surroundingLocations[0].lon)
-            return GeofenceK(polygonBuilder.build())
+            return Geofence(polygonBuilder.build())
         }
     }
 
@@ -120,7 +132,7 @@ class GeofenceK(@Serializable(with = ShapeWKTSerializer::class) @SerialName("wkt
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as GeofenceK
+        other as Geofence
 
         if (shape != other.shape) return false
 
@@ -137,12 +149,12 @@ class GeofenceK(@Serializable(with = ShapeWKTSerializer::class) @SerialName("wkt
  * Json Serialization
  ****************************************************************/
 
-fun GeofenceK.toJson(): String {
-    return Json(JsonConfiguration.Stable).stringify(GeofenceK.serializer(), this)
+fun Geofence.toJson(): String {
+    return Json(JsonConfiguration.Stable).stringify(Geofence.serializer(), this)
 }
 
-fun String.toGeofence(): GeofenceK {
-    return Json(JsonConfiguration.Stable).parse(GeofenceK.serializer(), this)
+fun String.toGeofence(): Geofence {
+    return Json(JsonConfiguration.Stable).parse(Geofence.serializer(), this)
 }
 
 object ShapeWKTSerializer : KSerializer<Shape> {

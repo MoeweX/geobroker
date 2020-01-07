@@ -56,11 +56,6 @@ class TopicAndGeofenceMapper(configuration: Configuration) {
      * @return see above
      */
     fun getPotentialSubscriptionIds(topic: Topic, publisherLocation: Location): List<ImmutablePair<String, Int>> {
-        if (publisherLocation.isUndefined) {
-            logger.warn("Cannot get subscription ids for topic {} as the given publisher location is undefined", topic)
-            return emptyList()
-        }
-
         // get TopicLevel that match Topic
         val matchingTopicLevels = getMatchingTopicLevels(topic)
 

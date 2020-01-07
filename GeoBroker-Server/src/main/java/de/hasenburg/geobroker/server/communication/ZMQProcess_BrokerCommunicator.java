@@ -2,9 +2,10 @@ package de.hasenburg.geobroker.server.communication;
 
 import de.hasenburg.geobroker.commons.communication.ZMQControlUtility;
 import de.hasenburg.geobroker.commons.communication.ZMQProcess;
-import de.hasenburg.geobroker.commons.model.KryoSerializer;
 import de.hasenburg.geobroker.commons.model.disgb.BrokerInfo;
 import de.hasenburg.geobroker.server.distribution.IDistributionLogic;
+import kotlinx.serialization.json.Json;
+import kotlinx.serialization.json.JsonConfiguration;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zeromq.SocketType;
@@ -35,7 +36,6 @@ public class ZMQProcess_BrokerCommunicator extends ZMQProcess {
 	private final int SOCKET_OFFSET = 1; // we have one other socket that is not a dealer broker socket
 	private List<BrokerInfo> otherBrokerInfos;
 	private IDistributionLogic distributionLogic;
-	private KryoSerializer kryo = new KryoSerializer();
 
 	/**
 	 * @param brokerId - identity should be the broker id this broker communicator is running on
@@ -110,7 +110,7 @@ public class ZMQProcess_BrokerCommunicator extends ZMQProcess {
 
 		if (otherBrokerInfos.size() - 1 >= dealerIndex) {
 			String otherBrokerId = otherBrokerInfos.get(dealerIndex).getBrokerId();
-			distributionLogic.processOtherBrokerAcknowledgement(msg, otherBrokerId, kryo);
+			distributionLogic.processOtherBrokerAcknowledgement(msg, otherBrokerId);
 			return;
 		}
 
@@ -144,7 +144,7 @@ public class ZMQProcess_BrokerCommunicator extends ZMQProcess {
 
 		Socket socket = sockets.get(socketIndex);
 
-		distributionLogic.sendMessageToOtherBrokers(msg, socket, targetBrokerId, kryo);
+		distributionLogic.sendMessageToOtherBrokers(msg, socket, targetBrokerId);
     numberOfSentMessages++;
 	}
 
@@ -152,6 +152,7 @@ public class ZMQProcess_BrokerCommunicator extends ZMQProcess {
 	 * Message Generation Helpers
 	 ****************************************************************/
 
+	// TODO I: delete method, use Payload.toZMsg(json, id) instead.
 	public static ZMsg generatePULLSocketMessage(String targetBrokerId, ZMsg originalMessage) {
 		ZMsg msg = ZMsg.newStringMsg(targetBrokerId);
 		msg.add(originalMessage.pop());

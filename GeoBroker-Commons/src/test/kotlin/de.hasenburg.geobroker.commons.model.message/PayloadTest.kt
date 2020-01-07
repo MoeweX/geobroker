@@ -1,12 +1,10 @@
 package de.hasenburg.geobroker.commons.model.message
 
 import de.hasenburg.geobroker.commons.*
-import de.hasenburg.geobroker.commons.model.KryoSerializer
 import de.hasenburg.geobroker.commons.model.spatial.Geofence
 import de.hasenburg.geobroker.commons.model.spatial.Location
 import org.apache.logging.log4j.LogManager
 import org.junit.Test
-import org.zeromq.ZMsg
 
 import java.util.Arrays
 
@@ -16,7 +14,6 @@ import org.junit.Assert.*
 class PayloadTest {
 
     private val logger = LogManager.getLogger()
-    private val kryo = KryoSerializer()
 
     @Test
     fun testCONNECTPayload() {
@@ -54,13 +51,13 @@ class PayloadTest {
 
         val subscriberMatchingPayload = BrokerForwardPublishPayload(PUBLISHPayload(Topic("data"),
                 Geofence.circle(Location.random(), 1.0),
-                "Some random content"), Location.undefined())
+                "Some random content"), null)
         transformAndCheck(subscriberMatchingPayload)
     }
 
     private fun transformAndCheck(payload: Payload) {
-        val message = payloadToZMsg(payload, kryo)
-        val payload2 = message.transformZMsg(kryo)
+        val message = payload.toZMsg()
+        val payload2 = message.toPayload()
         logger.info(payload2)
         assertEquals(payload, payload2)
     }

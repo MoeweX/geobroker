@@ -23,7 +23,7 @@ public class BrokerAreaManagerTest {
 		// we are responsible
 		assertTrue(brokerAreaManager.checkIfOurAreaContainsLocation(location));
 		// for everything
-		assertTrue(brokerAreaManager.checkIfOurAreaContainsLocation(Location.random()));
+		assertTrue(brokerAreaManager.checkIfOurAreaContainsLocation(Location.Companion.random()));
 
 		// as the areas overlap in the default config, two brokers are responsible in theory.
 		BrokerInfo otherBroker = brokerAreaManager.getOtherBrokerContainingLocation(location);
