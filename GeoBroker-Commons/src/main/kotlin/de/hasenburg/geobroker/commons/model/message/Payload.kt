@@ -5,7 +5,7 @@ import de.hasenburg.geobroker.commons.model.disgb.BrokerInfo
 import de.hasenburg.geobroker.commons.model.spatial.Geofence
 import de.hasenburg.geobroker.commons.model.spatial.GeofenceK
 import de.hasenburg.geobroker.commons.model.spatial.Location
-import de.hasenburg.geobroker.commons.model.spatial.LocationWrapper
+import de.hasenburg.geobroker.commons.model.spatial.LocationK
 import kotlinx.serialization.*
 import kotlinx.serialization.cbor.Cbor
 import kotlinx.serialization.json.Json
@@ -79,7 +79,7 @@ private enum class CPT {
 sealed class Payload2 {
     @Serializable
     @SerialName("CONNECTPayload")
-    data class CONNECTPayload(val location: LocationWrapper) : Payload2()
+    data class CONNECTPayload(val location: LocationK?) : Payload2()
 
     @Serializable
     @SerialName("CONNACKPayload")
@@ -91,7 +91,7 @@ sealed class Payload2 {
 
     @Serializable
     @SerialName("PINGREQPayload")
-    data class PINGREQPayload(val location: LocationWrapper) : Payload2()
+    data class PINGREQPayload(val location: LocationK?) : Payload2()
 
     @Serializable
     @SerialName("PINGRESPPayload")
@@ -138,7 +138,7 @@ sealed class Payload2 {
     @Serializable
     @SerialName("BrokerForwardPublishPayload")
     data class BrokerForwardPublishPayload(val publishPayload: PUBLISHPayload,
-                                           val publisherLocation: LocationWrapper = LocationWrapper.Undefined,
+                                           val publisherLocation: LocationK?,
                                            val subscriberClientIdentifiers: List<String> = emptyList()) : Payload2()
 
     @Serializable
@@ -152,28 +152,27 @@ sealed class Payload2 {
                                                val unsubscribePayload: UNSUBSCRIBEPayload) : Payload2()
 }
 
-fun Payload2.toZMsg(): ZMsg? {
-    return try {
-        ZMsg.newStringMsg(Json(JsonConfiguration.Stable).stringify(Payload2.serializer(), this))
-    } catch (e: SerializationException) {
-        logger.warn("Could not create ZMsg for payload {}", this, e)
-        null
+fun Payload2.toZMsg(json: Json = Json(JsonConfiguration.Stable), clientIdentifier: String? = null): ZMsg? {
+    return if (clientIdentifier != null) {
+        ZMsg.newStringMsg(clientIdentifier, json.stringify(Payload2.serializer(), this))
+    } else {
+        ZMsg.newStringMsg(json.stringify(Payload2.serializer(), this))
     }
 }
 
-fun ZMsg.toPayload(): Payload2? {
+fun ZMsg.toPayload(json: Json = Json(JsonConfiguration.Stable)): Payload2? {
     return try {
-        Json(JsonConfiguration.Stable).parse(Payload2.serializer(), this.popString().also { destroy() })
+        json.parse(Payload2.serializer(), this.popString().also { destroy() })
     } catch (e: SerializationException) {
         logger.warn("Could not create Payload for received ZMsg", e)
         null
     }
 }
 
-fun ZMsg.toPayloadAndId(): Pair<String, Payload2>? {
+fun ZMsg.toPayloadAndId(json: Json = Json(JsonConfiguration.Stable)): Pair<String, Payload2>? {
     return try {
         val clientIdentifier = this.popString()
-        val payload = this.toPayload()!!
+        val payload = this.toPayload(json)!!
         Pair(clientIdentifier, payload)
     } catch (e: Exception) {
         logger.error("Could not create payload and id from ZMsg", e)

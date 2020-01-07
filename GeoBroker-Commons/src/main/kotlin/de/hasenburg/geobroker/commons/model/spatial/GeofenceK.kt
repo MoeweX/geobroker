@@ -1,7 +1,6 @@
 package de.hasenburg.geobroker.commons.model.spatial
 
 import de.hasenburg.geobroker.commons.exceptions.RuntimeShapeException
-import de.hasenburg.geobroker.commons.model.spatial.LocationWrapper.LocationK
 import de.hasenburg.geobroker.commons.model.spatial.SpatialContextK.GEO
 import kotlinx.serialization.*
 import kotlinx.serialization.internal.StringDescriptor
@@ -95,7 +94,7 @@ class GeofenceK(@Serializable(with = ShapeWKTSerializer::class) @SerialName("wkt
          * @return a new geofence
          * @throws RuntimeShapeException if less than three [surroundingLocations]
          */
-        fun polygon(surroundingLocations: List<Location>): GeofenceK {
+        fun polygon(surroundingLocations: List<LocationK>): GeofenceK {
             if (surroundingLocations.size < 3) {
                 throw RuntimeShapeException("A geofence needs at least 3 locations")
             }
@@ -111,6 +110,25 @@ class GeofenceK(@Serializable(with = ShapeWKTSerializer::class) @SerialName("wkt
 
     override fun toString(): String {
         return GEO.formats.wktWriter.toString(shape)
+    }
+
+    /*****************************************************************
+     * Generated methods
+     ****************************************************************/
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as GeofenceK
+
+        if (shape != other.shape) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return shape.hashCode()
     }
 
 }
@@ -139,52 +157,4 @@ object ShapeWKTSerializer : KSerializer<Shape> {
         val reader = GEO.formats.wktReader as CustomWKTReader
         return reader.parse(decoder.decodeString()) as Shape
     }
-}
-
-/*****************************************************************
- * Main to test
- ****************************************************************/
-
-fun main() {
-    val c1 = GeofenceK.circle(LocationK.random(), 10.0)
-    logger.info("Geofence 1: $c1")
-    val j = c1.toJson()
-    logger.info("Geofence as Json: $j")
-    val c2 = j.toGeofence()
-    logger.info("Geofence 2: $c2")
-    assert(c1 == c2)
-
-    val paris = LocationK(48.86, 2.35)
-    val berlin = LocationK(52.52, 13.40)
-    val parisArea = GeofenceK.circle(paris, 3.0)
-    val berlinArea = GeofenceK.circle(berlin, 3.0)
-
-    logger.info("Paris area = {}", parisArea)
-    logger.info("Berlin area = {}", berlinArea)
-    logger.info("The areas intersect: {}", berlinArea.intersects(parisArea))
-
-    val justIn = LocationK(45.87, 2.3)
-    logger.info(parisArea.contains(justIn))
-
-    logger.info("Contains check Benchmark")
-    val world = GeofenceK.world()
-    val amount: Long = 10000000
-
-    logger.info("{} berlin in circle checks per ms", amount / measureTimeMillis {
-        for (i in 0 until amount) {
-            berlinArea.contains(berlin)
-        }
-    })
-
-    logger.info("{} berlin out circle checks per ms", amount / measureTimeMillis {
-        for (i in 0 until amount) {
-            berlinArea.contains(paris)
-        }
-    })
-
-    logger.info("{} world checks per ms", amount / measureTimeMillis {
-        for (i in 0 until amount) {
-            world.contains(berlin)
-        }
-    })
 }
