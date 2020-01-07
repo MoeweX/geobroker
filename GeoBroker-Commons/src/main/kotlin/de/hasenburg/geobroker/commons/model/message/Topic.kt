@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 class Topic(val topic: String) {
 
-    val levelSpecifiers = topic.split("/")
+    val levelSpecifiers = topic.split("/").toTypedArray()
     val numberOfLevels = levelSpecifiers.size
 
     fun getLevelSpecifier(levelIndex: Int): String {

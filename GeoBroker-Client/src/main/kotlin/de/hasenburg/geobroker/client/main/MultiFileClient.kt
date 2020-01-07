@@ -126,9 +126,6 @@ private suspend fun processFile(startTime: Long, toSent: SendChannel<ZMsg>, file
 
     pbAddToMax.send((lines.size - 1).toLong());
 
-    // line counting
-    var previousPercent = 0.0f
-
     // send a connect message
     toSent.send(payloadToZMsg(Payload.CONNECTPayload(Location.undefined()), kryo, clientId))
     logger.debug("[$clientId] Sent connect")
