@@ -82,7 +82,7 @@ fun updateClientLocationAtLocalBroker(clientIdentifier: String,
         ReasonCode.LocationUpdated
     } else {
         logger.debug("Client {} is not connected", clientIdentifier)
-        ReasonCode.NotConnected
+        ReasonCode.NotConnectedOrNoLocation
     }
 
 }
@@ -104,7 +104,7 @@ fun subscribeAtLocalBroker(clientIdentifier: String,
 
     return if (subscriptionId == null) {
         logger.debug("Client {} is not connected", clientIdentifier)
-        ReasonCode.NotConnected
+        ReasonCode.NotConnectedOrNoLocation
     } else {
         topicAndGeofenceMapper.putSubscriptionId(subscriptionId, topic, geofence)
         logger.debug("Client {} subscribed to topic {} and geofence {}", clientIdentifier, topic, geofence)
@@ -150,7 +150,7 @@ fun publishMessageToLocalClients(publisherLocation: Location, publishPayload: Pa
 
     // only keep subscription if subscriber location is insider message geofence
     val subscriptionIds = subscriptionIdResults.filter { subId ->
-        publishPayload.geofence.contains(clientDirectory.getClientLocation(subId.left)!!)
+        publishPayload.geofence.contains(clientDirectory.getClientLocation(subId.left))
     }
 
     // publish message to remaining subscribers

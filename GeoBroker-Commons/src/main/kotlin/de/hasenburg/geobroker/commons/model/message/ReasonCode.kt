@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 enum class ReasonCode {
     NormalDisconnection, //
     ProtocolError, //
-    NotConnected, //
+    NotConnectedOrNoLocation, //
     GrantedQoS0, //
     Success, //
     NoMatchingSubscribers, //

@@ -85,7 +85,7 @@ class SingleNoGeoMatchingLogic(private val clientDirectory: ClientDirectory,
             // index subscription
             reasonCode = if (subscriptionId == null) {
                 logger.debug("Client {} is not connected", clientIdentifier)
-                ReasonCode.NotConnected
+                ReasonCode.NotConnectedOrNoLocation
             } else {
                 subscriptionIndexingStructure.putSubscriptionId(subscriptionId, payload.topic)
                 logger.debug("Client {} subscribed to topic {}", clientIdentifier, payload.topic)
@@ -128,8 +128,8 @@ class SingleNoGeoMatchingLogic(private val clientDirectory: ClientDirectory,
         val publisherLocation = clientDirectory.getClientLocation(clientIdentifier)
 
         if (publisherLocation == null) { // null if client is not connected
-            logger.debug("Client {} is not connected", clientIdentifier)
-            reasonCode = ReasonCode.NotConnected
+            logger.debug("Client {} is not connected or has not provided a location", clientIdentifier)
+            reasonCode = ReasonCode.NotConnectedOrNoLocation
         } else {
             logger.debug("Publishing topic {} to all subscribers", payload.topic)
 

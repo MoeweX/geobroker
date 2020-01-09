@@ -92,7 +92,7 @@ class SingleGeoBrokerMatchingLogic(private val clientDirectory: ClientDirectory,
 
         reasonCode = if (publisherLocation == null) { // null if client is not connected
             logger.debug("Client {} is not connected", clientIdentifier)
-            ReasonCode.NotConnected
+            ReasonCode.NotConnectedOrNoLocation
         } else {
             publishMessageToLocalClients(publisherLocation,
                     payload,

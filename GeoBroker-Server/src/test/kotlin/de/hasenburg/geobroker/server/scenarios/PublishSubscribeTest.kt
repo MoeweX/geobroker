@@ -103,6 +103,7 @@ class PublishSubscribeTest {
     fun testPublisherNotInGeofence() {
         // subscriber
         val l = Location.random()
+        val l2 = l.locationInDistance(3000.0, 0.0)
         val g = Geofence.circle(l, 0.4)
         val t = Topic("test")
 
@@ -112,7 +113,7 @@ class PublishSubscribeTest {
 
         // publisher
         val clientPublisher = SimpleClient( "localhost", 5559, clientProcessManager)
-        clientPublisher.send(CONNECTPayload(null)) // publisher is not in geofence
+        clientPublisher.send(CONNECTPayload(l2)) // publisher is not in geofence
         clientPublisher.send(PUBLISHPayload(t, g, "Content"))
 
         sleepNoLog(500, 0)

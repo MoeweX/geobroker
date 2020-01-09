@@ -107,8 +107,8 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
         val publisherLocation = clientDirectory.getClientLocation(clientIdentifier)
 
         if (publisherLocation == null) { // null if client is not connected
-            logger.debug("Client {} is not connected", clientIdentifier)
-            reasonCode = ReasonCode.NotConnected
+            logger.debug("Client {} is not connected or has not provided a location", clientIdentifier)
+            reasonCode = ReasonCode.NotConnectedOrNoLocation
         } else {
 
             // find other brokers whose broker area intersects with the message geofence
@@ -118,8 +118,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
                         otherBroker.brokerId,
                         clientIdentifier)
                 // send message to BrokerCommunicator who takes care of the rest
-                ZMQProcess_BrokerCommunicator.generatePULLSocketMessage(otherBroker.brokerId,
-                        BrokerForwardPublishPayload(payload, publisherLocation).toZMsg(json)).send(brokers)
+                BrokerForwardPublishPayload(payload, publisherLocation).toZMsg(json, otherBroker.brokerId).send(brokers)
 
             }
 
