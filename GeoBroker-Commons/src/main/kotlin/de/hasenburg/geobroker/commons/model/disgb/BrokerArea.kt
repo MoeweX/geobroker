@@ -7,9 +7,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonConfiguration
 
-// TODO enable serialization
-//@Serializable
-//@SerialName("BrokerArea")
+@Serializable
+@SerialName("BrokerArea")
 data class BrokerArea(val responsibleBroker: BrokerInfo, val coveredArea: Geofence) {
 
     fun hasResponsibleBroker(brokerId: String): Boolean {
@@ -26,10 +25,13 @@ data class BrokerArea(val responsibleBroker: BrokerInfo, val coveredArea: Geofen
 
 }
 
-//fun BrokerArea.toJson() : String {
-//    return Json(JsonConfiguration.Stable).stringify(BrokerArea.serializer(), this)
-//}
-//
-//fun String.toBrokerArea() : BrokerArea {
-//    return Json(JsonConfiguration.Stable).parse(BrokerArea.serializer(), this)
-//}
+fun BrokerArea.toJson(json: Json = Json(JsonConfiguration.Stable)): String {
+    return json.stringify(BrokerArea.serializer(), this)
+}
+
+/**
+ * @throws [kotlinx.serialization.json.JsonDecodingException]
+ */
+fun String.toBrokerArea(json: Json = Json(JsonConfiguration.Stable)): BrokerArea {
+    return json.parse(BrokerArea.serializer(), this)
+}

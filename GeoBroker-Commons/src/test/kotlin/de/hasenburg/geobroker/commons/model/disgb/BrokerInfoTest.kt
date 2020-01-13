@@ -1,5 +1,6 @@
 package de.hasenburg.geobroker.commons.model.disgb
 
+import kotlinx.serialization.json.JsonDecodingException
 import org.apache.logging.log4j.LogManager
 import org.junit.Assert
 import org.junit.Test
@@ -15,6 +16,13 @@ class BrokerInfoTest {
         logger.info(json1)
         val brokerInfo2 = json1.toBrokerInfo()
         Assert.assertEquals(brokerInfo1, brokerInfo2)
+    }
+
+    @Test(expected = JsonDecodingException::class)
+    fun testFailedSerialize() {
+        val brokerInfo = BrokerInfo("brokerId", "address", 1000)
+        val json = brokerInfo.toJson()
+        val wrong = json.toBrokerArea()
     }
 
 }

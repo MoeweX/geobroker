@@ -11,7 +11,10 @@ import org.apache.logging.log4j.Logger
 import org.zeromq.ZMQ.Socket
 
 /**
- * We supply a [Json] serialization object, because re-using it is faster than creating new ones
+ * We supply a [Json] serialization object, because re-using it is faster than creating new ones.
+ *
+ * TODO: rather then handing in clients and brokers sockets, each method should return message that should be send via clients and via brokers socket.
+ * TODO: change to abstract class and provide json so that it does not need to be an argument.
  */
 interface IMatchingLogic {
 

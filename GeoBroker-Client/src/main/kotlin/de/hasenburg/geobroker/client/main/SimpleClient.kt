@@ -18,6 +18,7 @@ import kotlin.system.exitProcess
 
 private val logger = LogManager.getLogger()
 
+// TODO could be significantly simplified by using the SPDealer
 fun main() {
     val processManager = ZMQProcessManager()
     val client = SimpleClient("localhost", 5559, processManager)

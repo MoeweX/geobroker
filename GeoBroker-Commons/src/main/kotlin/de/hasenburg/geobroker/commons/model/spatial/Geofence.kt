@@ -153,6 +153,9 @@ fun Geofence.toJson(): String {
     return Json(JsonConfiguration.Stable).stringify(Geofence.serializer(), this)
 }
 
+/**
+ * @throws [kotlinx.serialization.json.JsonDecodingException]
+ */
 fun String.toGeofence(): Geofence {
     return Json(JsonConfiguration.Stable).parse(Geofence.serializer(), this)
 }

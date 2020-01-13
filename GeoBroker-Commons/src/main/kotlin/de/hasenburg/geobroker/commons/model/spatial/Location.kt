@@ -135,6 +135,9 @@ fun Location.toJson(json: Json = Json(JsonConfiguration.Stable)): String {
     return json.stringify(Location.serializer(), this)
 }
 
+/**
+ * @throws [kotlinx.serialization.json.JsonDecodingException]
+ */
 fun String.toLocation(json: Json = Json(JsonConfiguration.Stable)): Location {
     return json.parse(Location.serializer(), this)
 }
