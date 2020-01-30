@@ -1,6 +1,5 @@
 package de.hasenburg.geobroker.commons.model.spatial
 
-import de.hasenburg.geobroker.commons.randomDouble
 import kotlinx.serialization.*
 import kotlinx.serialization.internal.StringDescriptor
 import kotlinx.serialization.json.Json
@@ -8,8 +7,8 @@ import kotlinx.serialization.json.JsonConfiguration
 import org.apache.logging.log4j.LogManager
 import org.locationtech.spatial4j.distance.DistanceUtils
 import org.locationtech.spatial4j.shape.Point
-import java.util.*
 import kotlin.math.min
+import kotlin.random.Random
 
 private val logger = LogManager.getLogger()
 
@@ -66,8 +65,9 @@ class Location(@Serializable(with = PointWKTSerializer::class) @SerialName("wkt"
         /**
          * Creates a random location (Not inclusive of (-90, 0))
          */
-        fun random(): Location {
-            val random = Random()
+        @JvmOverloads
+        fun random(seed: Int = Random.nextInt()): Location {
+            val random = Random(seed)
             // there have been rounding errors
             return Location(min((random.nextDouble() * -180.0) + 90.0, 90.0),
                     min((random.nextDouble() * -360.0) + 180.0, 180.0))
@@ -79,13 +79,15 @@ class Location(@Serializable(with = PointWKTSerializer::class) @SerialName("wkt"
          * @param geofence - may not be a geofence that crosses any datelines!!
          * @return a random location or null if the geofence crosses a dateline
          */
-        fun randomInGeofence(geofence: Geofence): Location? {
+        @JvmOverloads
+        fun randomInGeofence(geofence: Geofence, seed: Int = Random.nextInt()): Location? {
+            val random = Random(seed)
             var result: Location
             var i = 0
             do {
                 // generate lat/lon in bounding box
-                val lat = randomDouble(geofence.boundingBoxSouthWest.lat, geofence.boundingBoxNorthEast.lat)
-                val lon = randomDouble(geofence.boundingBoxSouthWest.lon, geofence.boundingBoxNorthEast.lon)
+                val lat = random.nextDouble(geofence.boundingBoxSouthWest.lat, geofence.boundingBoxNorthEast.lat)
+                val lon = random.nextDouble(geofence.boundingBoxSouthWest.lon, geofence.boundingBoxNorthEast.lon)
 
                 // create location and hope it is in geofence
                 result = Location(lat, lon)
