@@ -16,6 +16,9 @@ private val logger = LogManager.getLogger()
 @Serializable
 class Geofence(@Serializable(with = ShapeWKTSerializer::class) @SerialName("wkt") private val shape: Shape) {
 
+    val center: Location
+        get() = Location(shape.center)
+
     fun isRectangle(): Boolean {
         return GEO.shapeFactory.getGeometryFrom(shape).isRectangle
     }

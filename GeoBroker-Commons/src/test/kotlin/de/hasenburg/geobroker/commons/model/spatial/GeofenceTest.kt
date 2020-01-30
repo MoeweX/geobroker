@@ -79,6 +79,18 @@ class GeofenceTest {
     }
 
     @Test
+    fun centerOfRectangle() {
+        var rectangle = Geofence.rectangle(Location(10.0, 10.0), Location(20.0, 20.0))
+        Assert.assertEquals(Location(15.0, 15.0), rectangle.center)
+
+        rectangle = Geofence.rectangle(Location(-20.0, -20.0), Location(-10.0, -10.0))
+        Assert.assertEquals(Location(-15.0, -15.0), rectangle.center)
+
+        rectangle = Geofence.rectangle(Location(-10.0, -10.0), Location(20.0, 20.0))
+        Assert.assertEquals(Location(5.0, 5.0), rectangle.center)
+    }
+
+    @Test
     fun testBoundingBoxBerlin() {
         val geofence = berlinRectangle()
         Assert.assertEquals(Location(53.0, 13.0), geofence.boundingBoxNorthWest)
