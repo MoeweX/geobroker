@@ -66,8 +66,7 @@ class Location(@Serializable(with = PointWKTSerializer::class) @SerialName("wkt"
          * Creates a random location (Not inclusive of (-90, 0))
          */
         @JvmOverloads
-        fun random(seed: Int = Random.nextInt()): Location {
-            val random = Random(seed)
+        fun random(random: Random = Random.Default): Location {
             // there have been rounding errors
             return Location(min((random.nextDouble() * -180.0) + 90.0, 90.0),
                     min((random.nextDouble() * -360.0) + 180.0, 180.0))
@@ -80,8 +79,7 @@ class Location(@Serializable(with = PointWKTSerializer::class) @SerialName("wkt"
          * @return a random location or null if the geofence crosses a dateline
          */
         @JvmOverloads
-        fun randomInGeofence(geofence: Geofence, seed: Int = Random.nextInt()): Location? {
-            val random = Random(seed)
+        fun randomInGeofence(geofence: Geofence, random: Random = Random.Default): Location? {
             var result: Location
             var i = 0
             do {
