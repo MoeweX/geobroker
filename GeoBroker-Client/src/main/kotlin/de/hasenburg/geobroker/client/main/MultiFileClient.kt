@@ -6,7 +6,6 @@ import com.xenomachina.argparser.default
 import com.xenomachina.argparser.mainBody
 import de.hasenburg.geobroker.commons.communication.SPDealer
 import de.hasenburg.geobroker.commons.communication.ZMsgTP
-import de.hasenburg.geobroker.commons.model.KryoSerializer
 import de.hasenburg.geobroker.commons.model.message.*
 import de.hasenburg.geobroker.commons.model.message.Payload.PINGREQPayload
 import de.hasenburg.geobroker.commons.model.message.Payload.SUBSCRIBEPayload
@@ -16,6 +15,8 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonConfiguration
 import me.tongfei.progressbar.ProgressBar
 import me.tongfei.progressbar.ProgressBarStyle
 import org.apache.logging.log4j.LogManager
@@ -47,8 +48,8 @@ fun main(args: Array<String>) {
     logger.info("Using ${fileList.size} files")
 
     // Channels for the progress bar
-    val pbAddToMax: Channel<Long> = Channel(Channel.UNLIMITED);
-    val pbStep: Channel<Long> = Channel(Channel.UNLIMITED);
+    val pbAddToMax: Channel<Long> = Channel(Channel.UNLIMITED)
+    val pbStep: Channel<Long> = Channel(Channel.UNLIMITED)
 
     runBlocking {
         launch(Dispatchers.IO) {
@@ -78,13 +79,13 @@ suspend fun writeChannelInputToFileBlocking(
         channel: ReceiveChannel<ZMsgTP>,
         output: File) = coroutineScope {
 
-    val kryo = KryoSerializer()
+    val json = Json(JsonConfiguration.Stable)
     logger.info("Writing channel content to $output")
     val writer = output.bufferedWriter()
     writer.write("timestamp;msg\n")
 
     for (zMsgTP in channel) {
-        writer.write("${zMsgTP.timestamp}\t${zMsgTP.msg.transformZMsgWithId(kryo).toString().replace("+", "")}\n")
+        writer.write("${zMsgTP.timestamp}\t${zMsgTP.msg.toPayloadAndId().toString().replace("+", "")}\n")
     } // ends when channel is closed
 
     writer.close()
@@ -104,13 +105,13 @@ suspend fun startFileProcessingBlocking(startTime: Long, toSent: SendChannel<ZMs
 }
 
 suspend fun displayProgressBarBlocking(addToMax: ReceiveChannel<Long>, step: ReceiveChannel<Long>) {
-    var maxSteps = 0L;
+    var maxSteps = 0L
     val pb = ProgressBar("Sent Messages", maxSteps, ProgressBarStyle.ASCII)
     for (message in step) {
         // First check if there are any new messages in the addToMax channel
         // This means that the maxHint will only be updated after a message has been sent
         if (!addToMax.isEmpty) {
-            maxSteps += addToMax.receive();
+            maxSteps += addToMax.receive()
             pb.maxHint(maxSteps)
         }
         pb.stepBy(message)
@@ -122,21 +123,18 @@ private suspend fun processFile(startTime: Long, toSent: SendChannel<ZMsg>, file
                                 pbStep: SendChannel<Long>) {
     val clientId = file.nameWithoutExtension
     val lines = file.readLines()
-    val kryo = KryoSerializer()
+    val json = Json(JsonConfiguration.Stable)
 
-    pbAddToMax.send((lines.size - 1).toLong());
-
-    // line counting
-    var previousPercent = 0.0f
+    pbAddToMax.send((lines.size - 1).toLong())
 
     // send a connect message
-    toSent.send(payloadToZMsg(Payload.CONNECTPayload(Location.undefined()), kryo, clientId))
+    toSent.send(Payload.CONNECTPayload(null).toZMsg(json, clientId))
     logger.debug("[$clientId] Sent connect")
 
     for ((i, line) in lines.withIndex()) {
 
         if (i == 0) {
-            continue; // header
+            continue // header
         }
 
         val split = line.split(";")
@@ -152,23 +150,23 @@ private suspend fun processFile(startTime: Long, toSent: SendChannel<ZMsg>, file
                 logger.warn("[$clientId] We are ${behindSchedule}ms behind schedule with ${split[3]}!")
             }
             // send if valid line
-            createZMsg(clientId, i, split, kryo)?.let { toSent.send(it) } ?: logger.warn("Empty ZMsg for $line")
+            createZMsg(clientId, i, split, json)?.let { toSent.send(it) } ?: logger.warn("Empty ZMsg for $line")
         } catch (e: NumberFormatException) {
             logger.warn("$line is not a valid line")
         }
 
         // Update the progress bar
-        pbStep.send(1L);
+        pbStep.send(1L)
     }
 
     // disconnect
     delay(5000)
-    toSent.send(payloadToZMsg(Payload.DISCONNECTPayload(ReasonCode.NormalDisconnection), kryo, clientId))
+    toSent.send(Payload.DISCONNECTPayload(ReasonCode.NormalDisconnection).toZMsg(json, clientId))
     logger.debug("[$clientId] Sent disconnect")
     delay(5000)
 }
 
-private fun createZMsg(clientId: String, messageNumber: Int, split: List<String>, kryo: KryoSerializer): ZMsg? {
+private fun createZMsg(clientId: String, messageNumber: Int, split: List<String>, json: Json): ZMsg? {
     try {
         val msg: ZMsg
 
@@ -181,20 +179,20 @@ private fun createZMsg(clientId: String, messageNumber: Int, split: List<String>
         when (messageType) {
             "ping" -> {
                 logger.trace("Sending ping message")
-                msg = payloadToZMsg(PINGREQPayload(Location(lat, lon)), kryo, clientId)
+                msg = PINGREQPayload(Location(lat, lon)).toZMsg(json, clientId)
             }
             "subscribe" -> {
                 logger.trace("Sending subscribe message")
-                msg = payloadToZMsg(SUBSCRIBEPayload(Topic(topic), Geofence(geofence)), kryo, clientId)
+                msg = SUBSCRIBEPayload(Topic(topic), Geofence.fromWkt(geofence)).toZMsg(json, clientId)
             }
             "publish" -> {
                 logger.trace("Sending publish message")
-                msg = payloadToZMsg(Payload.PUBLISHPayload(Topic(topic),
-                        Geofence(geofence),
+                msg = Payload.PUBLISHPayload(Topic(topic),
+                        Geofence.fromWkt(geofence),
                         generatePayload(clientId,
                                 messageNumber,
                                 topic,
-                                Integer.parseInt(split[6]))), kryo, clientId)
+                                Integer.parseInt(split[6]))).toZMsg(json, clientId)
             }
             else -> return null
         }

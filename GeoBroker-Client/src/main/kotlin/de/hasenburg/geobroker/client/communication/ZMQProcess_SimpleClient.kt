@@ -3,10 +3,11 @@ package de.hasenburg.geobroker.client.communication
 import de.hasenburg.geobroker.commons.*
 import de.hasenburg.geobroker.commons.communication.ZMQControlUtility
 import de.hasenburg.geobroker.commons.communication.ZMQProcess
-import de.hasenburg.geobroker.commons.model.KryoSerializer
 import de.hasenburg.geobroker.commons.model.message.Payload
-import de.hasenburg.geobroker.commons.model.message.payloadToZMsg
-import de.hasenburg.geobroker.commons.model.message.transformZMsg
+import de.hasenburg.geobroker.commons.model.message.toPayload
+import de.hasenburg.geobroker.commons.model.message.toZMsg
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonConfiguration
 import org.apache.logging.log4j.LogManager
 import org.zeromq.SocketType
 import org.zeromq.ZContext
@@ -28,7 +29,7 @@ class ZMQProcess_SimpleClient(private val address: String, private val port: Int
 
     // Client processing backend, accepts REQ and answers with REP
     private val CLIENT_ORDER_BACKEND = generateClientOrderBackendString(identity)
-    var kryo = KryoSerializer()
+    val json = Json(JsonConfiguration.Stable)
 
     // socket indices
     private val ORDER_INDEX = 0
@@ -68,7 +69,7 @@ class ZMQProcess_SimpleClient(private val address: String, private val port: Int
         when (socketIndex) {
             SERVER_INDEX -> { // got a reply from the server
                 logger.trace("Received message from server.")
-                val serverMessage = msg.transformZMsg(kryo)
+                val serverMessage = msg.toPayload(json)
                 if (serverMessage != null) {
                     receivedMessages.add(serverMessage)
                 } else {
@@ -88,12 +89,12 @@ class ZMQProcess_SimpleClient(private val address: String, private val port: Int
 
                     if (receivedMessages.size > 0) {
                         val payload = receivedMessages.removeAt(0)
-                        payloadToZMsg(payload, kryo).send(sockets[ORDER_INDEX])
+                        payload.toZMsg(json).send(sockets[ORDER_INDEX])
                     } else {
                         // nothing received yet, so let's wait
-                        val payload = ZMsg.recvMsg(sockets[SERVER_INDEX], true).transformZMsg(kryo)
+                        val payload = ZMsg.recvMsg(sockets[SERVER_INDEX], true).toPayload(json)
                         if (payload != null) {
-                            payloadToZMsg(payload, kryo).send(sockets[ORDER_INDEX])
+                            payload.toZMsg(json).send(sockets[ORDER_INDEX])
                         } else {
                             logger.warn("Server message malformed or empty")
                             valid = false
@@ -114,16 +115,16 @@ class ZMQProcess_SimpleClient(private val address: String, private val port: Int
                     // first check the buffer
                     if (receivedMessages.size > 0) {
                         val payload = receivedMessages.removeAt(0)
-                        payloadToZMsg(payload, kryo).send(sockets[ORDER_INDEX])
+                        payload.toZMsg(json).send(sockets[ORDER_INDEX])
                         return
                     } else {
                         // nothing received yet, so let's wait
                         poller.poll(timeout.toLong())
 
                         if (poller.pollin(SERVER_INDEX)) {
-                            val payload = ZMsg.recvMsg(sockets[SERVER_INDEX]).transformZMsg(kryo)
+                            val payload = ZMsg.recvMsg(sockets[SERVER_INDEX]).toPayload(json)
                             if (payload != null) {
-                                payloadToZMsg(payload, kryo).send(sockets[ORDER_INDEX])
+                                payload.toZMsg(json).send(sockets[ORDER_INDEX])
                             }
                             return
                         } else {
@@ -138,10 +139,10 @@ class ZMQProcess_SimpleClient(private val address: String, private val port: Int
                     logger.trace("ORDER = Send to Broker")
 
                     //the zMsg should consist of two parts only as others are popped
-                    val payload = msg.transformZMsg(kryo)
+                    val payload = msg.toPayload(json)
 
                     if (payload != null) {
-                        payloadToZMsg(payload, kryo).send(sockets[SERVER_INDEX])
+                        payload.toZMsg(json).send(sockets[SERVER_INDEX])
                         ZMsg.newStringMsg(ORDERS.CONFIRM.name).send(sockets[ORDER_INDEX])
                     } else {
                         logger.warn("Cannot run send as given message is incompatible")

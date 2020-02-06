@@ -1,6 +1,5 @@
 package de.hasenburg.geobroker.server.distribution;
 
-import de.hasenburg.geobroker.commons.model.KryoSerializer;
 import org.zeromq.ZMQ.Socket;
 import org.zeromq.ZMsg;
 
@@ -9,8 +8,8 @@ import org.zeromq.ZMsg;
  */
 public interface IDistributionLogic {
 
-	void sendMessageToOtherBrokers(ZMsg msg, Socket broker, String targetBrokerId, KryoSerializer kryo);
+	void sendMessageToOtherBrokers(ZMsg msg, Socket broker, String targetBrokerId);
 
-	void processOtherBrokerAcknowledgement(ZMsg msg, String otherBrokerId, KryoSerializer kryo);
+	void processOtherBrokerAcknowledgement(ZMsg msg, String otherBrokerId);
 
 }

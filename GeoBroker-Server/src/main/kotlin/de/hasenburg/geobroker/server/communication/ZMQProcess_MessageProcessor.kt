@@ -4,11 +4,12 @@ package de.hasenburg.geobroker.server.communication
 
 import de.hasenburg.geobroker.commons.communication.ZMQControlUtility
 import de.hasenburg.geobroker.commons.communication.ZMQProcess
-import de.hasenburg.geobroker.commons.model.KryoSerializer
 import de.hasenburg.geobroker.server.matching.IMatchingLogic
 import de.hasenburg.geobroker.commons.model.message.Payload
-import de.hasenburg.geobroker.commons.model.message.transformZMsgWithId
+import de.hasenburg.geobroker.commons.model.message.toPayloadAndId
 import io.prometheus.client.Gauge
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonConfiguration
 import org.apache.logging.log4j.LogManager
 import org.zeromq.SocketType
 import org.zeromq.ZContext
@@ -33,7 +34,7 @@ class ZMQProcess_MessageProcessor(private val brokerId: String, private val numb
     private val util = Gauge.build().name("Geo_MessageProcessor_${brokerId}_${number}_util")
         .help("Utilization of the ZMQ message processor with the broker #$brokerId, number #$number").register()
 
-    private val kryo = KryoSerializer()
+    private val json = Json(JsonConfiguration.Stable) // so that it can be reused
 
     var numberOfProcessedMessages = 0
         private set
@@ -82,7 +83,7 @@ class ZMQProcess_MessageProcessor(private val brokerId: String, private val numb
         // start processing the message
         numberOfProcessedMessages++
 
-        val message = msg.transformZMsgWithId(kryo)
+        val message = msg.toPayloadAndId(json)
 
         logger.trace("ZMQProcess_MessageProcessor {} processing message number {}",
                 identity,
@@ -98,57 +99,57 @@ class ZMQProcess_MessageProcessor(private val brokerId: String, private val numb
                         message.second as Payload.CONNECTPayload,
                         clientsSocket,
                         brokersSocket,
-                        kryo)
+                        json)
                 is Payload.DISCONNECTPayload -> matchingLogic.processDISCONNECT(message.first,
                         message.second as Payload.DISCONNECTPayload,
                         clientsSocket,
                         brokersSocket,
-                        kryo)
+                        json)
                 is Payload.PINGREQPayload -> matchingLogic.processPINGREQ(message.first,
                         message.second as Payload.PINGREQPayload,
                         clientsSocket,
                         brokersSocket,
-                        kryo)
+                        json)
                 is Payload.SUBSCRIBEPayload -> matchingLogic.processSUBSCRIBE(message.first,
                         message.second as Payload.SUBSCRIBEPayload,
                         clientsSocket,
                         brokersSocket,
-                        kryo)
+                        json)
                 is Payload.UNSUBSCRIBEPayload -> matchingLogic.processUNSUBSCRIBE(message.first,
                         message.second as Payload.UNSUBSCRIBEPayload,
                         clientsSocket,
                         brokersSocket,
-                        kryo)
+                        json)
                 is Payload.PUBLISHPayload -> matchingLogic.processPUBLISH(message.first,
                         message.second as Payload.PUBLISHPayload,
                         clientsSocket,
                         brokersSocket,
-                        kryo)
+                        json)
                 is Payload.BrokerForwardDisconnectPayload -> matchingLogic.processBrokerForwardDisconnect(message.first,
                         message.second as Payload.BrokerForwardDisconnectPayload,
                         clientsSocket,
                         brokersSocket,
-                        kryo)
+                        json)
                 is Payload.BrokerForwardPingreqPayload -> matchingLogic.processBrokerForwardPingreq(message.first,
                         message.second as Payload.BrokerForwardPingreqPayload,
                         clientsSocket,
                         brokersSocket,
-                        kryo)
+                        json)
                 is Payload.BrokerForwardSubscribePayload -> matchingLogic.processBrokerForwardSubscribe(message.first,
                         message.second as Payload.BrokerForwardSubscribePayload,
                         clientsSocket,
                         brokersSocket,
-                        kryo)
+                        json)
                 is Payload.BrokerForwardUnsubscribePayload -> matchingLogic.processBrokerForwardUnsubscribe(message.first,
                         message.second as Payload.BrokerForwardUnsubscribePayload,
                         clientsSocket,
                         brokersSocket,
-                        kryo)
+                        json)
                 is Payload.BrokerForwardPublishPayload -> matchingLogic.processBrokerForwardPublish(message.first,
                         message.second as Payload.BrokerForwardPublishPayload,
                         clientsSocket,
                         brokersSocket,
-                        kryo)
+                        json)
                 is Payload.CONNACKPayload -> logger.warn("CONNACK messages are ignored by server")
                 is Payload.PINGRESPPayload -> logger.warn("PINGRESP messages are ignored by server")
                 is Payload.SUBACKPayload -> logger.warn("SUBACK messages are ignored by server")

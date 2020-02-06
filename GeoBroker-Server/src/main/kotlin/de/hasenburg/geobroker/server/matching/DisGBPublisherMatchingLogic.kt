@@ -1,15 +1,15 @@
 package de.hasenburg.geobroker.server.matching
 
-import de.hasenburg.geobroker.commons.model.KryoSerializer
 import de.hasenburg.geobroker.commons.model.message.Payload.*
 import de.hasenburg.geobroker.commons.model.message.ReasonCode
-import de.hasenburg.geobroker.commons.model.message.payloadToZMsg
+import de.hasenburg.geobroker.commons.model.message.toZMsg
 import de.hasenburg.geobroker.commons.model.spatial.Location
 import de.hasenburg.geobroker.server.communication.ZMQProcess_BrokerCommunicator
 import de.hasenburg.geobroker.server.distribution.BrokerAreaManager
 import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory
 import de.hasenburg.geobroker.server.storage.client.SubscriptionAffection
+import kotlinx.serialization.json.Json
 import org.apache.logging.log4j.LogManager
 import org.zeromq.ZMQ.Socket
 import org.zeromq.ZMsg
@@ -28,40 +28,34 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
     }
 
     override fun processCONNECT(clientIdentifier: String, payload: CONNECTPayload, clients: Socket,
-                                brokers: Socket, kryo: KryoSerializer) {
-        if (!payload.location.isUndefined && !handleResponsibility(clientIdentifier,
-                        payload.location,
-                        clients,
-                        brokers,
-                        kryo)) {
+                                brokers: Socket, json: Json) {
+
+        if (!weAreResponsible(clientIdentifier, payload.location, clients, brokers, json)) {
             return  // we are not responsible, client has been notified
-        } else if (payload.location.isUndefined) {
-            logger.warn("Client with an undefined location connected to broker.")
         }
 
         val payloadResponse = connectClientAtLocalBroker(clientIdentifier, payload.location, clientDirectory, logger)
-
-        val response = payloadToZMsg(payloadResponse, kryo, clientIdentifier)
+        val response = payloadResponse.toZMsg(json, clientIdentifier)
 
         sendResponse(response, clients)
     }
 
 
     override fun processDISCONNECT(clientIdentifier: String, payload: DISCONNECTPayload, clients: Socket,
-                                   brokers: Socket, kryo: KryoSerializer) {
+                                   brokers: Socket, json: Json) {
 
         doDisconnect(clientIdentifier,
                 DISCONNECTPayload(ReasonCode.NormalDisconnection),
                 clients,
                 brokers,
-                kryo)
+                json)
 
         logger.debug("Disconnected client {}, code {}", clientIdentifier, payload.reasonCode)
 
     }
 
     override fun processPINGREQ(clientIdentifier: String, payload: PINGREQPayload, clients: Socket,
-                                brokers: Socket, kryo: KryoSerializer) {
+                                brokers: Socket, json: Json) {
 
         var reasonCode = ReasonCode.LocationUpdated
 
@@ -74,7 +68,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
             logger.debug("Updated location of {} to {}", clientIdentifier, payload.location)
         } else {
             logger.debug("Client {} is not connected", clientIdentifier)
-            reasonCode = ReasonCode.NotConnected
+            reasonCode = ReasonCode.NotConnectedOrNoLocation
         }
 
         /* ***************************************************************
@@ -91,8 +85,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
                 logger.debug("""|Broker area of ${otherAffectedBroker.brokerId} is affected by the location update
                                 |of client $clientIdentifier""".trimMargin())
                 // send message to BrokerCommunicator who takes care of the rest
-                ZMQProcess_BrokerCommunicator.generatePULLSocketMessage(otherAffectedBroker.brokerId,
-                        payloadToZMsg(payload, kryo)).send(brokers)
+                payload.toZMsg(json, otherAffectedBroker.brokerId).send(brokers)
             }
         }
 
@@ -100,12 +93,12 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
          * Response
          ****************************************************************/
 
-        val response = payloadToZMsg(PINGRESPPayload(reasonCode), kryo, clientIdentifier)
+        val response = PINGRESPPayload(reasonCode).toZMsg(json, clientIdentifier)
         sendResponse(response, clients)
     }
 
     override fun processSUBSCRIBE(clientIdentifier: String, payload: SUBSCRIBEPayload, clients: Socket,
-                                  brokers: Socket, kryo: KryoSerializer) {
+                                  brokers: Socket, json: Json) {
 
         /* ***************************************************************
          * Local Things
@@ -138,8 +131,8 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
                 logger.debug("""|Broker area of ${otherAffectedBroker.brokerId} intersects with subscription to topic
                             |${payload.topic}} from client $clientIdentifier""".trimMargin())
                 // send message to BrokerCommunicator who takes care of the rest
-                ZMQProcess_BrokerCommunicator.generatePULLSocketMessage(otherAffectedBroker.brokerId,
-                        payloadToZMsg(BrokerForwardSubscribePayload(clientIdentifier, payload), kryo)).send(brokers)
+                BrokerForwardSubscribePayload(clientIdentifier, payload).toZMsg(json, otherAffectedBroker.brokerId)
+                    .send(brokers)
             }
 
             // all brokers that did not know the client before have to also receive the client location
@@ -150,9 +143,8 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
                 logger.debug("""|Broker ${newlyAffectedBroker.brokerId} did not know client $clientIdentifier
                                 |before, so also sending its most up to date location""".trimMargin())
                 // send message to BrokerCommunicator who takes care of the rest
-                ZMQProcess_BrokerCommunicator.generatePULLSocketMessage(newlyAffectedBroker.brokerId,
-                        payloadToZMsg(BrokerForwardPingreqPayload(clientIdentifier, PINGREQPayload(clientLocation)),
-                                kryo)).send(brokers)
+                BrokerForwardPingreqPayload(clientIdentifier, PINGREQPayload(clientLocation)).toZMsg(json,
+                        newlyAffectedBroker.brokerId).send(brokers)
             }
 
             // update broker affection -> returns now not anymore affected brokers
@@ -165,9 +157,8 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
                                 |subscription to topic ${payload.topic}} from client $clientIdentifier""".trimMargin())
                 val unsubPayload = UNSUBSCRIBEPayload(payload.topic)
                 // send message to BrokerCommunicator who takes care of the rest
-                ZMQProcess_BrokerCommunicator.generatePULLSocketMessage(notAnymoreAffectedOtherBroker.brokerId,
-                        payloadToZMsg(BrokerForwardUnsubscribePayload(clientIdentifier, unsubPayload), kryo))
-                    .send(brokers)
+                BrokerForwardUnsubscribePayload(clientIdentifier, unsubPayload).toZMsg(json,
+                        notAnymoreAffectedOtherBroker.brokerId).send(brokers)
             }
         }
 
@@ -175,12 +166,12 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
          * Response
          ****************************************************************/
 
-        val response = payloadToZMsg(SUBACKPayload(reasonCode), kryo, clientIdentifier)
+        val response = SUBACKPayload(reasonCode).toZMsg(json, clientIdentifier)
         sendResponse(response, clients)
     }
 
     override fun processUNSUBSCRIBE(clientIdentifier: String, payload: UNSUBSCRIBEPayload, clients: Socket,
-                                    brokers: Socket, kryo: KryoSerializer) {
+                                    brokers: Socket, json: Json) {
 
         /* ***************************************************************
          * Local unsubscribe
@@ -208,8 +199,8 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
                 logger.debug("""|Broker area of ${otherAffectedBroker.brokerId} is affected by the unsubscribe from
                                 |topic $payload.topic of client $clientIdentifier""".trimMargin())
                 // send message to BrokerCommunicator who takes care of the rest
-                ZMQProcess_BrokerCommunicator.generatePULLSocketMessage(otherAffectedBroker.brokerId,
-                        payloadToZMsg(BrokerForwardUnsubscribePayload(clientIdentifier, payload), kryo)).send(brokers)
+                BrokerForwardUnsubscribePayload(clientIdentifier, payload).toZMsg(json, otherAffectedBroker.brokerId)
+                    .send(brokers)
             }
         }
 
@@ -217,19 +208,19 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
          * Response
          ****************************************************************/
 
-        val response = payloadToZMsg(UNSUBACKPayload(reasonCode), kryo, clientIdentifier)
+        val response = UNSUBACKPayload(reasonCode).toZMsg(json, clientIdentifier)
         sendResponse(response, clients)
     }
 
     override fun processPUBLISH(clientIdentifier: String, payload: PUBLISHPayload, clients: Socket,
-                                brokers: Socket, kryo: KryoSerializer) {
+                                brokers: Socket, json: Json) {
 
         val reasonCode: ReasonCode
         val publisherLocation = clientDirectory.getClientLocation(clientIdentifier)
 
         if (publisherLocation == null) { // null if client is not connected
-            logger.debug("Client {} is not connected", clientIdentifier)
-            reasonCode = ReasonCode.NotConnected
+            logger.debug("Client {} is not connected or has not provided a location", clientIdentifier)
+            reasonCode = ReasonCode.NotConnectedOrNoLocation
         } else {
             // get subscriptions that have a geofence containing the publisher location
             val subscriptionIdResults =
@@ -237,7 +228,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
 
             // only keep subscription if subscriber location is insider message geofence
             val subscriptionIds = subscriptionIdResults.filter { subId ->
-                payload.geofence.contains(clientDirectory.getClientLocation(subId.left)!!)
+                payload.geofence.contains(clientDirectory.getClientLocation(subId.left))
             }
 
             val remoteClientIds = mutableMapOf<String, MutableList<String>>()
@@ -263,7 +254,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
                     else -> {
                         // local client -> send directly
                         logger.debug("Client {} is a local subscriber", subscriber.clientIdentifier)
-                        val toPublish = payloadToZMsg(payload, kryo, subscriber.clientIdentifier)
+                        val toPublish = payload.toZMsg(json, subscriber.clientIdentifier)
                         logger.trace("Publishing $toPublish")
                         toPublish.send(clients)
                     }
@@ -274,9 +265,8 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
             // forward message to remote brokers together with all their subscribers
             for ((otherBrokerId, subscribers) in remoteClientIds) {
                 // send message to BrokerCommunicator who takes care of the rest
-                ZMQProcess_BrokerCommunicator.generatePULLSocketMessage(otherBrokerId,
-                        payloadToZMsg(BrokerForwardPublishPayload(payload, subscriberClientIdentifiers = subscribers),
-                                kryo)).send(brokers)
+                BrokerForwardPublishPayload(payload, subscriberClientIdentifiers = subscribers).toZMsg(json,
+                        otherBrokerId).send(brokers)
             }
 
             reasonCode = if (subscriptionIds.isEmpty()) {
@@ -289,7 +279,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
 
         // send response to publisher
         logger.trace("Sending response with reason code $reasonCode")
-        val response = payloadToZMsg(PUBACKPayload(reasonCode), kryo, clientIdentifier)
+        val response = PUBACKPayload(reasonCode).toZMsg(json, clientIdentifier)
         sendResponse(response, clients)
     }
 
@@ -305,7 +295,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
      */
     override fun processBrokerForwardDisconnect(otherBrokerId: String,
                                                 payload: BrokerForwardDisconnectPayload, clients: Socket,
-                                                brokers: Socket, kryo: KryoSerializer) {
+                                                brokers: Socket, json: Json) {
 
         var reasonCode = ReasonCode.WrongBroker // i.e., not a remote client
 
@@ -317,7 +307,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
             clientDirectory.removeClient(payload.clientIdentifier)
         }
 
-        val response = payloadToZMsg(DISCONNECTPayload(reasonCode), kryo, otherBrokerId)
+        val response = DISCONNECTPayload(reasonCode).toZMsg(json, otherBrokerId)
 
         // acknowledge disconnect operation to other broker, he does not expect a particular message (needs to go via
         // the clients socket as response has to go out of the ZMQProcess_Server
@@ -330,7 +320,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
      * Before doing so, we need to make sure the client is present in the client directory (as a remote client).
      */
     override fun processBrokerForwardPingreq(otherBrokerId: String, payload: BrokerForwardPingreqPayload,
-                                             clients: Socket, brokers: Socket, kryo: KryoSerializer) {
+                                             clients: Socket, brokers: Socket, json: Json) {
 
         // the id is determined by ZeroMQ based on the first frame, so here it is the id of the forwarding broker
         logger.trace("Processing BrokerForwardSubscribe from broker {}", otherBrokerId)
@@ -338,7 +328,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
         // make sure client exists as he did not send a connect
         if (!clientDirectory.clientExists(payload.clientIdentifier)) {
             // add client to directory as remote client
-            clientDirectory.addClient(payload.clientIdentifier, Location.undefined(), true)
+            clientDirectory.addClient(payload.clientIdentifier, null, true)
         }
 
         // now we can do local location update
@@ -347,7 +337,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
                 clientDirectory,
                 logger)
 
-        val response = payloadToZMsg(PINGRESPPayload(reasonCode), kryo, otherBrokerId)
+        val response = PINGRESPPayload(reasonCode).toZMsg(json, otherBrokerId)
 
         // acknowledge subscribe operation to other broker, he does not expect a particular message so we just reply
         // with the response that we have generated anyways (needs to go via the clients socket as response has to
@@ -369,7 +359,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
      * used anyways.
      */
     override fun processBrokerForwardSubscribe(otherBrokerId: String, payload: BrokerForwardSubscribePayload,
-                                               clients: Socket, brokers: Socket, kryo: KryoSerializer) {
+                                               clients: Socket, brokers: Socket, json: Json) {
 
         // the id is determined by ZeroMQ based on the first frame, so here it is the id of the forwarding broker
         logger.trace("Processing BrokerForwardSubscribe from broker {}", otherBrokerId)
@@ -377,7 +367,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
         // make sure client exists as he did not send a connect
         if (!clientDirectory.clientExists(payload.clientIdentifier)) {
             // add client to directory as remote client
-            clientDirectory.addClient(payload.clientIdentifier, Location.undefined(), true)
+            clientDirectory.addClient(payload.clientIdentifier, null, true)
         }
 
         // now we can do local subscribe
@@ -388,7 +378,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
                 payload.subscribePayload.geofence,
                 logger)
 
-        val response = payloadToZMsg(SUBACKPayload(reasonCode), kryo, otherBrokerId)
+        val response = SUBACKPayload(reasonCode).toZMsg(json, otherBrokerId)
 
         // acknowledge subscribe operation to other broker, he does not expect a particular message so we just reply
         // with the response that we have generated anyways (needs to go via the clients socket as response has to
@@ -401,7 +391,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
      */
     override fun processBrokerForwardUnsubscribe(otherBrokerId: String,
                                                  payload: BrokerForwardUnsubscribePayload, clients: Socket,
-                                                 brokers: Socket, kryo: KryoSerializer) {
+                                                 brokers: Socket, json: Json) {
 
         // the id is determined by ZeroMQ based on the first frame, so here it is the id of the forwarding broker
         logger.trace("Processing BrokerForwardSubscribe from broker {}", otherBrokerId)
@@ -412,7 +402,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
                 payload.unsubscribePayload.topic,
                 logger)
 
-        val response = payloadToZMsg(UNSUBACKPayload(reasonCode), kryo, otherBrokerId)
+        val response = UNSUBACKPayload(reasonCode).toZMsg(json, otherBrokerId)
 
         // acknowledge unsubscribe operation to other broker, he does not expect a particular message so we just reply
         // with the response that we have generated anyways (needs to go via the clients socket as response has to
@@ -427,7 +417,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
      * case the clients exists)
      */
     override fun processBrokerForwardPublish(otherBrokerId: String, payload: BrokerForwardPublishPayload,
-                                             clients: Socket, brokers: Socket, kryo: KryoSerializer) {
+                                             clients: Socket, brokers: Socket, json: Json) {
 
         val reasonCode = ReasonCode.Success
 
@@ -439,7 +429,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
             if (clientDirectory.clientExists(subscriberClientIdentifier)) {
                 logger.debug("Sending a message that was matched by broker $otherBrokerId to Client {}",
                         subscriberClientIdentifier)
-                val toPublish = payloadToZMsg(payload.publishPayload, kryo, subscriberClientIdentifier)
+                val toPublish = payload.publishPayload.toZMsg(json, subscriberClientIdentifier)
                 logger.trace("Publishing $toPublish")
                 toPublish.send(clients)
             } else {
@@ -449,7 +439,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
             }
         }
 
-        val response = payloadToZMsg(PUBACKPayload(reasonCode), kryo, otherBrokerId)
+        val response = PUBACKPayload(reasonCode).toZMsg(json, otherBrokerId)
 
         // acknowledge publish operation to other broker, he does not expect a particular message so we just reply
         // with the response that we have generated anyways (needs to go via the clients socket as response has to
@@ -462,30 +452,31 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
      ****************************************************************/
 
     /**
-     * Checks whether this particular broker is responsible for the client with the given [clientLocation]. If not, sends a
+     * Checks whether this particular broker is responsible for the client with the given location. If not, sends a
      * disconnect message and information about the responsible broker, if any exists. The client is also removed from
      * the client directory. Otherwise, does nothing.
      *
+     * If [clientLocation] is null, the broker is not responsible as the location is not part of its geofence.
      *
      * @return true, if this broker is responsible, otherwise false
      */
-    private fun handleResponsibility(clientIdentifier: String, clientLocation: Location, clients: Socket,
-                                     brokers: Socket, kryo: KryoSerializer): Boolean {
+    private fun weAreResponsible(clientIdentifier: String, clientLocation: Location?, clients: Socket,
+                                 brokers: Socket, json: Json): Boolean {
         if (!brokerAreaManager.checkIfOurAreaContainsLocation(clientLocation)) {
             // get responsible broker
             val repBroker = brokerAreaManager.getOtherBrokerContainingLocation(clientLocation)
 
-            val response = payloadToZMsg(DISCONNECTPayload(ReasonCode.WrongBroker, repBroker), kryo, clientIdentifier)
-
+            val response = DISCONNECTPayload(ReasonCode.WrongBroker, repBroker).toZMsg(json, clientIdentifier)
             logger.debug("Not responsible for client {}, responsible broker is {}", clientIdentifier, repBroker)
-            response.send(clients)
+
+            sendResponse(response, clients)
 
             // TODO F: migrate client data to other broker, right now he has to update the information himself
             logger.debug("Client had {} active subscriptions",
                     clientDirectory.getCurrentClientSubscriptions(clientIdentifier))
 
             // do disconnect and handle all with that related matters
-            doDisconnect(clientIdentifier, DISCONNECTPayload(ReasonCode.WrongBroker), clients, brokers, kryo)
+            doDisconnect(clientIdentifier, DISCONNECTPayload(ReasonCode.WrongBroker), clients, brokers, json)
 
             return false
         }
@@ -505,7 +496,7 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
      * @param brokers - socket used for broker communication
      */
     private fun doDisconnect(clientIdentifier: String, payload: DISCONNECTPayload, clients: Socket, brokers: Socket,
-                             kryo: KryoSerializer) {
+                             json: Json) {
 
         val success = clientDirectory.removeClient(clientIdentifier)
         if (!success) {
@@ -520,8 +511,10 @@ class DisGBAtPublisherMatchingLogic constructor(private val clientDirectory: Cli
             logger.trace("""|Broker area of ${formerlyAffectedBroker.brokerId} is notified about disconnect from client
                             |$clientIdentifier""".trimMargin())
             // send message to BrokerCommunicator who takes care of the rest
-            ZMQProcess_BrokerCommunicator.generatePULLSocketMessage(formerlyAffectedBroker.brokerId,
-                    payloadToZMsg(BrokerForwardDisconnectPayload(clientIdentifier, payload), kryo)).send(brokers)
+            BrokerForwardDisconnectPayload(clientIdentifier, payload)
+                .toZMsg(json, formerlyAffectedBroker.brokerId)
+                .send(brokers)
+
         }
 
     }

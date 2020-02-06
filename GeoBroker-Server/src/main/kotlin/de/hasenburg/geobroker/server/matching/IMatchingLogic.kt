@@ -1,55 +1,55 @@
 package de.hasenburg.geobroker.server.matching
 
-import de.hasenburg.geobroker.commons.model.KryoSerializer
 import de.hasenburg.geobroker.commons.model.message.*
 import de.hasenburg.geobroker.commons.model.spatial.Geofence
 import de.hasenburg.geobroker.commons.model.spatial.Location
 import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory
+import kotlinx.serialization.json.Json
 import org.apache.commons.lang3.tuple.ImmutablePair
 import org.apache.logging.log4j.Logger
 import org.zeromq.ZMQ.Socket
 
 /**
- * Message Processing Notes <br></br>
- * - we already validated the messages above using #buildMessage() <br></br>
- * -> we expect the payload to be compatible with the control packet type <br></br>
- * -> we expect all fields to be set
+ * We supply a [Json] serialization object, because re-using it is faster than creating new ones.
+ *
+ * TODO: rather then handing in clients and brokers sockets, each method should return message that should be send via clients and via brokers socket.
+ * TODO: change to abstract class and provide json so that it does not need to be an argument.
  */
 interface IMatchingLogic {
 
     fun processCONNECT(clientIdentifier: String, payload: Payload.CONNECTPayload, clients: Socket, brokers: Socket,
-                       kryo: KryoSerializer)
+                       json: Json)
 
     fun processDISCONNECT(clientIdentifier: String, payload: Payload.DISCONNECTPayload, clients: Socket,
-                          brokers: Socket, kryo: KryoSerializer)
+                          brokers: Socket, json: Json)
 
     fun processPINGREQ(clientIdentifier: String, payload: Payload.PINGREQPayload, clients: Socket, brokers: Socket,
-                       kryo: KryoSerializer)
+                       json: Json)
 
     fun processSUBSCRIBE(clientIdentifier: String, payload: Payload.SUBSCRIBEPayload, clients: Socket, brokers: Socket,
-                         kryo: KryoSerializer)
+                         json: Json)
 
     fun processUNSUBSCRIBE(clientIdentifier: String, payload: Payload.UNSUBSCRIBEPayload, clients: Socket,
-                           brokers: Socket, kryo: KryoSerializer)
+                           brokers: Socket, json: Json)
 
     fun processPUBLISH(clientIdentifier: String, payload: Payload.PUBLISHPayload, clients: Socket, brokers: Socket,
-                       kryo: KryoSerializer)
+                       json: Json)
 
     fun processBrokerForwardDisconnect(otherBrokerId: String, payload: Payload.BrokerForwardDisconnectPayload,
-                                       clients: Socket, brokers: Socket, kryo: KryoSerializer)
+                                       clients: Socket, brokers: Socket, json: Json)
 
     fun processBrokerForwardPingreq(otherBrokerId: String, payload: Payload.BrokerForwardPingreqPayload,
-                                    clients: Socket, brokers: Socket, kryo: KryoSerializer)
+                                    clients: Socket, brokers: Socket, json: Json)
 
     fun processBrokerForwardSubscribe(otherBrokerId: String, payload: Payload.BrokerForwardSubscribePayload,
-                                      clients: Socket, brokers: Socket, kryo: KryoSerializer)
+                                      clients: Socket, brokers: Socket, json: Json)
 
     fun processBrokerForwardUnsubscribe(otherBrokerId: String, payload: Payload.BrokerForwardUnsubscribePayload,
-                                        clients: Socket, brokers: Socket, kryo: KryoSerializer)
+                                        clients: Socket, brokers: Socket, json: Json)
 
     fun processBrokerForwardPublish(otherBrokerId: String, payload: Payload.BrokerForwardPublishPayload,
-                                    clients: Socket, brokers: Socket, kryo: KryoSerializer)
+                                    clients: Socket, brokers: Socket, json: Json)
 
 }
 
@@ -58,7 +58,7 @@ interface IMatchingLogic {
  ****************************************************************/
 
 fun connectClientAtLocalBroker(clientIdentifier: String,
-                               location: Location,
+                               location: Location?,
                                clientDirectory: ClientDirectory,
                                logger: Logger): Payload {
 
@@ -75,18 +75,17 @@ fun connectClientAtLocalBroker(clientIdentifier: String,
 }
 
 fun updateClientLocationAtLocalBroker(clientIdentifier: String,
-                                      location: Location,
+                                      location: Location?,
                                       clientDirectory: ClientDirectory,
                                       logger: Logger): ReasonCode {
 
     val success = clientDirectory.updateClientLocation(clientIdentifier, location)
     return if (success) {
         logger.debug("Updated location of {} to {}", clientIdentifier, location)
-
         ReasonCode.LocationUpdated
     } else {
         logger.debug("Client {} is not connected", clientIdentifier)
-        ReasonCode.NotConnected
+        ReasonCode.NotConnectedOrNoLocation
     }
 
 }
@@ -108,7 +107,7 @@ fun subscribeAtLocalBroker(clientIdentifier: String,
 
     return if (subscriptionId == null) {
         logger.debug("Client {} is not connected", clientIdentifier)
-        ReasonCode.NotConnected
+        ReasonCode.NotConnectedOrNoLocation
     } else {
         topicAndGeofenceMapper.putSubscriptionId(subscriptionId, topic, geofence)
         logger.debug("Client {} subscribed to topic {} and geofence {}", clientIdentifier, topic, geofence)
@@ -143,7 +142,7 @@ fun unsubscribeAtLocalBroker(clientIdentifier: String,
  */
 fun publishMessageToLocalClients(publisherLocation: Location, publishPayload: Payload.PUBLISHPayload,
                                  clientDirectory: ClientDirectory, topicAndGeofenceMapper: TopicAndGeofenceMapper,
-                                 clients: Socket, logger: Logger, kryo: KryoSerializer): ReasonCode {
+                                 clients: Socket, logger: Logger, json: Json): ReasonCode {
 
     logger.debug("Publishing topic {} to all subscribers", publishPayload.topic)
 
@@ -154,14 +153,14 @@ fun publishMessageToLocalClients(publisherLocation: Location, publishPayload: Pa
 
     // only keep subscription if subscriber location is insider message geofence
     val subscriptionIds = subscriptionIdResults.filter { subId ->
-        publishPayload.geofence.contains(clientDirectory.getClientLocation(subId.left)!!)
+        publishPayload.geofence.contains(clientDirectory.getClientLocation(subId.left))
     }
 
     // publish message to remaining subscribers
     for (subscriptionId in subscriptionIds) {
         val subscriberClientIdentifier = subscriptionId.left
         logger.debug("Client {} is a subscriber", subscriberClientIdentifier)
-        val toPublish = payloadToZMsg(publishPayload, kryo, subscriberClientIdentifier)
+        val toPublish = publishPayload.toZMsg(json, subscriberClientIdentifier)
         logger.trace("Publishing $toPublish")
         toPublish.send(clients)
     }
@@ -172,5 +171,4 @@ fun publishMessageToLocalClients(publisherLocation: Location, publishPayload: Pa
     } else {
         ReasonCode.Success
     }
-
 }

@@ -1,8 +1,9 @@
 package de.hasenburg.geobroker.server.distribution;
 
-import de.hasenburg.geobroker.commons.model.BrokerArea;
-import de.hasenburg.geobroker.commons.model.BrokerInfo;
+import de.hasenburg.geobroker.commons.model.disgb.BrokerArea;
+import de.hasenburg.geobroker.commons.model.disgb.BrokerInfo;
 import de.hasenburg.geobroker.commons.model.spatial.Geofence;
+import de.hasenburg.geobroker.commons.model.spatial.GeofenceKt;
 import de.hasenburg.geobroker.commons.model.spatial.Location;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -47,7 +48,7 @@ public class BrokerAreaManager {
 	}
 
 	public boolean checkIfOurAreaContainsLocation(Location clientLocation) {
-		return ownArea.ContainsLocation(clientLocation);
+		return ownArea.containsLocation(clientLocation);
 	}
 
 	public boolean checkOurAreaForGeofenceIntersection(Geofence messageGeofence) {
@@ -56,7 +57,7 @@ public class BrokerAreaManager {
 
 	public @Nullable BrokerInfo getOtherBrokerContainingLocation(Location clientLocation) {
 		for (BrokerArea area : otherAreas) {
-			if (area.ContainsLocation(clientLocation)) {
+			if (area.containsLocation(clientLocation)) {
 				return area.getResponsibleBroker();
 			}
 		}
@@ -89,6 +90,7 @@ public class BrokerAreaManager {
 	 * Helper Methods
 	 ****************************************************************/
 
+	// TODO replace with Kotlin Serialization
 	void createFromJson(String json) {
 		JSONArray jsonArray = new JSONArray(json);
 		for (int i = 0; i < jsonArray.length(); i++) {
@@ -100,13 +102,13 @@ public class BrokerAreaManager {
 				String brokerId = responsibleBroker.getString("brokerId");
 				int port = responsibleBroker.getInt("port");
 				String WKT = coveredArea.getString("WKT");
-				BrokerArea area = new BrokerArea(new BrokerInfo(brokerId, ip, port), new Geofence(WKT));
-				if (area.CheckResponsibleBroker(ownBrokerId)) {
+				BrokerArea area = new BrokerArea(new BrokerInfo(brokerId, ip, port), Geofence.Companion.fromWkt(WKT));
+				if (area.hasResponsibleBroker(ownBrokerId)) {
 					ownArea = area;
 				} else {
 					otherAreas.add(area);
 				}
-			} catch (JSONException | ParseException ex) {
+			} catch (JSONException ex) {
 				logger.fatal("Couldn't parse the BrokerInfo", ex);
 				System.exit(1);
 			}

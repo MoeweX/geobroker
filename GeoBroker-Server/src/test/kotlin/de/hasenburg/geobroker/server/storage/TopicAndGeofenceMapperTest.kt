@@ -225,8 +225,8 @@ class TopicAndGeofenceMapperTest {
         // put t1 topics
         for (i in 0..200) {
             val clientIdentifier = "t1-client-" + i
-            val g = Geofence.circle(Location.randomInGeofence(testedArea), 0.5)
-            td.addClient(clientIdentifier, Location.undefined())
+            val g = Geofence.circle(Location.randomInGeofence(testedArea)!!, 0.5)
+            td.addClient(clientIdentifier, null)
             val id = td.updateSubscription(clientIdentifier, t1, g)!!
             mapper.putSubscriptionId(id, t1, g)
             t1List.add(g)
@@ -235,8 +235,8 @@ class TopicAndGeofenceMapperTest {
         // put t2 topics
         for (i in 0..200) {
             val clientIdentifier = "t2-client-" + i
-            val g = Geofence.circle(Location.randomInGeofence(testedArea), 0.5)
-            td.addClient(clientIdentifier, Location.undefined())
+            val g = Geofence.circle(Location.randomInGeofence(testedArea)!!, 0.5)
+            td.addClient(clientIdentifier, null)
             val id = td.updateSubscription(clientIdentifier, t2, g)!!
             mapper.putSubscriptionId(id, t2, g)
             t2List.add(g)
@@ -245,7 +245,7 @@ class TopicAndGeofenceMapperTest {
         // now test randomly locations for t1
         for (i in 0..10) {
             val matchingIndices = mutableListOf<Int>()
-            val publisherLocation = Location.randomInGeofence(testedArea)
+            val publisherLocation = Location.randomInGeofence(testedArea)!!
             for ((j, geofence) in t1List.withIndex()) {
                 if (geofence.contains(publisherLocation)) {
                     matchingIndices.add(j)
@@ -260,7 +260,7 @@ class TopicAndGeofenceMapperTest {
         // now test randomly locations for t2
         for (i in 0..10) {
             val matchingIndices = mutableListOf<Int>()
-            val publisherLocation = Location.randomInGeofence(testedArea)
+            val publisherLocation = Location.randomInGeofence(testedArea)!!
             for ((j, geofence) in t2List.withIndex()) {
                 if (geofence.contains(publisherLocation)) {
                     matchingIndices.add(j)
@@ -276,10 +276,10 @@ class TopicAndGeofenceMapperTest {
 
     @Test
     fun specificTest() {
-        val g = Geofence("BUFFER (POINT (8.079053798283907 10.017496679172208), 0.5)")
+        val g = Geofence.fromWkt("BUFFER (POINT (8.079053798283907 10.017496679172208), 0.5)")
 
         val td = ClientDirectory()
-        td.addClient("c", Location.undefined())
+        td.addClient("c", null)
         val id = td.updateSubscription("c", Topic("t"), g)!!
 
         mapper = TopicAndGeofenceMapper(Configuration(granularity = 25, messageProcessors = 1))

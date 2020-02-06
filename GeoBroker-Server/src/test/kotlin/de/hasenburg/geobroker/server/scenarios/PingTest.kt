@@ -106,7 +106,7 @@ class PingTest {
         val payload = client.receiveWithTimeout(100)
 
         if (payload is PINGRESPPayload) {
-            assertEquals(ReasonCode.NotConnected, payload.reasonCode)
+            assertEquals(ReasonCode.NotConnectedOrNoLocation, payload.reasonCode)
         } else {
             fail("Wrong payload, received $payload")
         }

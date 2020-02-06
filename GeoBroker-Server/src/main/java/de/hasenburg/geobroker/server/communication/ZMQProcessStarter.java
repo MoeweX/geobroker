@@ -1,7 +1,7 @@
 package de.hasenburg.geobroker.server.communication;
 
 import de.hasenburg.geobroker.commons.communication.ZMQProcessManager;
-import de.hasenburg.geobroker.commons.model.BrokerInfo;
+import de.hasenburg.geobroker.commons.model.disgb.BrokerInfo;
 import de.hasenburg.geobroker.server.distribution.IDistributionLogic;
 import de.hasenburg.geobroker.server.matching.IMatchingLogic;
 import org.apache.logging.log4j.LogManager;
