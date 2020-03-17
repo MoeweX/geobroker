@@ -2,11 +2,23 @@
 
 [![CodeFactor](https://www.codefactor.io/repository/github/moewex/geobroker/badge)](https://www.codefactor.io/repository/github/moewex/geobroker)
 
-GeoBroker is a pub/sub system research prototype that not only uses content information, i.e., the topic of a message, 
-but also the geo-context of publishers and subscribers for the matching of messages.
+In the Internet of Things, the relevance of data often depends on the geographic context of data producers and consumers. Today’s data distribution services, however, mostly focus on data content and not on geo-context, which could help to reduce the dissemination of excess data in many IoT scenarios. We propose to use the geo-context information associated with devices to control data distribution.
+For this, we designed GeoBroker, a data distribution service that uses the location of things, as well as geofences for messages and subscriptions, to control data distribution. This way, we enable new IoT application scenarios while also increasing overall system efficiency for scenarios where geo-contexts matter by delivering only relevant messages.
 
-Related Publication:  
-Jonathan Hasenburg, David Bermbach. **GeoBroker: Leveraging Geo-Contexts for IoT Data Distribution**. In: Computer Communications, 151, 473-484. Elsevier 2020.  [Bib](https://www.mcc.tu-berlin.de/fileadmin/fg344/publications/2020-06-01_geobroker.bib). [PDF](https://arxiv.org/pdf/2001.01603.pdf).
+If you use this software in a publication, please cite it as:
+
+### Text
+Jonathan Hasenburg, David Bermbach. **GeoBroker: Leveraging Geo-Contexts for IoT Data Distribution**. In: Computer Communications. Elsevier 2020.
+
+### BibTeX
+```
+@article{paper_hasenburg_geobroker,
+	title = {{GeoBroker}: Leveraging Geo-Context for {IoT} Data Distribution},
+	journal = {Elsevier Computer Communications},
+	author = {Hasenburg, Jonathan and Bermbach, David},
+	year = {2020}
+}
+```
 
 ## Quickstart
 
