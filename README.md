@@ -10,13 +10,25 @@ If you use this software in a publication, please cite it as:
 ### Text
 Jonathan Hasenburg, David Bermbach. **GeoBroker: Leveraging Geo-Contexts for IoT Data Distribution**. In: Computer Communications. Elsevier 2020.
 
+Jonathan Hasenburg, David Bermbach. **Towards Geo-Context Aware IoT Data Distribution.** In: Proceedings of the 4th Workshop on IoT Systems Provisioning and Management for Context-Aware Smart Cities (ISYCC 2019). Springer 2019.
+
 ### BibTeX
 ```
-@article{paper_hasenburg_geobroker,
-	title = {{GeoBroker}: Leveraging Geo-Context for {IoT} Data Distribution},
-	journal = {Elsevier Computer Communications},
+@article{hasenburg_geobroker:_2020,
+	title = {{GeoBroker}: Leveraging geo-contexts for {IoT} data distribution},
 	author = {Hasenburg, Jonathan and Bermbach, David},
+	journal = {Computer Communications},
+	volume = {151},
+	doi = {10.1016/j.comcom.2020.01.015},
 	year = {2020}
+}
+
+@inproceedings{hasenburg_towards_2018,
+	title = {Towards Geo-Context Aware {IoT} Data Distribution},
+	booktitle = {4th Workshop on {IoT} Systems Provisioning \& Management for Context-Aware Smart Cities ({ISYCC})},
+	publisher = {Springer},
+	author = {Hasenburg, Jonathan and Bermbach, David},
+	year = {2018}
 }
 ```
 
