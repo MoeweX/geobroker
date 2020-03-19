@@ -20,11 +20,11 @@ class SubscriptionAffectionTest {
     private lateinit var cId2: String
 
     // subscription identifier
-    private lateinit var sub1_1: ImmutablePair<String, Int>
-    private lateinit var sub1_2: ImmutablePair<String, Int>
-    private lateinit var sub1_3: ImmutablePair<String, Int>
-    private lateinit var sub2_1: ImmutablePair<String, Int>
-    private lateinit var sub2_2: ImmutablePair<String, Int>
+    private lateinit var sub1_1: ImmutablePair<String, String>
+    private lateinit var sub1_2: ImmutablePair<String, String>
+    private lateinit var sub1_3: ImmutablePair<String, String>
+    private lateinit var sub2_1: ImmutablePair<String, String>
+    private lateinit var sub2_2: ImmutablePair<String, String>
 
     // broker infos
     private lateinit var bi1: BrokerInfo
@@ -37,12 +37,12 @@ class SubscriptionAffectionTest {
         cId1 = "Client 1"
         cId2 = "Client 2"
 
-        sub1_1 = ImmutablePair(cId1, 1)
-        sub1_2 = ImmutablePair(cId1, 2)
-        sub1_3 = ImmutablePair(cId1, 3)
+        sub1_1 = ImmutablePair(cId1, "1")
+        sub1_2 = ImmutablePair(cId1, "2")
+        sub1_3 = ImmutablePair(cId1, "3")
 
-        sub2_1 = ImmutablePair(cId2, 1)
-        sub2_2 = ImmutablePair(cId2, 2)
+        sub2_1 = ImmutablePair(cId2, "1")
+        sub2_2 = ImmutablePair(cId2, "2")
 
         bi1 = BrokerInfo("Broker 1", ip, port)
         bi2 = BrokerInfo("Broker 2", ip, port)

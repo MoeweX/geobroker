@@ -73,7 +73,7 @@ class SingleNoGeoMatchingLogic(private val clientDirectory: ClientDirectory,
                                   json: Json) {
         val reasonCode: ReasonCode
 
-        val subscribed: ImmutablePair<ImmutablePair<String, Int>, Geofence>? =
+        val subscribed: ImmutablePair<ImmutablePair<String, String>, Geofence>? =
                 clientDirectory.checkIfSubscribed(clientIdentifier, payload.topic, ignore)
 
         if (subscribed != null) {

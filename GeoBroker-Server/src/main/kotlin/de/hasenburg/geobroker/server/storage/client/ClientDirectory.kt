@@ -124,7 +124,7 @@ class ClientDirectory {
      * @return see above
      */
     fun checkIfSubscribed(clientIdentifier: String, topic: Topic,
-                          geofence: Geofence): ImmutablePair<ImmutablePair<String, Int>, Geofence>? {
+                          geofence: Geofence): ImmutablePair<ImmutablePair<String, String>, Geofence>? {
         val c = clients[clientIdentifier] ?: return null
         val s = c.getSubscription(topic) ?: return null
         return ImmutablePair(s.subscriptionId, s.geofence)
@@ -139,7 +139,7 @@ class ClientDirectory {
      * @param geofence - geofence of subscription
      * @return the above specified subscription id or null if no client existed
      */
-    fun updateSubscription(clientIdentifier: String, topic: Topic, geofence: Geofence): ImmutablePair<String, Int>? {
+    fun updateSubscription(clientIdentifier: String, topic: Topic, geofence: Geofence): ImmutablePair<String, String>? {
         val c = clients[clientIdentifier] ?: return null
 
         val s = c.getSubscription(topic) ?: return c.createAndPutSubscription(topic, geofence)

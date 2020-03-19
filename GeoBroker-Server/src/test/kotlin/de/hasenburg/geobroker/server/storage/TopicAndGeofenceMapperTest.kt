@@ -99,9 +99,9 @@ class TopicAndGeofenceMapperTest {
         testIds1.forEach { id -> mapper.putSubscriptionId(id, t1, berlinRectangle()) }
         testIds2.forEach { id -> mapper.putSubscriptionId(id, t2, berlinRectangle()) }
 
-        var returnedIds1: MutableSet<ImmutablePair<String, Int>> =
+        var returnedIds1: MutableSet<ImmutablePair<String, String>> =
                 mapper.getPotentialSubscriptionIds(t1, berlinPoint()).toMutableSet()
-        var returnedIds2: MutableSet<ImmutablePair<String, Int>> =
+        var returnedIds2: MutableSet<ImmutablePair<String, String>> =
                 mapper.getPotentialSubscriptionIds(Topic("t/a/2"), berlinPoint()).toMutableSet()
 
         // verify berlin
@@ -137,9 +137,9 @@ class TopicAndGeofenceMapperTest {
         testIds1.forEach { id -> mapper.putSubscriptionId(id, t1, berlinRectangle()) }
         testIds2.forEach { id -> mapper.putSubscriptionId(id, t2, datelineRectangle()) }
 
-        var returnedIds1: MutableSet<ImmutablePair<String, Int>> =
+        var returnedIds1: MutableSet<ImmutablePair<String, String>> =
                 mapper.getPotentialSubscriptionIds(t1, berlinPoint()).toMutableSet()
-        var returnedIds2: MutableSet<ImmutablePair<String, Int>> =
+        var returnedIds2: MutableSet<ImmutablePair<String, String>> =
                 mapper.getPotentialSubscriptionIds(Topic("t/x/2"), datelinePoint()).toMutableSet()
 
         // verify
@@ -165,7 +165,7 @@ class TopicAndGeofenceMapperTest {
         mapper = TopicAndGeofenceMapper(Configuration(granularity = 25, messageProcessors = 1))
 
         // prepare
-        val testId = ImmutablePair("test-client", 1)
+        val testId = ImmutablePair("test-client", "1")
         val t = Topic("data")
         val l = Location(40.007499, 116.320013)
         val f = Geofence.circle(l, 0.01)
@@ -185,12 +185,12 @@ class TopicAndGeofenceMapperTest {
         val top = Topic("a")
         val l1 = Location(40.1, 116.3)
         val g1 = Geofence.circle(l1, 1.5)
-        val t1 = ImmutablePair("t1", 1)
+        val t1 = ImmutablePair("t1", "1")
         val l2 = Location(73.1, 105.3)
         val g2 = Geofence.circle(l2, 1.5)
-        val t2 = ImmutablePair("t2", 1)
+        val t2 = ImmutablePair("t2", "1")
         val w = Geofence.world()
-        val t3 = ImmutablePair("t3", 1)
+        val t3 = ImmutablePair("t3", "1")
 
         // put
         mapper.putSubscriptionId(t1, top, g1)
@@ -328,17 +328,17 @@ class TopicAndGeofenceMapperTest {
         return Location(-1.2, 1.4)
     }
 
-    private fun testIds(numClient: Int, numIds: Int): Set<ImmutablePair<String, Int>> {
+    private fun testIds(numClient: Int, numIds: Int): Set<ImmutablePair<String, String>> {
         val seed = System.nanoTime()
         val r = Random(seed)
         logger.info("Random seed for test ids is {}", seed)
 
-        val ids = HashSet<ImmutablePair<String, Int>>()
+        val ids = HashSet<ImmutablePair<String, String>>()
 
         for (i in 0 until numClient) {
             val client = randomName(r)
             for (j in 1..numIds) {
-                ids.add(ImmutablePair(client, j))
+                ids.add(ImmutablePair(client, j.toString()))
             }
         }
 
