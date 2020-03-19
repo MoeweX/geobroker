@@ -225,7 +225,7 @@ class RasterTest {
         raster = Raster(25)
         val l = Location(40.007499, 116.320013)
         val fence = Geofence.circle(l, 0.01)
-        val sid = ImmutablePair("test", 1)
+        val sid = ImmutablePair("test", "1")
 
         val result = invokeCalculateIndexLocations(fence)
         val index = invokeCalculateIndexLocation(l)

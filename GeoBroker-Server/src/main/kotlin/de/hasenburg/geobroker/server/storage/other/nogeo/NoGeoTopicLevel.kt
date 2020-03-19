@@ -23,12 +23,12 @@ class NoGeoTopicLevel(val levelSpecifier: String) {
     private val children = ConcurrentHashMap<String, NoGeoTopicLevel>()
 
     // subscriptions
-    private val existingSubscriptionIds = ConcurrentHashMap<String, MutableSet<ImmutablePair<String, Int>>>()
+    private val existingSubscriptionIds = ConcurrentHashMap<String, MutableSet<ImmutablePair<String, String>>>()
     private val numSubscriptionIds = AtomicInteger(0)
     val numberOfSubscriptionIds: Int
         get() = numSubscriptionIds.get()
 
-    val allSubscriptionIds: Map<String, Set<ImmutablePair<String, Int>>>
+    val allSubscriptionIds: Map<String, Set<ImmutablePair<String, String>>>
         get() = existingSubscriptionIds
 
     /*****************************************************************
@@ -76,7 +76,7 @@ class NoGeoTopicLevel(val levelSpecifier: String) {
      * @param subscriptionId - unique identifier for a subscription that comprises a clientId and an integer
      * @return the number of subscriptionIds stored in this [NoGeoTopicLevel] after the operation completed
      */
-    fun putSubscriptionId(subscriptionId: ImmutablePair<String, Int>): Int {
+    fun putSubscriptionId(subscriptionId: ImmutablePair<String, String>): Int {
         existingSubscriptionIds.getOrPut(subscriptionId.left) { ConcurrentHashMap.newKeySet() }.add(subscriptionId)
         return numSubscriptionIds.incrementAndGet()
     }
@@ -89,7 +89,7 @@ class NoGeoTopicLevel(val levelSpecifier: String) {
      * @param subscriptionId - unique identifier for a subscription that comprises a clientId and an integer
      * @return the number of subscriptionIds stored in this [NoGeoTopicLevel] after the operation completed
      */
-    fun removeSubscriptionId(subscriptionId: ImmutablePair<String, Int>): Int {
+    fun removeSubscriptionId(subscriptionId: ImmutablePair<String, String>): Int {
         if (existingSubscriptionIds[subscriptionId.left]?.remove(subscriptionId) ?: false) {
             // if the client has entries + the id was part of the client's entries
             return numSubscriptionIds.decrementAndGet()
@@ -114,7 +114,7 @@ class NoGeoTopicLevel(val levelSpecifier: String) {
      * @param clientId - the id of the [Client]
      * @return Returns all subscriptionIds for the specified client.
      */
-    fun getSubscriptionIdsForClientIdentifier(clientId: String): Set<ImmutablePair<String, Int>> {
+    fun getSubscriptionIdsForClientIdentifier(clientId: String): Set<ImmutablePair<String, String>> {
         // this builds on the assumptions that this is faster then the toSet() method
         return Collections.unmodifiableSet(existingSubscriptionIds[clientId])
     }

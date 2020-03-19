@@ -5,7 +5,7 @@ import de.hasenburg.geobroker.commons.model.spatial.Geofence
 import org.apache.commons.lang3.tuple.ImmutablePair
 
 
-class Subscription(val subscriptionId: ImmutablePair<String, Int>, val topic: Topic, var geofence: Geofence) {
+class Subscription(val subscriptionId: ImmutablePair<String, String>, val topic: Topic, var geofence: Geofence) {
 
     fun getClientId(): String {
         return subscriptionId.getLeft()

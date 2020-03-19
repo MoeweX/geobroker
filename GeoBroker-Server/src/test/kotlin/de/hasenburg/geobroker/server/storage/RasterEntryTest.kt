@@ -45,7 +45,7 @@ class RasterEntryTest {
     @Test
     fun testSubscribeUnsubscribe() {
         val rasterEntry = RasterEntry(Location.random(), 1.0)
-        val subscriptionId = ImmutablePair("client", 1)
+        val subscriptionId = ImmutablePair("client", "1")
         rasterEntry.putSubscriptionId(subscriptionId)
         assertEquals(1, rasterEntry.numberOfSubscriptionIds.toLong())
         assertEquals(1, rasterEntry.allSubscriptionIds.size.toLong())
@@ -87,7 +87,7 @@ class RasterEntryTest {
 //
 //        rasterEntry.allSubscriptionIds.put("fail",
 //                Stream.of(ImmutablePair.of("fail",
-//                        1)).collect<Set<ImmutablePair<String, Int>>, Any>(Collectors.toSet()))
+//                        1)).collect<Set<ImmutablePair<String, String>>, Any>(Collectors.toSet()))
 //    }
 
     /*****************************************************************
@@ -136,7 +136,7 @@ class RasterEntryTest {
     @Throws(InterruptedException::class, ExecutionException::class, TimeoutException::class)
     fun testMultiThreadedDifferentClientIds() {
         val rasterEntry = RasterEntry(Location.random(), 1.0)
-        val futures = HashMap<String, Future<MutableSet<ImmutablePair<String, Int>>>>()
+        val futures = HashMap<String, Future<MutableSet<ImmutablePair<String, String>>>>()
 
         for (i in 0 until THREADS) {
             val clientIdentifier = System.nanoTime().toString() + ""
@@ -176,7 +176,7 @@ class RasterEntryTest {
     @Throws(InterruptedException::class, ExecutionException::class, TimeoutException::class)
     fun testMultiThreadedSameClientIdSynchronized() {
         val rasterEntry = RasterEntry(Location.random(), 1.0)
-        val futures = ArrayList<Future<MutableSet<ImmutablePair<String, Int>>>>()
+        val futures = ArrayList<Future<MutableSet<ImmutablePair<String, String>>>>()
         val atomicInteger = AtomicInteger()
         val clientIdentifier = "U3"
 
@@ -192,7 +192,7 @@ class RasterEntryTest {
         executorService.awaitTermination(10, TimeUnit.SECONDS)
 
         val idsFromRaster = rasterEntry.getSubscriptionIdsForClientIdentifier(clientIdentifier)
-        val idsFromThreads = HashSet<ImmutablePair<String, Int>>()
+        val idsFromThreads = HashSet<ImmutablePair<String, String>>()
 
         var sum = 0
         for (future in futures) {
@@ -221,7 +221,7 @@ class RasterEntryTest {
     @Throws(InterruptedException::class, ExecutionException::class, TimeoutException::class)
     fun testMultiThreadedSameClientIdNotSynchronized() {
         val rasterEntry = RasterEntry(Location.random(), 1.0)
-        val futures = ArrayList<Future<MutableSet<ImmutablePair<String, Int>>>>()
+        val futures = ArrayList<Future<MutableSet<ImmutablePair<String, String>>>>()
         val clientIdentifier = "U3"
 
         for (i in 0 until THREADS) {
@@ -236,7 +236,7 @@ class RasterEntryTest {
         executorService.awaitTermination(10, TimeUnit.SECONDS)
 
         val idsFromRaster = rasterEntry.getSubscriptionIdsForClientIdentifier(clientIdentifier)
-        val idsFromThreads = HashSet<ImmutablePair<String, Int>>()
+        val idsFromThreads = HashSet<ImmutablePair<String, String>>()
 
         var sum = 0
         for (future in futures) {
@@ -263,18 +263,18 @@ class RasterEntryTest {
 
 private class FakeClientCallable(private val clientIdentifier: String, private val numberOfOperations: Int,
                                  private val rasterEntry: RasterEntry, private val currentId: AtomicInteger) :
-    Callable<MutableSet<ImmutablePair<String, Int>>> {
+    Callable<MutableSet<ImmutablePair<String, String>>> {
 
     /**
      * @return the number of Ids that should be inside the [RasterEntry] for this [FakeClientCallable].
      */
-    override fun call(): MutableSet<ImmutablePair<String, Int>> {
-        val existingIds = ArrayList<ImmutablePair<String, Int>>()
+    override fun call(): MutableSet<ImmutablePair<String, String>> {
+        val existingIds = ArrayList<ImmutablePair<String, String>>()
 
         for (i in 0 until numberOfOperations) {
             if (getTrueWithChance(70)) {
                 val id = currentId.incrementAndGet()
-                val subscriptionId = ImmutablePair.of(clientIdentifier, id)
+                val subscriptionId = ImmutablePair.of(clientIdentifier, id.toString())
                 rasterEntry.putSubscriptionId(subscriptionId)
                 logger.trace("Added subscriptionId {}", subscriptionId)
                 existingIds.add(subscriptionId)

@@ -26,12 +26,12 @@ class TopicAndGeofenceMapper(configuration: Configuration) {
      * Subscribe/Unsubscribe Operations
      ****************************************************************/
 
-    fun putSubscriptionId(subscriptionId: ImmutablePair<String, Int>, topic: Topic, geofence: Geofence) {
+    fun putSubscriptionId(subscriptionId: ImmutablePair<String, String>, topic: Topic, geofence: Geofence) {
         val level = anchor.getOrCreateChildren(*topic.levelSpecifiers)
         level.raster.putSubscriptionIdIntoRasterEntries(geofence, subscriptionId)
     }
 
-    fun removeSubscriptionId(subscriptionId: ImmutablePair<String, Int>, topic: Topic, geofence: Geofence) {
+    fun removeSubscriptionId(subscriptionId: ImmutablePair<String, String>, topic: Topic, geofence: Geofence) {
         val level = anchor.getChildren(*topic.levelSpecifiers) ?: return
         level.raster.removeSubscriptionIdFromRasterEntries(geofence, subscriptionId)
     }
@@ -55,12 +55,12 @@ class TopicAndGeofenceMapper(configuration: Configuration) {
      * @param publisherLocation - see above
      * @return see above
      */
-    fun getPotentialSubscriptionIds(topic: Topic, publisherLocation: Location): List<ImmutablePair<String, Int>> {
+    fun getPotentialSubscriptionIds(topic: Topic, publisherLocation: Location): List<ImmutablePair<String, String>> {
         // get TopicLevel that match Topic
         val matchingTopicLevels = getMatchingTopicLevels(topic)
 
         // get subscription ids from raster for publisher location
-        val subscriptionIds = mutableListOf<ImmutablePair<String, Int>>()
+        val subscriptionIds = mutableListOf<ImmutablePair<String, String>>()
         for (matchingTopicLevel in matchingTopicLevels) {
             subscriptionIds.addAll(matchingTopicLevel.raster.getSubscriptionIdsInRasterEntryForPublisherLocation(
                     publisherLocation))
@@ -82,7 +82,7 @@ class TopicAndGeofenceMapper(configuration: Configuration) {
      * @return see above
      */
     fun getSubscriptionIds(topic: Topic, publisherLocation: Location,
-                           clientDirectory: ClientDirectory): List<ImmutablePair<String, Int>> {
+                           clientDirectory: ClientDirectory): List<ImmutablePair<String, String>> {
         return getPotentialSubscriptionIds(topic, publisherLocation).filter { subId ->
             clientDirectory.getSubscription(subId.left, topic)?.geofence?.contains(publisherLocation) ?: false
         }

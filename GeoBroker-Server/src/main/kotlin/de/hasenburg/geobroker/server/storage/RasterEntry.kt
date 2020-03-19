@@ -16,7 +16,7 @@ class RasterEntry(val index: Location, degreeStep: Double) {
             Location(index.lat + degreeStep, index.lon + degreeStep),
             Location(index.lat, index.lon + degreeStep))) // let's buffer this
 
-    private val existingSubscriptionIds = ConcurrentHashMap<String, MutableSet<ImmutablePair<String, Int>>>()
+    private val existingSubscriptionIds = ConcurrentHashMap<String, MutableSet<ImmutablePair<String, String>>>()
     private val numSubscriptionIds = AtomicInteger(0)
     val numberOfSubscriptionIds: Int
         get() = numSubscriptionIds.get()
@@ -24,7 +24,7 @@ class RasterEntry(val index: Location, degreeStep: Double) {
     /**
      * @return all subscriptions
      */
-    val allSubscriptionIds: Map<String, Set<ImmutablePair<String, Int>>>
+    val allSubscriptionIds: Map<String, Set<ImmutablePair<String, String>>>
         get() = existingSubscriptionIds
 
     override fun toString(): String {
@@ -43,7 +43,7 @@ class RasterEntry(val index: Location, degreeStep: Double) {
      * @param subscriptionId - unique identifier for a subscription that comprises a clientId and an integer
      * @return the number of subscriptionIds stored in the [RasterEntry] after the operation completed
      */
-    fun putSubscriptionId(subscriptionId: ImmutablePair<String, Int>): Int {
+    fun putSubscriptionId(subscriptionId: ImmutablePair<String, String>): Int {
         existingSubscriptionIds.getOrPut(subscriptionId.left) { ConcurrentHashMap.newKeySet() }.add(subscriptionId)
         return numSubscriptionIds.incrementAndGet()
     }
@@ -56,7 +56,7 @@ class RasterEntry(val index: Location, degreeStep: Double) {
      * @param subscriptionId - unique identifier for a subscription that comprises a clientId and an integer
      * @return the number of subscriptionIds stored in the [RasterEntry] after the operation completed
      */
-    fun removeSubscriptionId(subscriptionId: ImmutablePair<String, Int>): Int {
+    fun removeSubscriptionId(subscriptionId: ImmutablePair<String, String>): Int {
         if (existingSubscriptionIds[subscriptionId.left]?.remove(subscriptionId) ?: false) {
             // if the client has entries + the id was part of the client's entries
             return numSubscriptionIds.decrementAndGet()
@@ -73,7 +73,7 @@ class RasterEntry(val index: Location, degreeStep: Double) {
      * @param clientId - the id of the [Client]
      * @return Returns all subscriptionIds for the specified client.
      */
-    fun getSubscriptionIdsForClientIdentifier(clientId: String): Set<ImmutablePair<String, Int>> {
+    fun getSubscriptionIdsForClientIdentifier(clientId: String): Set<ImmutablePair<String, String>> {
         // this builds on the assumptions that this is faster then the toSet() method
         return Collections.unmodifiableSet(existingSubscriptionIds[clientId])
     }

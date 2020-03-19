@@ -27,7 +27,7 @@ private val logger = LogManager.getLogger()
 class Raster(val granularity: Int) {
 
     private val rasterEntries = ConcurrentHashMap<Location, RasterEntry>()
-    private val worldSubscriptionIds = ConcurrentHashMap<String, MutableSet<ImmutablePair<String, Int>>>()
+    private val worldSubscriptionIds = ConcurrentHashMap<String, MutableSet<ImmutablePair<String, String>>>()
 
     private val degreeStep: Double // = 1 / granularity
 
@@ -52,7 +52,7 @@ class Raster(val granularity: Int) {
      * @param geofence - the geofence used to calculate the fitting [RasterEntry]
      * @param subscriptionId - the subscriptionId to be added
      */
-    fun putSubscriptionIdIntoRasterEntries(geofence: Geofence, subscriptionId: ImmutablePair<String, Int>) {
+    fun putSubscriptionIdIntoRasterEntries(geofence: Geofence, subscriptionId: ImmutablePair<String, String>) {
         // add to worldSubscriptionIds if geofence is world
         if (geofence == Geofence.world()) {
             worldSubscriptionIds.getOrPut(subscriptionId.left) { ConcurrentHashMap.newKeySet() }.add(subscriptionId)
@@ -74,7 +74,7 @@ class Raster(val granularity: Int) {
      * @param geofence - the geofence used to calculate the fitting [RasterEntry]
      * @param subscriptionId - the subscription id to be removed
      */
-    fun removeSubscriptionIdFromRasterEntries(geofence: Geofence, subscriptionId: ImmutablePair<String, Int>) {
+    fun removeSubscriptionIdFromRasterEntries(geofence: Geofence, subscriptionId: ImmutablePair<String, String>) {
         // remove from worldSubscriptionIds if geofence is world
         if (geofence == Geofence.world()) {
             worldSubscriptionIds[subscriptionId.left]?.remove(subscriptionId)
@@ -98,7 +98,7 @@ class Raster(val granularity: Int) {
      * @param index - index of [RasterEntry] from which the subscription id should be removed
      * @param subscriptionId - the subscription id to be removed
      */
-    fun removeSubscriptionIdFromRasterEntry(index: Location, subscriptionId: ImmutablePair<String, Int>) {
+    fun removeSubscriptionIdFromRasterEntry(index: Location, subscriptionId: ImmutablePair<String, String>) {
         rasterEntries[index]?.removeSubscriptionId(subscriptionId)
     }
 
@@ -117,10 +117,10 @@ class Raster(val granularity: Int) {
      * @param location - the location that determines which [RasterEntry] fits
      * @return a set containing all fitting subscriptionIds
      */
-    fun getSubscriptionIdsInRasterEntryForPublisherLocation(location: Location): List<ImmutablePair<String, Int>> {
+    fun getSubscriptionIdsInRasterEntryForPublisherLocation(location: Location): List<ImmutablePair<String, String>> {
         val index = calculateIndexLocation(location)
 
-        val result = mutableListOf<ImmutablePair<String, Int>>()
+        val result = mutableListOf<ImmutablePair<String, String>>()
 
         for (rasterEntry in rasterEntries[index]?.allSubscriptionIds?.values ?: emptyList()) {
             result.addAll(rasterEntry)

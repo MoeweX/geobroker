@@ -97,7 +97,7 @@ fun subscribeAtLocalBroker(clientIdentifier: String,
                            geofence: Geofence,
                            logger: Logger): ReasonCode {
 
-    val subscribed: ImmutablePair<ImmutablePair<String, Int>, Geofence>? =
+    val subscribed: ImmutablePair<ImmutablePair<String, String>, Geofence>? =
             clientDirectory.checkIfSubscribed(clientIdentifier, topic, geofence)
 
     // if already subscribed -> remove subscription id from now unrelated geofence parts

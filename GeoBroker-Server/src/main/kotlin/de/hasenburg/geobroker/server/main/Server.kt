@@ -67,7 +67,7 @@ fun main(args: Array<String>) {
     logger.info("End of lifecycle reached, shutting down")
     prometheusServer?.run {
         stop()
-        CollectorRegistry.defaultRegistry.clear();
+        CollectorRegistry.defaultRegistry.clear()
         logger.info("Stopped prometheus")
     }
 

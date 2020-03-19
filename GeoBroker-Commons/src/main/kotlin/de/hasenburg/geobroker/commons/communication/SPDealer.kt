@@ -45,7 +45,7 @@ class SPDealer(val ip: String = "localhost", val port: Int = 5559, val socketHWM
     private val pusher = zContext.createSocket(SocketType.PUSH).also { it.connect(pullSocketAddress) }
 
     // dealer sockets
-    private val indexMap = HashMap<String, Int>()
+    private val indexMap = HashMap<String, String>()
     private val socketList = ArrayList<Socket>()
     val numberOfPersonalities
         get() = socketList.size
@@ -154,10 +154,10 @@ class SPDealer(val ip: String = "localhost", val port: Int = 5559, val socketHWM
                 socketList.add(it)
             }
 
-            index = socketList.size - 1
+            index = (socketList.size - 1).toString()
             indexMap[thingId] = index
         }
-        msg.send(socketList[index], false) // send via correct socket
+        msg.send(socketList[index.toInt()], false) // send via correct socket
         logger.trace("Send message $msg for $thingId to target socket")
         wasSent.send(ZMsgTP(msg.addFirst(thingId), System.currentTimeMillis())) // add to wasSent channel
     }

@@ -60,7 +60,7 @@ fun readInternalConfiguration(filePath: String): Configuration {
                 ?: throw Exception("Cannot read toml from internal file $filePath")
         return parseToml(toml)
     } catch (e: Exception) {
-        logger.fatal("Could not load internal configuration", e);
+        logger.fatal("Could not load internal configuration", e)
     }
     exitProcess(1)
 }

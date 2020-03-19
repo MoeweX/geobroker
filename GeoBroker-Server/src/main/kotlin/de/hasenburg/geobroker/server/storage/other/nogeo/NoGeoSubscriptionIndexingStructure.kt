@@ -25,12 +25,12 @@ class NoGeoSubscriptionIndexingStructure() {
      * Subscribe/Unsubscribe Operations
      ****************************************************************/
 
-    fun putSubscriptionId(subscriptionId: ImmutablePair<String, Int>, topic: Topic) {
+    fun putSubscriptionId(subscriptionId: ImmutablePair<String, String>, topic: Topic) {
         val level = anchor.getOrCreateChild(*topic.levelSpecifiers)
         level.putSubscriptionId(subscriptionId)
     }
 
-    fun removeSubscriptionId(subscriptionId: ImmutablePair<String, Int>, topic: Topic) {
+    fun removeSubscriptionId(subscriptionId: ImmutablePair<String, String>, topic: Topic) {
         val level = anchor.getChild(*topic.levelSpecifiers) ?: return
         level.removeSubscriptionId(subscriptionId)
     }
@@ -45,13 +45,13 @@ class NoGeoSubscriptionIndexingStructure() {
      * @param topic - see above
      * @return see above
      */
-    fun getSubscriptionIds(topic: Topic): List<ImmutablePair<String, Int>> {
+    fun getSubscriptionIds(topic: Topic): List<ImmutablePair<String, String>> {
 
         // get TopicLevel that match Topic
         val matchingTopicLevels = getMatchingTopicLevels(topic)
 
         // get subscription ids from raster for publisher location
-        val subscriptionIds = mutableListOf<ImmutablePair<String, Int>>()
+        val subscriptionIds = mutableListOf<ImmutablePair<String, String>>()
         for (matchingTopicLevel in matchingTopicLevels) {
             val clientSets = matchingTopicLevel.allSubscriptionIds.values;
             for (clientSet in clientSets) {

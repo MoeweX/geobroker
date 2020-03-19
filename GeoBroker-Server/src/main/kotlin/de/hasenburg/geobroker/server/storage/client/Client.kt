@@ -38,9 +38,9 @@ class Client(val clientIdentifier: String, location: Location?, val remote: Bool
         this.location = location
     }
 
-    fun createAndPutSubscription(topic: Topic, geofence: Geofence): ImmutablePair<String, Int> {
+    fun createAndPutSubscription(topic: Topic, geofence: Geofence): ImmutablePair<String, String> {
         updateHeartbeat()
-        val s = Subscription(ImmutablePair(clientIdentifier, lastSubscriptionId.incrementAndGet()), topic, geofence)
+        val s = Subscription(ImmutablePair(clientIdentifier, lastSubscriptionId.incrementAndGet().toString()), topic, geofence)
         subscriptions[topic] = s
         return s.subscriptionId
     }

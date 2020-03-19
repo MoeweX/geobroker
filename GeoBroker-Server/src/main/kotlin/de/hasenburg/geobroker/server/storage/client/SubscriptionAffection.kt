@@ -17,9 +17,9 @@ private val logger = LogManager.getLogger()
 class SubscriptionAffection {
 
     // client id -> subscription id + list(broker info)
-    private val affections = ConcurrentHashMap<String, ConcurrentHashMap<ImmutablePair<String, Int>, List<BrokerInfo>>>()
+    private val affections = ConcurrentHashMap<String, ConcurrentHashMap<ImmutablePair<String, String>, List<BrokerInfo>>>()
 
-    fun updateAffections(subscriptionId: ImmutablePair<String, Int>,
+    fun updateAffections(subscriptionId: ImmutablePair<String, String>,
                          otherAffectedBrokers: List<BrokerInfo>): List<BrokerInfo> {
 
         val clientAffections = affections.getOrPut(subscriptionId.left) { ConcurrentHashMap() }
@@ -56,7 +56,7 @@ class SubscriptionAffection {
      * @param subscriptionId - specifies a subscription
      * @return all affections for the specified subscription
      */
-    fun getAffections(subscriptionId: ImmutablePair<String, Int>): List<BrokerInfo> {
+    fun getAffections(subscriptionId: ImmutablePair<String, String>): List<BrokerInfo> {
         return this.affections[subscriptionId.left]?.get(subscriptionId) ?: emptyList()
     }
 
@@ -69,7 +69,7 @@ class SubscriptionAffection {
      * Calculated by [updatedAffectedBrokers] - all brokers affected by any of the client's subscriptions
      * This is required as these brokers also have to receive the most up to date client location.
      */
-    fun determineAffectedBrokersThatDoNotKnowTheClient(subscriptionId: ImmutablePair<String, Int>,
+    fun determineAffectedBrokersThatDoNotKnowTheClient(subscriptionId: ImmutablePair<String, String>,
                                              updatedAffectedBrokers: List<BrokerInfo>): List<BrokerInfo> {
         val result = updatedAffectedBrokers.toMutableList()
         result.removeAll(getAffections(subscriptionId.left))
