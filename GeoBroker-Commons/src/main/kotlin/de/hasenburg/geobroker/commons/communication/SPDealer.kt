@@ -20,7 +20,9 @@ private val logger = LogManager.getLogger()
  * - uses Coroutines (easier API through suspend functionality)
  * - manages multiple individual [SocketType.DEALER] sockets that all connect to the same other [Socket] (multi-tenancy)
  *
- * TODO add how to use; requirements for processed ZMsg format
+ * To use the SPDealer, simply write messages to the [toSent] channel.
+ * When the message was sent, the SPDealer writes the message and timestamp to the [wasSent] channel.
+ * Replies from the target socket are written to the [wasReceived] channel.
  *
  * [ObsoleteCoroutinesApi] necessary, as the [SPDealer] uses its own ThreadPool and the API is being changed, soon.
  */
