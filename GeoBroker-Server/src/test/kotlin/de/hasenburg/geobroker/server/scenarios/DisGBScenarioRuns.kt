@@ -47,7 +47,6 @@ class DisGBScenarioRuns {
     private val mg3 = Geofence.circle(Location(52.52, 13.4), 1.6)
 
     // client fields
-    private lateinit var clientProcessManager: ZMQProcessManager
     private lateinit var clients: List<SimpleClient>
 
     @Before
@@ -55,7 +54,6 @@ class DisGBScenarioRuns {
         setLogLevel(logger, Level.INFO)
         CollectorRegistry.defaultRegistry.clear();
 
-        clientProcessManager = ZMQProcessManager()
         clients = setupLocalhostClients(listOf(5558, 5558, 5559))
 
         logger.info("Client setup completed")
@@ -66,7 +64,6 @@ class DisGBScenarioRuns {
         for (client in clients) {
             client.tearDownClient()
         }
-        clientProcessManager.tearDown(1000)
         logger.info("Client teardown completed")
     }
 
@@ -465,7 +462,7 @@ class DisGBScenarioRuns {
         val clients = mutableListOf<SimpleClient>()
 
         for (i in ports.indices) {
-            val client = SimpleClient("localhost", ports[i], clientProcessManager, getClientIdentifier(i))
+            val client = SimpleClient("localhost", ports[i], identity = getClientIdentifier(i))
             clients.add(client)
         }
 

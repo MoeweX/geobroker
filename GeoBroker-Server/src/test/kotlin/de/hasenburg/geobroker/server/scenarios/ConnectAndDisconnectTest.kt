@@ -25,7 +25,6 @@ class ConnectAndDisconnectTest {
 
     private val logger = LogManager.getLogger()
     private lateinit var serverLogic: DisGBSubscriberMatchingServerLogic
-    private lateinit var clientProcessManager: ZMQProcessManager
 
     @Before
     fun setUp() {
@@ -37,22 +36,18 @@ class ConnectAndDisconnectTest {
         serverLogic.initializeFields()
         serverLogic.startServer()
 
-        logger.info("Starting client zmq process manager")
-        clientProcessManager = ZMQProcessManager()
-
         assertEquals(0, serverLogic.clientDirectory.numberOfClients.toLong())
     }
 
     @After
     fun tearDown() {
         logger.info("Running test tearDown.")
-        clientProcessManager.tearDown(2000)
         serverLogic.cleanUp()
     }
 
     @Test
     fun testOneClient() {
-        val client = SimpleClient("localhost", 5559, clientProcessManager)
+        val client = SimpleClient("localhost", 5559)
 
         // connect
         client.send(CONNECTPayload(Location.random()))
@@ -67,6 +62,8 @@ class ConnectAndDisconnectTest {
         // check whether disconnected and no more messages received
         sleepNoLog(5, 0)
         assertEquals(0, serverLogic.clientDirectory.numberOfClients.toLong())
+
+        client.tearDownClient()
     }
 
     @Test
@@ -77,7 +74,7 @@ class ConnectAndDisconnectTest {
 
         // create clients
         for (i in 0 until activeConnections) {
-            val client = SimpleClient("localhost", 5559, clientProcessManager)
+            val client = SimpleClient("localhost", 5559)
             clients.add(client)
         }
 
@@ -101,6 +98,13 @@ class ConnectAndDisconnectTest {
                 activeConnections.toLong(),
                 serverLogic.clientDirectory.numberOfClients.toLong())
         logger.info("{} out of {} clients were active, so everything fine", activeConnections, 10)
+        sleepNoLog(1000, 0)
+
+        // tear down clients
+        for (client in clients) {
+            client.tearDownClient()
+        }
+
     }
 
     @Test
@@ -109,7 +113,7 @@ class ConnectAndDisconnectTest {
             .ownBrokerInfo,
                 Geofence.circle(Location(0.0, 0.0), 10.0)))
 
-        val client = SimpleClient("localhost", 5559, clientProcessManager)
+        val client = SimpleClient("localhost", 5559)
 
         // connect
         client.send(CONNECTPayload(Location(30.0, 30.0)))
@@ -123,6 +127,9 @@ class ConnectAndDisconnectTest {
 
         // check whether client exists
         assertEquals(0, serverLogic.clientDirectory.numberOfClients.toLong())
+
+        // check acknowledgements
+        client.tearDownClient()
     }
 
 }

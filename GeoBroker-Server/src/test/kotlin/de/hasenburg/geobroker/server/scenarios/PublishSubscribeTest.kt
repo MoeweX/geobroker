@@ -21,7 +21,6 @@ class PublishSubscribeTest {
 
     private val logger = LogManager.getLogger()
     private lateinit var serverLogic: SingleGeoBrokerServerLogic
-    private lateinit var clientProcessManager: ZMQProcessManager
 
     @Before
     fun setUp() {
@@ -33,13 +32,11 @@ class PublishSubscribeTest {
         serverLogic.initializeFields()
         serverLogic.startServer()
 
-        clientProcessManager = ZMQProcessManager()
     }
 
     @After
     fun tearDown() {
         logger.info("Running test tearDown.")
-        clientProcessManager.tearDown(2000)
         serverLogic.cleanUp()
     }
 
@@ -52,7 +49,7 @@ class PublishSubscribeTest {
         val g = Geofence.circle(l, 0.4)
         val t = Topic("test")
 
-        val client = SimpleClient("localhost", 5559, clientProcessManager)
+        val client = SimpleClient("localhost", 5559)
         client.send(CONNECTPayload(l))
         client.send(SUBSCRIBEPayload(t, g))
         client.send(PUBLISHPayload(t, g, "Content"))
@@ -76,6 +73,8 @@ class PublishSubscribeTest {
         } else {
             fail("Wrong payload, received $payload")
         }
+
+        client.tearDownClient()
     }
 
     @Test
@@ -85,18 +84,21 @@ class PublishSubscribeTest {
         val g = Geofence.circle(l, 0.4)
         val t = Topic("test")
 
-        val clientSubscriber = SimpleClient("localhost", 5559, clientProcessManager)
+        val clientSubscriber = SimpleClient("localhost", 5559)
         clientSubscriber.send(CONNECTPayload(null)) // subscriber not in geofence
         clientSubscriber.send(SUBSCRIBEPayload(t, g))
 
         // publisher
-        val clientPublisher = SimpleClient("localhost", 5559, clientProcessManager)
+        val clientPublisher = SimpleClient("localhost", 5559)
         clientPublisher.send(CONNECTPayload(l)) // publisher is in geofence
         clientPublisher.send(PUBLISHPayload(t, g, "Content"))
 
         sleepNoLog(500, 0)
 
         validateNoPublishReceived(clientSubscriber, clientPublisher)
+
+        clientSubscriber.tearDownClient()
+        clientPublisher.tearDownClient()
     }
 
     @Test
@@ -107,18 +109,21 @@ class PublishSubscribeTest {
         val g = Geofence.circle(l, 0.4)
         val t = Topic("test")
 
-        val clientSubscriber = SimpleClient("localhost", 5559, clientProcessManager)
+        val clientSubscriber = SimpleClient("localhost", 5559)
         clientSubscriber.send(CONNECTPayload(l)) // subscriber is in geofence
         clientSubscriber.send(SUBSCRIBEPayload(t, g))
 
         // publisher
-        val clientPublisher = SimpleClient( "localhost", 5559, clientProcessManager)
+        val clientPublisher = SimpleClient( "localhost", 5559)
         clientPublisher.send(CONNECTPayload(l2)) // publisher is not in geofence
         clientPublisher.send(PUBLISHPayload(t, g, "Content"))
 
         sleepNoLog(500, 0)
 
         validateNoPublishReceived(clientSubscriber, clientPublisher)
+
+        clientSubscriber.tearDownClient()
+        clientPublisher.tearDownClient()
     }
 
     private fun validateNoPublishReceived(clientSubscriber: SimpleClient, clientPublisher: SimpleClient) {

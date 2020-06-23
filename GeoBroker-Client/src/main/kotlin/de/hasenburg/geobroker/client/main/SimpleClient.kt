@@ -1,27 +1,77 @@
 package de.hasenburg.geobroker.client.main
 
-import de.hasenburg.geobroker.client.communication.ZMQProcess_SimpleClient
-import de.hasenburg.geobroker.commons.*
-import de.hasenburg.geobroker.commons.communication.ZMQControlUtility
+import de.hasenburg.geobroker.commons.communication.SPDealer
 import de.hasenburg.geobroker.commons.communication.ZMQProcessManager
 import de.hasenburg.geobroker.commons.model.message.*
 import de.hasenburg.geobroker.commons.model.message.Payload.*
 import de.hasenburg.geobroker.commons.model.spatial.Geofence
 import de.hasenburg.geobroker.commons.model.spatial.Location
+import de.hasenburg.geobroker.commons.sleepNoLog
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonConfiguration
 import org.apache.logging.log4j.LogManager
-import org.zeromq.SocketType
-import org.zeromq.ZMQ
-import org.zeromq.ZMsg
 import kotlin.system.exitProcess
 
 private val logger = LogManager.getLogger()
 
-// TODO could be significantly simplified by using the SPDealer
+/**
+ * The SimpleClient connects to the GeoBroker running at [ip]:[port].
+ * If an [identity] is provided on startup, it announces itself with this identify; otherwise, a default identify is used.
+ *
+ * It is possible to supply a [socketHWM], for more information on HWM, check out the ZeroMQ documentation.
+ * If no HWM is supplied, 1000 is used.
+ */
+class SimpleClient(ip: String, port: Int, socketHWM: Int = 1000, val identity: String = "SimpleClient-" + System.nanoTime()) {
+
+    private val spDealer = SPDealer(ip, port, socketHWM)
+    private val json = Json(JsonConfiguration.Stable)
+
+    fun tearDownClient() {
+        if (spDealer.isActive) {
+            spDealer.shutdown()
+        }
+    }
+
+    /**
+     * Send the given [payload] to the broker.
+     * Returns true, if successful, otherwise false.
+     */
+    fun send(payload: Payload): Boolean {
+        val zMsg = payload.toZMsg(json, clientIdentifier = identity)
+        return spDealer.toSent.offer(zMsg)
+    }
+
+    /**
+     * Receives a message from the broker, blocks until a message was received.
+     * Then, it returns the [Payload] of the message.
+     */
+    fun receive(): Payload {
+        return runBlocking {
+            val zMsgTP = spDealer.wasReceived.receive()
+            zMsgTP.msg.toPayloadAndId(json)!!.second
+        }
+    }
+
+    /**
+     * Receives a message from the blocker, blocks as defined by [timeout] in ms.
+     * Then, it returns the [Payload] or the message or null, if none was received.
+     **/
+    fun receiveWithTimeout(timeout: Int): Payload? {
+        return runBlocking {
+            withTimeoutOrNull(timeout.toLong()) {
+                val zMsgTP = spDealer.wasReceived.receive()
+                zMsgTP.msg.toPayloadAndId(json)!!.second
+            }
+        }
+    }
+
+}
+
 fun main() {
     val processManager = ZMQProcessManager()
-    val client = SimpleClient("localhost", 5559, processManager)
+    val client = SimpleClient("localhost", 5559)
 
     // connect
     client.send(CONNECTPayload(Location.random()))
@@ -49,65 +99,4 @@ fun main() {
                 processManager.incompleteZMQProcesses)
     }
     exitProcess(0)
-}
-
-class SimpleClient(address: String, port: Int, private val processManager: ZMQProcessManager,
-                   val identity: String = "SimpleClient-" + System.nanoTime()) {
-
-    private val json = Json(JsonConfiguration.Stable)
-    private val orderSocket: ZMQ.Socket
-
-    init {
-        processManager.submitZMQProcess(identity, ZMQProcess_SimpleClient(address, port, identity))
-        orderSocket = processManager.context.createSocket(SocketType.REQ)
-        orderSocket.identity = identity.toByteArray()
-        orderSocket.connect(generateClientOrderBackendString(identity))
-
-        logger.info("Created client {}", identity)
-    }
-
-    fun tearDownClient() {
-        orderSocket.linger = 0
-        processManager.context.destroySocket(orderSocket)
-        processManager.sendCommandToZMQProcess(identity, ZMQControlUtility.ZMQControlCommand.KILL)
-    }
-
-    fun send(payload: Payload): ZMsg {
-        val orderMessage = ZMsg.newStringMsg(ZMQProcess_SimpleClient.ORDERS.SEND.name)
-        val payloadMessage = payload.toZMsg(json)
-        repeat(payloadMessage.size) {
-            orderMessage.add(payloadMessage.pop())
-        }
-
-        orderMessage.send(orderSocket)
-        return ZMsg.recvMsg(orderSocket)
-    }
-
-    fun receive(): Payload {
-        val orderMessage = ZMsg.newStringMsg(ZMQProcess_SimpleClient.ORDERS.RECEIVE.name)
-
-        // send order
-        orderMessage.send(orderSocket)
-
-        return ZMsg.recvMsg(orderSocket).toPayload()!! // was validated before order socket
-    }
-
-    /**
-     * @param timeout - receive timeout in ms
-     * @return a message from the server or null if server did not send a message
-     */
-    fun receiveWithTimeout(timeout: Int): Payload? {
-        val orderMessage =
-                ZMsg.newStringMsg(ZMQProcess_SimpleClient.ORDERS.RECEIVE_WITH_TIMEOUT.name, timeout.toString() + "")
-
-        // send order
-        orderMessage.send(orderSocket)
-        val response = ZMsg.recvMsg(orderSocket)
-        // check first frame as might be empty
-        return if (ZMQProcess_SimpleClient.ORDERS.EMPTY.name == response.first!!.getString(ZMQ.CHARSET)) {
-            null
-        } else response.toPayload()
-
-    }
-
 }

@@ -21,7 +21,7 @@ class SubscribeUnsubscribeTest {
 
     private val logger = LogManager.getLogger()
     private lateinit var serverLogic: SingleGeoBrokerServerLogic
-    private lateinit var clientProcessManager: ZMQProcessManager
+    private lateinit var client: SimpleClient
 
     @Before
     fun setUp() {
@@ -33,13 +33,12 @@ class SubscribeUnsubscribeTest {
         serverLogic.initializeFields()
         serverLogic.startServer()
 
-        clientProcessManager = ZMQProcessManager()
     }
 
     @After
     fun tearDown() {
         logger.info("Running test tearDown.")
-        clientProcessManager.tearDown(2000)
+        client.tearDownClient()
         serverLogic.cleanUp()
     }
 
@@ -51,7 +50,7 @@ class SubscribeUnsubscribeTest {
         val g = Geofence.circle(l, 0.4)
         val t = Topic("test")
 
-        val client = SimpleClient("localhost", 5559, clientProcessManager, cI)
+        client = SimpleClient("localhost", 5559, identity = cI)
         client.send(CONNECTPayload(l))
         client.send(SUBSCRIBEPayload(t, g))
 
@@ -81,7 +80,7 @@ class SubscribeUnsubscribeTest {
         val t = Topic("test")
         val cI = "testClient"
 
-        val client = SimpleClient("localhost", 5559, clientProcessManager, cI)
+        client = SimpleClient("localhost", 5559, identity = cI)
 
         // Unsubscribe
         client.send(UNSUBSCRIBEPayload(t))

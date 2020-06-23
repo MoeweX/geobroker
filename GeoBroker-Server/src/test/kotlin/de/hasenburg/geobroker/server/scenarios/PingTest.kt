@@ -19,7 +19,7 @@ class PingTest {
 
     private val logger = LogManager.getLogger()
     private lateinit var serverLogic: SingleGeoBrokerServerLogic
-    private lateinit var clientProcessManager: ZMQProcessManager
+    private lateinit var client: SimpleClient
 
     @Before
     fun setUp() {
@@ -31,13 +31,12 @@ class PingTest {
         serverLogic.initializeFields()
         serverLogic.startServer()
 
-        clientProcessManager = ZMQProcessManager()
     }
 
     @After
     fun tearDown() {
         logger.info("Running test tearDown.")
-        clientProcessManager.tearDown(2000)
+        client.tearDownClient()
         serverLogic.cleanUp()
     }
 
@@ -45,7 +44,7 @@ class PingTest {
     fun compareSerial() {
         val time1 = System.nanoTime().toDouble()
         // connect, ping, and disconnect
-        val client = SimpleClient("localhost", 5559, clientProcessManager)
+        client = SimpleClient("localhost", 5559)
         client.send(CONNECTPayload(Location.random()))
         for (i in 0..99) {
             client.send(PINGREQPayload(Location.random()))
@@ -72,7 +71,7 @@ class PingTest {
     @Test
     fun testPingWhileConnected() {
         // connect, ping, and disconnect
-        val client = SimpleClient("localhost", 5559, clientProcessManager)
+        client = SimpleClient("localhost", 5559)
         client.send(CONNECTPayload(Location.random()))
         for (i in 0..9) {
             client.send(PINGREQPayload(Location.random()))
@@ -99,7 +98,7 @@ class PingTest {
 
     @Test
     fun testPingWhileNotConnected() {
-        val client = SimpleClient("localhost", 5559, clientProcessManager)
+        client = SimpleClient("localhost", 5559)
 
         client.send(PINGREQPayload(Location.random()))
 

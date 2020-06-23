@@ -41,7 +41,7 @@ git submodule update
 ```
 
 To start the Server, run the main method of *de.hasenburg.geobroker.server.main.Server.java*. 
-A very simple client can be started by running *de.hasenburg.geobroker.client.main.SimpleClient.java*.
+A very simple client can be started by running *de.hasenburg.geobroker.client.main.SimpleClient.kt*.
 
 ## Usage of Code in Publications
 

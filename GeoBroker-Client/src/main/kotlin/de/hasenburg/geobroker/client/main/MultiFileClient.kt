@@ -27,6 +27,17 @@ import kotlin.math.floor
 
 private val logger = LogManager.getLogger()
 
+/**
+ * The MultiFileClient is a command line application.
+ * Run it with the command line argument -h (or without any arguments), to see available options.
+ *
+ * The purpose of the MultiFileClient is to process files output by the IoTDSG (https://github.com/MoeweX/IoTDSG) and
+ * send corresponding messages to the configured GeoBroker server.
+ * Example files can be found in src/main/resources/multifile/
+ *
+ * The MultiFileClient writes all sent messages to wasSent.txt (including a timestamp), and all received messages to
+ * wasReceived.txt (including a timestamp).
+ */
 fun main(args: Array<String>) {
     // configuration
     val conf = mainBody { ArgParser(args).parseInto(::ConfMultiFile) }

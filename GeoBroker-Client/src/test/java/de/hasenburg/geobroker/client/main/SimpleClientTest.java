@@ -14,13 +14,9 @@ public class SimpleClientTest {
 
 	@Test
 	public void startupTearDown() {
-		ZMQProcessManager processManager = new ZMQProcessManager();
-		SimpleClient simpleClient = new SimpleClient("localhost", 1, processManager, "test");
+		SimpleClient simpleClient = new SimpleClient("localhost", 1, 1000, "test");
 		Utility.sleepNoLog(1000, 0);
-		logger.info(processManager.getContext().getSockets());
 		simpleClient.tearDownClient();
 		Utility.sleepNoLog(1000, 0);
-		assertEquals(1, processManager.getContext().getSockets().size()); // one = PUB of process manager
-		processManager.tearDown(1000);
 	}
 }

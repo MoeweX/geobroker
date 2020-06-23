@@ -211,7 +211,7 @@ class TopicAndGeofenceMapperTest {
     fun randomTest() {
         val td = ClientDirectory()
 
-        mapper = TopicAndGeofenceMapper(Configuration(granularity = 10, messageProcessors = 1))
+        mapper = TopicAndGeofenceMapper(Configuration(granularity = 1, messageProcessors = 1))
 
         // tested area
         val testedArea = Geofence.circle(Location(10.0, 10.0), 2.0)
