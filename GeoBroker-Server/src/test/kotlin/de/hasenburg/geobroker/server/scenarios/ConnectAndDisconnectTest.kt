@@ -98,7 +98,6 @@ class ConnectAndDisconnectTest {
                 activeConnections.toLong(),
                 serverLogic.clientDirectory.numberOfClients.toLong())
         logger.info("{} out of {} clients were active, so everything fine", activeConnections, 10)
-        sleepNoLog(1000, 0)
 
         // tear down clients
         for (client in clients) {

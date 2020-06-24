@@ -29,7 +29,7 @@ private val logger = LogManager.getLogger()
 
 /**
  * The MultiFileClient is a command line application.
- * Run it with the command line argument -h (or without any arguments), to see available options.
+ * Run it with the command line argument --help to see available options.
  *
  * The purpose of the MultiFileClient is to process files output by the IoTDSG (https://github.com/MoeweX/IoTDSG) and
  * send corresponding messages to the configured GeoBroker server.

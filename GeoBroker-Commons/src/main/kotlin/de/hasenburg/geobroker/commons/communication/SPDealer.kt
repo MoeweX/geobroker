@@ -8,9 +8,11 @@ import org.apache.logging.log4j.LogManager
 import org.zeromq.SocketType
 import org.zeromq.ZContext
 import org.zeromq.ZMQ
-import org.zeromq.ZMQ.Socket
+import org.zeromq.ZMQ.*
 import org.zeromq.ZMsg
 import java.lang.RuntimeException
+import java.nio.channels.ClosedChannelException
+import java.nio.channels.ClosedSelectorException
 import kotlin.math.roundToInt
 
 private val logger = LogManager.getLogger()
@@ -59,24 +61,47 @@ class SPDealer(val ip: String = "localhost", val port: Int = 5559, val socketHWM
 
     // shutdown error handler and job
     private val eh = CoroutineExceptionHandler { _, e ->
-        logger.error("Unknown Exception, shutting down SPDealer", e)
-        shutdown()
+        if (inShutdown) {
+            // do nothing
+        } else {
+            logger.error("Unknown Exception, shutting down SPDealer", e)
+            shutdown()
+        }
     }
     private val job = GlobalScope.launch(eh) {
         launch(eh + poolToSent) { processToSendBlocking() }
         launch(eh + poolSendAndReceive) { sendAndReceiveBlocking() }
+        logger.trace("Started all blocking coroutines.")
     }
+
+    private val startup = System.currentTimeMillis()
+
     val isActive: Boolean
         get() = job.isActive
 
+    private var inShutdown = false
+
     fun shutdown() {
+        val sleepTime = 2000 - (System.currentTimeMillis() - startup)
+        if (sleepTime > 0) {
+            sleepNoLog(sleepTime, 0)
+        }
+        inShutdown = true
+
+        // Coroutines
         job.cancel()
-        zContext.destroy()
+        logger.trace("Finished teardown of coroutines")
+
+        // Thread Pools
         poolToSent.close()
         poolSendAndReceive.close()
+        logger.trace("Finished teardown of thread pools")
+
+        // Channel
         toSent.close()
         wasSent.close()
         wasReceived.close()
+        logger.trace("Finished teardown of channels")
         logger.info("Shutdown of SPDealer completed")
     }
 

@@ -10,6 +10,11 @@ import java.io.IOException
 
 private val logger = LogManager.getLogger()
 
+/**
+ * This is a command line application for the GeoBroker server.
+ * When you do not provide any command line arguments, GeoBroker is started with the default configuration.
+ * You can also provide a file path from which the configuration will be parsed.
+ */
 fun main(args: Array<String>) {
 
     // read in configuration

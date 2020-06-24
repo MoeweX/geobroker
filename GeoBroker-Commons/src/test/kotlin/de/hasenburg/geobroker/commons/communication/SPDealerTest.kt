@@ -1,5 +1,6 @@
 package de.hasenburg.geobroker.commons.communication
 
+import de.hasenburg.geobroker.commons.sleepNoLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -36,6 +37,12 @@ class SPDealerTest {
         assertTrue(spDealer.isActive)
         spDealer.shutdown()
         assertFalse(spDealer.isActive)
+    }
+
+    @Test
+    fun tearUpTearDown() {
+        val spDealer = SPDealer()
+        spDealer.shutdown()
     }
 
     /**
