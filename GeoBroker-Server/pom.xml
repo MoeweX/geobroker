@@ -29,7 +29,7 @@
                             <appendAssemblyId>false</appendAssemblyId>
                             <archive>
                                 <manifest>
-                                    <mainClass>de.hasenburg.geobroker.server.main.Server</mainClass>
+                                    <mainClass>de.hasenburg.geobroker.server.main.ServerKt</mainClass>
                                 </manifest>
                                 <manifestEntries>
                                     <Multi-Release>true</Multi-Release>
