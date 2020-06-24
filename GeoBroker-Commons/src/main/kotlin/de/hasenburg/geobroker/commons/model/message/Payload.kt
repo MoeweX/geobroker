@@ -1,6 +1,5 @@
 package de.hasenburg.geobroker.commons.model.message
 
-import de.hasenburg.geobroker.commons.model.disgb.BrokerInfo
 import de.hasenburg.geobroker.commons.model.spatial.Geofence
 import de.hasenburg.geobroker.commons.model.spatial.Location
 import kotlinx.serialization.*
@@ -23,7 +22,7 @@ sealed class Payload {
 
     @Serializable
     @SerialName("DISCONNECTPayload")
-    data class DISCONNECTPayload(val reasonCode: ReasonCode, val brokerInfo: BrokerInfo? = null) : Payload()
+    data class DISCONNECTPayload(val reasonCode: ReasonCode) : Payload()
 
     @Serializable
     @SerialName("PINGREQPayload")
@@ -57,35 +56,6 @@ sealed class Payload {
     @SerialName("PUBACKPayload")
     data class PUBACKPayload(val reasonCode: ReasonCode) : Payload()
 
-    @Serializable
-    @SerialName("BrokerForwardDisconnectPayload")
-    data class BrokerForwardDisconnectPayload(val clientIdentifier: String,
-                                              val disconnectPayload: DISCONNECTPayload) : Payload()
-
-    @Serializable
-    @SerialName("BrokerForwardPingreqPayload")
-    data class BrokerForwardPingreqPayload(val clientIdentifier: String,
-                                           val pingreqPayload: PINGREQPayload) : Payload()
-
-    /**
-     * [publisherLocation] is needed in case of matching at the subscriber
-     * [subscriberClientIdentifiers] is needed in case of matching at the publisher
-     */
-    @Serializable
-    @SerialName("BrokerForwardPublishPayload")
-    data class BrokerForwardPublishPayload(val publishPayload: PUBLISHPayload,
-                                           val publisherLocation: Location? = null,
-                                           val subscriberClientIdentifiers: List<String> = emptyList()) : Payload()
-
-    @Serializable
-    @SerialName("BrokerForwardSubscribePayload")
-    data class BrokerForwardSubscribePayload(val clientIdentifier: String,
-                                             val subscribePayload: SUBSCRIBEPayload) : Payload()
-
-    @Serializable
-    @SerialName("BrokerForwardUnsubscribePayload")
-    data class BrokerForwardUnsubscribePayload(val clientIdentifier: String,
-                                               val unsubscribePayload: UNSUBSCRIBEPayload) : Payload()
 }
 
 fun Payload.toZMsg(json: Json = Json(JsonConfiguration.Stable), clientIdentifier: String? = null): ZMsg {

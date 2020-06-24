@@ -1,37 +1,32 @@
 package de.hasenburg.geobroker.server.scenarios
 
 import de.hasenburg.geobroker.client.main.SimpleClient
-import de.hasenburg.geobroker.commons.*
-import de.hasenburg.geobroker.commons.communication.ZMQProcessManager
-import de.hasenburg.geobroker.commons.model.disgb.BrokerArea
+import de.hasenburg.geobroker.commons.model.message.Payload.*
 import de.hasenburg.geobroker.commons.model.message.ReasonCode
-import de.hasenburg.geobroker.commons.model.spatial.Geofence
 import de.hasenburg.geobroker.commons.model.spatial.Location
-import de.hasenburg.geobroker.server.main.server.DisGBSubscriberMatchingServerLogic
+import de.hasenburg.geobroker.commons.sleepNoLog
+import de.hasenburg.geobroker.server.main.readInternalConfiguration
+import de.hasenburg.geobroker.server.main.server.SingleGeoBrokerServerLogic
+import io.prometheus.client.CollectorRegistry
 import org.apache.logging.log4j.LogManager
 import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-
-import java.util.ArrayList
-import java.util.Random
-
-import de.hasenburg.geobroker.commons.model.message.Payload.*
-import de.hasenburg.geobroker.server.main.readInternalConfiguration
-import io.prometheus.client.CollectorRegistry
-import org.junit.Assert.*
+import java.util.*
 
 class ConnectAndDisconnectTest {
 
     private val logger = LogManager.getLogger()
-    private lateinit var serverLogic: DisGBSubscriberMatchingServerLogic
+    private lateinit var serverLogic: SingleGeoBrokerServerLogic
 
     @Before
     fun setUp() {
         logger.info("Running test setUp")
         CollectorRegistry.defaultRegistry.clear();
 
-        serverLogic = DisGBSubscriberMatchingServerLogic()
+        serverLogic = SingleGeoBrokerServerLogic()
         serverLogic.loadConfiguration(readInternalConfiguration("connect_and_disconnect.toml"))
         serverLogic.initializeFields()
         serverLogic.startServer()
@@ -104,31 +99,6 @@ class ConnectAndDisconnectTest {
             client.tearDownClient()
         }
 
-    }
-
-    @Test
-    fun testNotResponsibleClient() {
-        serverLogic.brokerAreaManager.updateOwnBrokerArea(BrokerArea(serverLogic.brokerAreaManager
-            .ownBrokerInfo,
-                Geofence.circle(Location(0.0, 0.0), 10.0)))
-
-        val client = SimpleClient("localhost", 5559)
-
-        // connect
-        client.send(CONNECTPayload(Location(30.0, 30.0)))
-        val payload = client.receiveWithTimeout(100)
-        logger.info("Client received response {}", payload)
-        if (payload is DISCONNECTPayload) {
-            assertEquals(ReasonCode.WrongBroker, payload.reasonCode)
-        } else {
-            fail("Wrong payload, received $payload")
-        }
-
-        // check whether client exists
-        assertEquals(0, serverLogic.clientDirectory.numberOfClients.toLong())
-
-        // check acknowledgements
-        client.tearDownClient()
     }
 
 }

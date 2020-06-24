@@ -1,13 +1,9 @@
 package de.hasenburg.geobroker.server.communication;
 
 import de.hasenburg.geobroker.commons.communication.ZMQProcessManager;
-import de.hasenburg.geobroker.commons.model.disgb.BrokerInfo;
-import de.hasenburg.geobroker.server.distribution.IDistributionLogic;
 import de.hasenburg.geobroker.server.matching.IMatchingLogic;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.util.List;
 
 public class ZMQProcessStarter {
 
@@ -22,26 +18,11 @@ public class ZMQProcessStarter {
 
 	public static ZMQProcess_MessageProcessor runZMQProcess_MessageProcessor(ZMQProcessManager processManager,
 																			 String brokerId, int number,
-																			 IMatchingLogic matchingLogic,
-																			 int numberOfBrokerCommunicators) {
+																			 IMatchingLogic matchingLogic) {
 		ZMQProcess_MessageProcessor zmqProcess = new ZMQProcess_MessageProcessor(brokerId,
 				number,
-				matchingLogic,
-				numberOfBrokerCommunicators);
+				matchingLogic);
 		processManager.submitZMQProcess(ZMQProcess_MessageProcessorKt.getMessageProcessorIdentity(brokerId, number),
-				zmqProcess);
-		return zmqProcess;
-	}
-
-	public static ZMQProcess_BrokerCommunicator runZMQProcess_BrokerCommunicator(ZMQProcessManager processManager,
-																				 String brokerId, int number,
-																				 IDistributionLogic distributionLogic,
-																				 List<BrokerInfo> otherBrokerInfos) {
-		ZMQProcess_BrokerCommunicator zmqProcess = new ZMQProcess_BrokerCommunicator(brokerId,
-				number,
-				distributionLogic,
-				otherBrokerInfos);
-		processManager.submitZMQProcess(ZMQProcess_BrokerCommunicator.getBrokerCommunicatorId(brokerId, number),
 				zmqProcess);
 		return zmqProcess;
 	}

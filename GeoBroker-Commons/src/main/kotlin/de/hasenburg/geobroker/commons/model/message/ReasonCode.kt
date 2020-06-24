@@ -14,6 +14,4 @@ enum class ReasonCode {
 
     // New Reason Codes
     LocationUpdated, //
-    WrongBroker, //
-    NoMatchingSubscribersButForwarded //  locally there are no subscribers, but others MIGHT have some
 }

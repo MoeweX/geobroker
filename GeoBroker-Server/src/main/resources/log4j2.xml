@@ -13,7 +13,7 @@
             <AppenderRef ref="Console"/>
             <AppenderRef ref="File"/>
         </Root>
-        <Logger name="de.hasenburg.geobroker.server.matching.DisGBAtSubscriberMatchingLogic" level="debug"
+        <Logger name="de.hasenburg.geobroker.server.matching.SingleGeoBrokerMatchingLogic" level="info"
                 additivity="false">
             <AppenderRef ref="Console"/>
             <AppenderRef ref="File"/>

@@ -6,11 +6,7 @@ granularity = 5
 messageProcessors = 1
 
     # server mode specific information (only one should be uncommented)
-#    [server.mode]
-#    name = "single"
-
     [server.mode]
-    name = "disgb_subscriberMatching"
-    brokerAreaFilePath = "src/test/resources/connect_and_disconnect.json"
-    brokerCommunicators = 1
+    name = "single"
+
 

@@ -48,8 +48,7 @@ public class SingleNoGeoServerLogic implements IServerLogic {
 			ZMQProcessStarter.runZMQProcess_MessageProcessor(processManager,
 					configuration.getBrokerId(),
 					number,
-					matchingLogic,
-					0);
+					matchingLogic);
 		}
 		logger.info("Started server successfully!");
 	}

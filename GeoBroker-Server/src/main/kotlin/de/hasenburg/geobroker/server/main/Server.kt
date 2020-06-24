@@ -48,14 +48,6 @@ fun main(args: Array<String>) {
             logger.info("GeoBroker is configured to run standalone")
             SingleGeoBrokerServerLogic()
         }
-        Mode.disgb_subscriberMatching -> {
-            logger.info("GeoBroker is configured to run geo-distributed (subscriber matching)")
-            DisGBSubscriberMatchingServerLogic()
-        }
-        Mode.disgb_publisherMatching -> {
-            logger.info("GeoBroker is configured to run geo-distributed (publisher matching)")
-            DisGBPublisherMatchingServerLogic()
-        }
         Mode.single_noGeo -> {
             logger.info("[OtherMode]: GeoBroker is configured to run without doing GeoChecks.")
             SingleNoGeoServerLogic()

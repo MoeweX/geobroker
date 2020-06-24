@@ -24,10 +24,6 @@ class ClientDirectory {
         return clients.containsKey(clientIdentifier)
     }
 
-    fun clientExistsAsRemoteClient(clientIdentifier: String): Boolean {
-        return clients[clientIdentifier]?.remote ?: false
-    }
-
     /**
      * Add a client to the directory, if it did not exist before.
      *
@@ -36,13 +32,13 @@ class ClientDirectory {
      * @param remote - whether the client is a remote client (connected to another broker)
      * @return true, if added
      */
-    fun addClient(clientIdentifier: String, initialLocation: Location?, remote: Boolean = false): Boolean {
-        logger.trace("Connecting client {}, is remote: {}", clientIdentifier, remote)
+    fun addClient(clientIdentifier: String, initialLocation: Location?): Boolean {
+        logger.trace("Connecting client {}, is remote: {}", clientIdentifier)
         if (clients.containsKey(clientIdentifier)) {
             logger.warn("Tried to add client {}, but already existed", clientIdentifier)
             return false
         }
-        clients[clientIdentifier] = Client(clientIdentifier, initialLocation, remote)
+        clients[clientIdentifier] = Client(clientIdentifier, initialLocation)
         return true
     }
 

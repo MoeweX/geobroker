@@ -4,9 +4,9 @@ package de.hasenburg.geobroker.server.communication
 
 import de.hasenburg.geobroker.commons.communication.ZMQControlUtility
 import de.hasenburg.geobroker.commons.communication.ZMQProcess
-import de.hasenburg.geobroker.server.matching.IMatchingLogic
 import de.hasenburg.geobroker.commons.model.message.Payload
 import de.hasenburg.geobroker.commons.model.message.toPayloadAndId
+import de.hasenburg.geobroker.server.matching.IMatchingLogic
 import io.prometheus.client.Gauge
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonConfiguration
@@ -15,7 +15,6 @@ import org.zeromq.SocketType
 import org.zeromq.ZContext
 import org.zeromq.ZMQ.Socket
 import org.zeromq.ZMsg
-
 import kotlin.system.exitProcess
 
 private val logger = LogManager.getLogger()
@@ -23,11 +22,9 @@ private val logger = LogManager.getLogger()
 /**
  * @param brokerId - identity should be the broker id this message processor is running on
  * @param number - incrementing number for this message processor (as there might be many), starts with 1
- * @param numberOfBrokerCommunicators - how many bc exist, can be 0
  */
 class ZMQProcess_MessageProcessor(private val brokerId: String, private val number: Int,
-                                  private val matchingLogic: IMatchingLogic,
-                                  private val numberOfBrokerCommunicators: Int) :
+                                  private val matchingLogic: IMatchingLogic) :
     ZMQProcess(getMessageProcessorIdentity(brokerId, number)) {
 
     // Prometheus Gauge
@@ -41,24 +38,14 @@ class ZMQProcess_MessageProcessor(private val brokerId: String, private val numb
 
     // socket index
     private val processorIndex = 0
-    private val brokerCommunicatorIndex = 1
 
     override fun bindAndConnectSockets(context: ZContext): List<Socket> {
-        val socketArray = arrayOfNulls<Socket>(2)
+        val socketArray = arrayOfNulls<Socket>(1)
 
         val processor = context.createSocket(SocketType.DEALER)
         processor.identity = identity.toByteArray()
         processor.connect("inproc://" + ZMQProcess_Server.getServerIdentity(brokerId))
         socketArray[processorIndex] = processor
-
-        val bc = context.createSocket(SocketType.PUSH)
-        // ok because processor and bc do not send both to this socket
-        bc.identity = identity.toByteArray()
-        for (i in 1..numberOfBrokerCommunicators) {
-            val brokerCommunicatorIdentity = ZMQProcess_BrokerCommunicator.getBrokerCommunicatorId(brokerId, i)
-            bc.connect("inproc://$brokerCommunicatorIdentity")
-        }
-        socketArray[brokerCommunicatorIndex] = bc
 
         // validate that we did not forget to set any sockets
         if (socketArray.any { it == null }) {
@@ -91,64 +78,32 @@ class ZMQProcess_MessageProcessor(private val brokerId: String, private val numb
 
         if (message != null) {
             val clientsSocket = sockets[processorIndex]
-            val brokersSocket = sockets[brokerCommunicatorIndex]
 
             // smart cast does not work here -> Payload defined in different module
             when (message.second) {
                 is Payload.CONNECTPayload -> matchingLogic.processCONNECT(message.first,
                         message.second as Payload.CONNECTPayload,
                         clientsSocket,
-                        brokersSocket,
                         json)
                 is Payload.DISCONNECTPayload -> matchingLogic.processDISCONNECT(message.first,
                         message.second as Payload.DISCONNECTPayload,
                         clientsSocket,
-                        brokersSocket,
                         json)
                 is Payload.PINGREQPayload -> matchingLogic.processPINGREQ(message.first,
                         message.second as Payload.PINGREQPayload,
                         clientsSocket,
-                        brokersSocket,
                         json)
                 is Payload.SUBSCRIBEPayload -> matchingLogic.processSUBSCRIBE(message.first,
                         message.second as Payload.SUBSCRIBEPayload,
                         clientsSocket,
-                        brokersSocket,
                         json)
                 is Payload.UNSUBSCRIBEPayload -> matchingLogic.processUNSUBSCRIBE(message.first,
                         message.second as Payload.UNSUBSCRIBEPayload,
                         clientsSocket,
-                        brokersSocket,
                         json)
                 is Payload.PUBLISHPayload -> matchingLogic.processPUBLISH(message.first,
                         message.second as Payload.PUBLISHPayload,
                         clientsSocket,
-                        brokersSocket,
-                        json)
-                is Payload.BrokerForwardDisconnectPayload -> matchingLogic.processBrokerForwardDisconnect(message.first,
-                        message.second as Payload.BrokerForwardDisconnectPayload,
-                        clientsSocket,
-                        brokersSocket,
-                        json)
-                is Payload.BrokerForwardPingreqPayload -> matchingLogic.processBrokerForwardPingreq(message.first,
-                        message.second as Payload.BrokerForwardPingreqPayload,
-                        clientsSocket,
-                        brokersSocket,
-                        json)
-                is Payload.BrokerForwardSubscribePayload -> matchingLogic.processBrokerForwardSubscribe(message.first,
-                        message.second as Payload.BrokerForwardSubscribePayload,
-                        clientsSocket,
-                        brokersSocket,
-                        json)
-                is Payload.BrokerForwardUnsubscribePayload -> matchingLogic.processBrokerForwardUnsubscribe(message.first,
-                        message.second as Payload.BrokerForwardUnsubscribePayload,
-                        clientsSocket,
-                        brokersSocket,
-                        json)
-                is Payload.BrokerForwardPublishPayload -> matchingLogic.processBrokerForwardPublish(message.first,
-                        message.second as Payload.BrokerForwardPublishPayload,
-                        clientsSocket,
-                        brokersSocket,
                         json)
                 is Payload.CONNACKPayload -> logger.warn("CONNACK messages are ignored by server")
                 is Payload.PINGRESPPayload -> logger.warn("PINGRESP messages are ignored by server")

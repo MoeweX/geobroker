@@ -21,19 +21,12 @@ data class Configuration(
         val prometheusPort: Int = -1,
 
         // server mode - general
-        val mode: Mode = Mode.single,
-
-        // server mode - disgb
-        // TODO replace with File similarly to logConfFile field
-        val brokerAreaFilePath: String = "defaultBrokerAreas.json",
-        val brokerCommunicators: Int = 1
+        val mode: Mode = Mode.single
 )
 
 @Suppress("EnumEntryName")
 enum class Mode {
     single,
-    disgb_subscriberMatching,
-    disgb_publisherMatching,
 
     // other modes (not intended for production use)
     single_noGeo
@@ -81,9 +74,6 @@ private fun parseToml(toml: Toml): Configuration { // server information
     // [sever.mode]
     val tomlServerMode: Toml? = tomlServer?.getTable("mode")
     val mode = tomlServerMode?.getMode("name") ?: c.mode
-    // disgb specific
-    val brokerAreaFilePath = tomlServerMode?.getString("brokerAreaFilePath") ?: c.brokerAreaFilePath
-    val brokerCommunicators = tomlServerMode?.getInt("brokerCommunicators") ?: c.brokerCommunicators
 
     // update configuration if required
     logConfFile?.run {
@@ -100,9 +90,7 @@ private fun parseToml(toml: Toml): Configuration { // server information
             messageProcessors,
             logConfFile,
             prometheusPort,
-            mode,
-            brokerAreaFilePath,
-            brokerCommunicators)
+            mode)
 }
 
 

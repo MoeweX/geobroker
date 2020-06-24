@@ -6,7 +6,7 @@
 
     <groupId>de.hasenburg</groupId>
     <artifactId>GeoBroker</artifactId>
-    <version>1.2</version>
+    <version>s.1.2</version>
     <packaging>pom</packaging>
 
     <modules>

@@ -3,7 +3,6 @@ package de.hasenburg.geobroker.server.storage.client
 import de.hasenburg.geobroker.commons.model.message.Topic
 import de.hasenburg.geobroker.commons.model.spatial.Geofence
 import de.hasenburg.geobroker.commons.model.spatial.Location
-import de.hasenburg.geobroker.server.matching.DisGBAtPublisherMatchingLogic
 import org.apache.commons.lang3.tuple.ImmutablePair
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
@@ -11,9 +10,8 @@ import java.util.concurrent.atomic.AtomicInteger
 /**
  * [clientIdentifier] must be unique
  * [location] might be null, if none has been supplied yet
- * [remote] indicates whether the client is connected to another broker, so far only needed for [DisGBAtPublisherMatchingLogic]
  */
-class Client(val clientIdentifier: String, location: Location?, val remote: Boolean = false) {
+class Client(val clientIdentifier: String, location: Location?) {
 
     var location: Location? = location
         private set // prevent to be set by other classes

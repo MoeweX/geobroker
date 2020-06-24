@@ -41,8 +41,8 @@ public class ZMQProcessManagerTest {
 		assertTrue(pm.getIncompleteZMQProcesses().isEmpty());
 
 		// start two processes
-		ZMQProcessStarter.runZMQProcess_MessageProcessor(pm, "test", 1, matchingLogic, 0);
-		ZMQProcessStarter.runZMQProcess_MessageProcessor(pm, "test", 2, matchingLogic, 0);
+		ZMQProcessStarter.runZMQProcess_MessageProcessor(pm, "test", 1, matchingLogic);
+		ZMQProcessStarter.runZMQProcess_MessageProcessor(pm, "test", 2, matchingLogic);
 		Utility.sleepNoLog(100, 0);
 		assertTrue(pm.getIncompleteZMQProcesses()
 					 .containsAll(Arrays.asList(ZMQProcess_MessageProcessorKt.getMessageProcessorIdentity("test", 1),

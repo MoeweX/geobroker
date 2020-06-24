@@ -41,20 +41,6 @@ class PayloadTest {
         transformAndCheck(payload)
     }
 
-
-    @Test
-    fun testBrokerForwardPublishPayload() {
-        val publisherMatchingPayload = BrokerForwardPublishPayload(PUBLISHPayload(Topic("data"),
-                Geofence.circle(Location.random(), 1.0),
-                "Some random content"), subscriberClientIdentifiers = listOf("Subscriber 1", "Subscriber 2"))
-        transformAndCheck(publisherMatchingPayload)
-
-        val subscriberMatchingPayload = BrokerForwardPublishPayload(PUBLISHPayload(Topic("data"),
-                Geofence.circle(Location.random(), 1.0),
-                "Some random content"), null)
-        transformAndCheck(subscriberMatchingPayload)
-    }
-
     private fun transformAndCheck(payload: Payload) {
         val message = payload.toZMsg()
         val payload2 = message.toPayload()

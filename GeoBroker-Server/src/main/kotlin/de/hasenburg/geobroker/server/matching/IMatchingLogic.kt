@@ -18,38 +18,17 @@ import org.zeromq.ZMQ.Socket
  */
 interface IMatchingLogic {
 
-    fun processCONNECT(clientIdentifier: String, payload: Payload.CONNECTPayload, clients: Socket, brokers: Socket,
-                       json: Json)
+    fun processCONNECT(clientIdentifier: String, payload: Payload.CONNECTPayload, clients: Socket, json: Json)
 
-    fun processDISCONNECT(clientIdentifier: String, payload: Payload.DISCONNECTPayload, clients: Socket,
-                          brokers: Socket, json: Json)
+    fun processDISCONNECT(clientIdentifier: String, payload: Payload.DISCONNECTPayload, clients: Socket, json: Json)
 
-    fun processPINGREQ(clientIdentifier: String, payload: Payload.PINGREQPayload, clients: Socket, brokers: Socket,
-                       json: Json)
+    fun processPINGREQ(clientIdentifier: String, payload: Payload.PINGREQPayload, clients: Socket, json: Json)
 
-    fun processSUBSCRIBE(clientIdentifier: String, payload: Payload.SUBSCRIBEPayload, clients: Socket, brokers: Socket,
-                         json: Json)
+    fun processSUBSCRIBE(clientIdentifier: String, payload: Payload.SUBSCRIBEPayload, clients: Socket, json: Json)
 
-    fun processUNSUBSCRIBE(clientIdentifier: String, payload: Payload.UNSUBSCRIBEPayload, clients: Socket,
-                           brokers: Socket, json: Json)
+    fun processUNSUBSCRIBE(clientIdentifier: String, payload: Payload.UNSUBSCRIBEPayload, clients: Socket, json: Json)
 
-    fun processPUBLISH(clientIdentifier: String, payload: Payload.PUBLISHPayload, clients: Socket, brokers: Socket,
-                       json: Json)
-
-    fun processBrokerForwardDisconnect(otherBrokerId: String, payload: Payload.BrokerForwardDisconnectPayload,
-                                       clients: Socket, brokers: Socket, json: Json)
-
-    fun processBrokerForwardPingreq(otherBrokerId: String, payload: Payload.BrokerForwardPingreqPayload,
-                                    clients: Socket, brokers: Socket, json: Json)
-
-    fun processBrokerForwardSubscribe(otherBrokerId: String, payload: Payload.BrokerForwardSubscribePayload,
-                                      clients: Socket, brokers: Socket, json: Json)
-
-    fun processBrokerForwardUnsubscribe(otherBrokerId: String, payload: Payload.BrokerForwardUnsubscribePayload,
-                                        clients: Socket, brokers: Socket, json: Json)
-
-    fun processBrokerForwardPublish(otherBrokerId: String, payload: Payload.BrokerForwardPublishPayload,
-                                    clients: Socket, brokers: Socket, json: Json)
+    fun processPUBLISH(clientIdentifier: String, payload: Payload.PUBLISHPayload, clients: Socket, json: Json)
 
 }
 
