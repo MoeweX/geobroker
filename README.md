@@ -32,22 +32,38 @@ Jonathan Hasenburg, David Bermbach. **Towards Geo-Context Aware IoT Data Distrib
 }
 ```
 
-## Quickstart
+## Running the precompiled software
 
-As this project contains multiple git submodules, one needs to run the following after cloning:
+- In the *release/* directory, you can find pre-compiled versions of the GeoBroker software and an example client
+- Instructions on how to use these Jars can be found in *release/README.md*.
+
+## Compiling and running the project from source
+
+As this project contains multiple git submodules, one needs to run the following after cloning/downloading the sources:
 ```
 git submodule init
 git submodule update
 ```
 
-To start the Server, run the main method of *de.hasenburg.geobroker.server.main.Server.java*. 
-A very simple client can be started by running *de.hasenburg.geobroker.client.main.SimpleClient.kt*.
+### Using IntelliJ
 
-## Usage of Code in Publications
+- Import the project, choose Maven as the external model
+- IntelliJ will automatically resolve all dependencies
+- To start GeoBroker, run the main method of *de.hasenburg.geobroker.server.main.Server.kt* (you can find this class
+ in the GeoBroker-Server directory)
+    - This will start the server with a default configuration
+    - You can provide your own configuration by providing the path to the configuration file as program argument
+- A very simple client can be started by running *de.hasenburg.geobroker.client.main.SimpleClient.kt* (you can find
+ this class in the GeoBroker-Client directory)
+    - This client connects to GeoBroker and executes a set of simple actions
+    
+### Using the command line
 
-The code found in this repository has been used for the experiments of the GeoBroker paper.
-- The original code for GEO experiments (geo-context information is used) is accessible in the GEO branch or release 
-[v1.0](https://github.com/MoeweX/geobroker/releases/tag/v1.0).
-- The original code for NoGEO experiments (geo-context information is not used) is accessible in the NoGEO branch or 
-release [v1.0-noContext](https://github.com/MoeweX/geobroker/releases/tag/v1.0-noContext).
+- Run `maven clean package` in the root directory
+- This will create two Jar files: *GeoBroker-Server/out/GeoBroker-Server.jar* and *GeoBroker-Client/out
+/MultiFileClient.jar*
+- Instructions on how to use these Jar files can be found in *release/README.md*
 
+### Using docker
+
+- Docker specific instructions can be found in *GeoBroker-Server/Docker.md* and *GeoBroker-Client/Docker.md*.
