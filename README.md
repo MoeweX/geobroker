@@ -1,9 +1,11 @@
-# GeoBroker
+# (Distributed) GeoBroker
 
 [![CodeFactor](https://www.codefactor.io/repository/github/moewex/geobroker/badge)](https://www.codefactor.io/repository/github/moewex/geobroker)
 
 In the Internet of Things, the relevance of data often depends on the geographic context of data producers and consumers. Today’s data distribution services, however, mostly focus on data content and not on geo-context, which could help to reduce the dissemination of excess data in many IoT scenarios. We propose to use the geo-context information associated with devices to control data distribution.
 For this, we designed GeoBroker, a data distribution service that uses the location of things, as well as geofences for messages and subscriptions, to control data distribution. This way, we enable new IoT application scenarios while also increasing overall system efficiency for scenarios where geo-contexts matter by delivering only relevant messages.
+
+GeoBroker can also be used for message routing in distributed environments. Here, DisGB (distributed GeoBroker) uses geo-context information to improve inter-broker routing. We describe the abstract concept in this [tech report](https://www.mcc.tu-berlin.de/fileadmin/fg344/publications/2020-fgfc.pdf).
 
 If you use this software in a publication, please cite it as:
 
