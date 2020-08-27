@@ -34,16 +34,29 @@ Jonathan Hasenburg, David Bermbach. **Towards Geo-Context Aware IoT Data Distrib
 }
 ```
 
-## Quickstart
+## Compiling and running the project from source
 
-As this project contains multiple git submodules, one needs to run the following after cloning:
+As this project contains multiple git submodules, one needs to run the following after cloning/downloading the sources:
 ```
 git submodule init
 git submodule update
 ```
 
-To start the Server, run the main method of *de.hasenburg.geobroker.server.main.Server.java*. 
-A very simple client can be started by running *de.hasenburg.geobroker.client.main.SimpleClient.kt*.
+### Using IntelliJ
+
+- Import the project, choose Maven as the external model
+- IntelliJ will automatically resolve all dependencies
+- To start GeoBroker, run the main method of *de.hasenburg.geobroker.server.main.Server.kt* (you can find this class
+ in the GeoBroker-Server directory)
+    - This will start the server with a default configuration
+    - You can provide your own configuration by providing the path to the configuration file as program argument
+- A very simple client can be started by running *de.hasenburg.geobroker.client.main.SimpleClient.kt* (you can find
+ this class in the GeoBroker-Client directory)
+    - This client connects to GeoBroker and executes a set of simple actions
+
+### Using docker
+
+- Docker specific instructions can be found in *GeoBroker-Server/Docker.md* and *GeoBroker-Client/Docker.md*.
 
 ## Usage of Code in Publications
 
