@@ -77,3 +77,5 @@ The code found in this repository has been used for the experiments of the GeoBr
 - The original code for NoGEO experiments (geo-context information is not used) is accessible in the NoGEO branch or 
 release [v1.0-noContext](https://github.com/MoeweX/geobroker/releases/tag/v1.0-noContext).
 
+The [fork](https://github.com/SoftwareImpacts/SIMPAC-2020-30) of the Software Impacts paper is identical with the contents of the [single](https://github.com/MoeweX/geobroker/tree/single) branch.
+
