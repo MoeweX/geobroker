@@ -6,7 +6,7 @@
 
     <groupId>de.hasenburg</groupId>
     <artifactId>GeoBroker</artifactId>
-    <version>1.2</version>
+    <version>1.2-simra</version>
     <packaging>pom</packaging>
 
     <modules>
