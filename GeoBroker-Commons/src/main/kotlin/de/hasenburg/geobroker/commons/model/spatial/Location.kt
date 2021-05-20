@@ -1,7 +1,11 @@
 package de.hasenburg.geobroker.commons.model.spatial
 
 import kotlinx.serialization.*
-import kotlinx.serialization.internal.StringDescriptor
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonConfiguration
 import org.apache.logging.log4j.LogManager
@@ -131,23 +135,20 @@ class Location(@Serializable(with = PointWKTSerializer::class) @SerialName("wkt"
  * Json Serialization
  ****************************************************************/
 
-fun Location.toJson(json: Json = Json(JsonConfiguration.Stable)): String {
-    return json.stringify(Location.serializer(), this)
+fun Location.toJson(): String {
+    return Json.encodeToString(Location.serializer(), this)
 }
 
-/**
- * @throws [kotlinx.serialization.json.JsonDecodingException]
- */
-fun String.toLocation(json: Json = Json(JsonConfiguration.Stable)): Location {
-    return json.parse(Location.serializer(), this)
+fun String.toLocation(): Location {
+    return Json.decodeFromString(Location.serializer(), this)
 }
 
 object PointWKTSerializer : KSerializer<Point> {
 
-    override val descriptor: SerialDescriptor = StringDescriptor
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("Location", PrimitiveKind.STRING)
 
-    override fun serialize(encoder: Encoder, obj: Point) {
-        encoder.encodeString(SpatialContextK.GEO.formats.wktWriter.toString(obj))
+    override fun serialize(encoder: Encoder, value: Point) {
+        encoder.encodeString(SpatialContextK.GEO.formats.wktWriter.toString(value))
     }
 
     override fun deserialize(decoder: Decoder): Point {

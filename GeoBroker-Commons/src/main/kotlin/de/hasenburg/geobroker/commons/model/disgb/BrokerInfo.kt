@@ -15,13 +15,13 @@ import kotlinx.serialization.json.JsonConfiguration
 @Serializable
 data class BrokerInfo(val brokerId: String, val ip: String, val port: Int)
 
-fun BrokerInfo.toJson(json: Json = Json(JsonConfiguration.Stable)) : String {
-    return json.stringify(BrokerInfo.serializer(), this)
+fun BrokerInfo.toJson() : String {
+    return Json.encodeToString(BrokerInfo.serializer(), this)
 }
 
 /**
  * @throws [kotlinx.serialization.json.JsonDecodingException]
  */
-fun String.toBrokerInfo(json: Json = Json(JsonConfiguration.Stable)) : BrokerInfo {
-    return json.parse(BrokerInfo.serializer(), this)
+fun String.toBrokerInfo() : BrokerInfo {
+    return Json.decodeFromString(BrokerInfo.serializer(), this)
 }

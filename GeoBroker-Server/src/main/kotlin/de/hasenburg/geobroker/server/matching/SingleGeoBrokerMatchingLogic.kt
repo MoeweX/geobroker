@@ -24,16 +24,15 @@ class SingleGeoBrokerMatchingLogic(private val clientDirectory: ClientDirectory,
     }
 
     override fun processCONNECT(clientIdentifier: String, payload: CONNECTPayload, clients: Socket,
-                                brokers: Socket, json: Json) {
+                                brokers: Socket) {
         val payloadResponse = connectClientAtLocalBroker(clientIdentifier, payload.location, clientDirectory, logger)
-        val response = payloadResponse.toZMsg(json, clientIdentifier)
+        val response = payloadResponse.toZMsg(clientIdentifier)
 
         sendResponse(response, clients)
     }
 
     override fun processDISCONNECT(clientIdentifier: String, payload: DISCONNECTPayload, clients: Socket,
-                                   brokers: Socket,
-                                   json: Json) {
+                                   brokers: Socket) {
         val success = clientDirectory.removeClient(clientIdentifier)
         if (!success) {
             logger.trace("Client for {} did not exist", clientIdentifier)
@@ -45,20 +44,18 @@ class SingleGeoBrokerMatchingLogic(private val clientDirectory: ClientDirectory,
     }
 
     override fun processPINGREQ(clientIdentifier: String, payload: PINGREQPayload, clients: Socket,
-                                brokers: Socket,
-                                json: Json) {
+                                brokers: Socket) {
         val reasonCode = updateClientLocationAtLocalBroker(clientIdentifier,
                 payload.location,
                 clientDirectory,
                 logger)
-        val response = PINGRESPPayload(reasonCode).toZMsg(json, clientIdentifier)
+        val response = PINGRESPPayload(reasonCode).toZMsg(clientIdentifier)
 
         sendResponse(response, clients)
     }
 
     override fun processSUBSCRIBE(clientIdentifier: String, payload: SUBSCRIBEPayload, clients: Socket,
-                                  brokers: Socket,
-                                  json: Json) {
+                                  brokers: Socket) {
         val reasonCode = subscribeAtLocalBroker(clientIdentifier,
                 clientDirectory,
                 topicAndGeofenceMapper,
@@ -66,26 +63,26 @@ class SingleGeoBrokerMatchingLogic(private val clientDirectory: ClientDirectory,
                 payload.geofence,
                 logger)
 
-        val response = SUBACKPayload(reasonCode).toZMsg(json, clientIdentifier)
+        val response = SUBACKPayload(reasonCode).toZMsg(clientIdentifier)
 
         sendResponse(response, clients)
     }
 
     override fun processUNSUBSCRIBE(clientIdentifier: String, payload: UNSUBSCRIBEPayload, clients: Socket,
-                                    brokers: Socket, json: Json) {
+                                    brokers: Socket) {
         val reasonCode = unsubscribeAtLocalBroker(clientIdentifier,
                 clientDirectory,
                 topicAndGeofenceMapper,
                 payload.topic,
                 logger)
 
-        val response = UNSUBACKPayload(reasonCode).toZMsg(json, clientIdentifier)
+        val response = UNSUBACKPayload(reasonCode).toZMsg(clientIdentifier)
 
         sendResponse(response, clients)
     }
 
     override fun processPUBLISH(clientIdentifier: String, payload: PUBLISHPayload, clients: Socket,
-                                brokers: Socket, json: Json) {
+                                brokers: Socket) {
 
         val reasonCode: ReasonCode
         val publisherLocation = clientDirectory.getClientLocation(clientIdentifier)
@@ -99,12 +96,11 @@ class SingleGeoBrokerMatchingLogic(private val clientDirectory: ClientDirectory,
                     clientDirectory,
                     topicAndGeofenceMapper,
                     clients,
-                    logger,
-                    json)
+                    logger)
         }
 
         // send response to publisher
-        val response = PUBACKPayload(reasonCode).toZMsg(json, clientIdentifier)
+        val response = PUBACKPayload(reasonCode).toZMsg(clientIdentifier)
         sendResponse(response, clients)
     }
 
@@ -114,28 +110,28 @@ class SingleGeoBrokerMatchingLogic(private val clientDirectory: ClientDirectory,
 
     override fun processBrokerForwardDisconnect(otherBrokerId: String,
                                                 payload: BrokerForwardDisconnectPayload, clients: Socket,
-                                                brokers: Socket, json: Json) {
+                                                brokers: Socket) {
         logger.warn("Unsupported operation, message is discarded")
     }
 
     override fun processBrokerForwardPingreq(otherBrokerId: String, payload: BrokerForwardPingreqPayload,
-                                             clients: Socket, brokers: Socket, json: Json) {
+                                             clients: Socket, brokers: Socket) {
         logger.warn("Unsupported operation, message is discarded")
     }
 
     override fun processBrokerForwardSubscribe(otherBrokerId: String, payload: BrokerForwardSubscribePayload,
-                                               clients: Socket, brokers: Socket, json: Json) {
+                                               clients: Socket, brokers: Socket) {
         logger.warn("Unsupported operation, message is discarded")
     }
 
     override fun processBrokerForwardUnsubscribe(otherBrokerId: String,
                                                  payload: BrokerForwardUnsubscribePayload, clients: Socket,
-                                                 brokers: Socket, json: Json) {
+                                                 brokers: Socket) {
         logger.warn("Unsupported operation, message is discarded")
     }
 
     override fun processBrokerForwardPublish(otherBrokerId: String, payload: BrokerForwardPublishPayload,
-                                             clients: Socket, brokers: Socket, json: Json) {
+                                             clients: Socket, brokers: Socket) {
         logger.warn("Unsupported operation, message is discarded")
     }
 }

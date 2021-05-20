@@ -90,7 +90,6 @@ suspend fun writeChannelInputToFileBlocking(
         channel: ReceiveChannel<ZMsgTP>,
         output: File) = coroutineScope {
 
-    val json = Json(JsonConfiguration.Stable)
     logger.info("Writing channel content to $output")
     val writer = output.bufferedWriter()
     writer.write("timestamp;msg\n")
@@ -134,12 +133,11 @@ private suspend fun processFile(startTime: Long, toSent: SendChannel<ZMsg>, file
                                 pbStep: SendChannel<Long>) {
     val clientId = file.nameWithoutExtension
     val lines = file.readLines()
-    val json = Json(JsonConfiguration.Stable)
 
     pbAddToMax.send((lines.size - 1).toLong())
 
     // send a connect message
-    toSent.send(Payload.CONNECTPayload(null).toZMsg(json, clientId))
+    toSent.send(Payload.CONNECTPayload(null).toZMsg(clientId))
     logger.debug("[$clientId] Sent connect")
 
     for ((i, line) in lines.withIndex()) {
@@ -161,7 +159,7 @@ private suspend fun processFile(startTime: Long, toSent: SendChannel<ZMsg>, file
                 logger.warn("[$clientId] We are ${behindSchedule}ms behind schedule with ${split[3]}!")
             }
             // send if valid line
-            createZMsg(clientId, i, split, json)?.let { toSent.send(it) } ?: logger.warn("Empty ZMsg for $line")
+            createZMsg(clientId, i, split)?.let { toSent.send(it) } ?: logger.warn("Empty ZMsg for $line")
         } catch (e: NumberFormatException) {
             logger.warn("$line is not a valid line")
         }
@@ -172,12 +170,12 @@ private suspend fun processFile(startTime: Long, toSent: SendChannel<ZMsg>, file
 
     // disconnect
     delay(5000)
-    toSent.send(Payload.DISCONNECTPayload(ReasonCode.NormalDisconnection).toZMsg(json, clientId))
+    toSent.send(Payload.DISCONNECTPayload(ReasonCode.NormalDisconnection).toZMsg(clientId))
     logger.debug("[$clientId] Sent disconnect")
     delay(5000)
 }
 
-private fun createZMsg(clientId: String, messageNumber: Int, split: List<String>, json: Json): ZMsg? {
+private fun createZMsg(clientId: String, messageNumber: Int, split: List<String>): ZMsg? {
     try {
         val msg: ZMsg
 
@@ -190,11 +188,11 @@ private fun createZMsg(clientId: String, messageNumber: Int, split: List<String>
         when (messageType) {
             "ping" -> {
                 logger.trace("Sending ping message")
-                msg = PINGREQPayload(Location(lat, lon)).toZMsg(json, clientId)
+                msg = PINGREQPayload(Location(lat, lon)).toZMsg(clientId)
             }
             "subscribe" -> {
                 logger.trace("Sending subscribe message")
-                msg = SUBSCRIBEPayload(Topic(topic), Geofence.fromWkt(geofence)).toZMsg(json, clientId)
+                msg = SUBSCRIBEPayload(Topic(topic), Geofence.fromWkt(geofence)).toZMsg(clientId)
             }
             "publish" -> {
                 logger.trace("Sending publish message")
@@ -203,7 +201,7 @@ private fun createZMsg(clientId: String, messageNumber: Int, split: List<String>
                         generatePayload(clientId,
                                 messageNumber,
                                 topic,
-                                Integer.parseInt(split[6]))).toZMsg(json, clientId)
+                                Integer.parseInt(split[6]))).toZMsg(clientId)
             }
             else -> return null
         }

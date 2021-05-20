@@ -25,13 +25,13 @@ data class BrokerArea(val responsibleBroker: BrokerInfo, val coveredArea: Geofen
 
 }
 
-fun BrokerArea.toJson(json: Json = Json(JsonConfiguration.Stable)): String {
-    return json.stringify(BrokerArea.serializer(), this)
+fun BrokerArea.toJson(): String {
+    return Json.encodeToString(BrokerArea.serializer(), this)
 }
 
 /**
  * @throws [kotlinx.serialization.json.JsonDecodingException]
  */
-fun String.toBrokerArea(json: Json = Json(JsonConfiguration.Stable)): BrokerArea {
-    return json.parse(BrokerArea.serializer(), this)
+fun String.toBrokerArea(): BrokerArea {
+    return Json.decodeFromString(BrokerArea.serializer(), this)
 }

@@ -38,10 +38,9 @@ class LocationTest {
 
     @Test
     fun toAndFromJsonN() {
-        val json = Json(JsonConfiguration.Stable)
         measureTimeMillis {
             for (i in 0..n) {
-                Assert.assertEquals(location, location.toJson(json).toLocation(json))
+                Assert.assertEquals(location, location.toJson().toLocation())
             }
         }.also {
             logger.info("Created and read {} locations in {}ms", n, it)

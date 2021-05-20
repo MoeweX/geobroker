@@ -18,8 +18,8 @@
     </modules>
 
     <properties>
-        <kotlin.version>1.3.61</kotlin.version>
-        <serialization.version>0.14.0</serialization.version>
+        <kotlin.version>1.5.0</kotlin.version>
+        <serialization.version>1.2.1</serialization.version>
         <kotlin.compiler.jvmTarget>11</kotlin.compiler.jvmTarget>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
@@ -132,7 +132,7 @@
         </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlinx</groupId>
-            <artifactId>kotlinx-serialization-runtime</artifactId>
+            <artifactId>kotlinx-serialization-json</artifactId>
             <version>${serialization.version}</version>
         </dependency>
         <!-- End Kotlin -->
