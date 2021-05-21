@@ -18,20 +18,22 @@ import java.util.Random
 
 import de.hasenburg.geobroker.commons.model.message.Payload.*
 import de.hasenburg.geobroker.server.main.readInternalConfiguration
+import de.hasenburg.geobroker.server.main.server.SingleGeoBrokerServerLogic
 import io.prometheus.client.CollectorRegistry
 import org.junit.Assert.*
+import org.junit.Ignore
 
 class ConnectAndDisconnectTest {
 
     private val logger = LogManager.getLogger()
-    private lateinit var serverLogic: DisGBSubscriberMatchingServerLogic
+    private lateinit var serverLogic: SingleGeoBrokerServerLogic
 
     @Before
     fun setUp() {
         logger.info("Running test setUp")
         CollectorRegistry.defaultRegistry.clear();
 
-        serverLogic = DisGBSubscriberMatchingServerLogic()
+        serverLogic = SingleGeoBrokerServerLogic()
         serverLogic.loadConfiguration(readInternalConfiguration("connect_and_disconnect.toml"))
         serverLogic.initializeFields()
         serverLogic.startServer()
@@ -106,11 +108,13 @@ class ConnectAndDisconnectTest {
 
     }
 
+    @Ignore
     @Test
     fun testNotResponsibleClient() {
-        serverLogic.brokerAreaManager.updateOwnBrokerArea(BrokerArea(serverLogic.brokerAreaManager
-            .ownBrokerInfo,
-                Geofence.circle(Location(0.0, 0.0), 10.0)))
+        TODO("REQUIRES DisGBSubscriberMatchingServerLogic")
+//        serverLogic.brokerAreaManager.updateOwnBrokerArea(BrokerArea(serverLogic.brokerAreaManager
+//            .ownBrokerInfo,
+//                Geofence.circle(Location(0.0, 0.0), 10.0)))
 
         val client = SimpleClient("localhost", 5559)
 

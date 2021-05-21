@@ -20,6 +20,7 @@ import org.apache.logging.log4j.LogManager
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Test
 
 private var logger = LogManager.getLogger()
@@ -117,6 +118,7 @@ class DisGBScenarioRuns {
         assertTrue(mg3.contains(cl3))
     }
 
+    @Ignore
     @Test
     fun subscriberMatchingScenario() {
         val paris = DisGBSubscriberMatchingServerLogic()
@@ -205,6 +207,7 @@ class DisGBScenarioRuns {
         assertEquals(0, berlinCD.numberOfClients)
     }
 
+    @Ignore
     @Test
     fun publisherMatchingScenario() {
         val paris = DisGBPublisherMatchingServerLogic()
