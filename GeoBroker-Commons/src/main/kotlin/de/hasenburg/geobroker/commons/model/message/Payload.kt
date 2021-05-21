@@ -88,27 +88,27 @@ sealed class Payload {
                                                val unsubscribePayload: UNSUBSCRIBEPayload) : Payload()
 }
 
-fun Payload.toZMsg(json: Json = Json(JsonConfiguration.Stable), clientIdentifier: String? = null): ZMsg {
+fun Payload.toZMsg(clientIdentifier: String? = null): ZMsg {
     return if (clientIdentifier != null) {
-        ZMsg.newStringMsg(clientIdentifier, json.stringify(Payload.serializer(), this))
+        ZMsg.newStringMsg(clientIdentifier, Json.encodeToString(Payload.serializer(), this))
     } else {
-        ZMsg.newStringMsg(json.stringify(Payload.serializer(), this))
+        ZMsg.newStringMsg(Json.encodeToString(Payload.serializer(), this))
     }
 }
 
-fun ZMsg.toPayload(json: Json = Json(JsonConfiguration.Stable)): Payload? {
+fun ZMsg.toPayload(): Payload? {
     return try {
-        json.parse(Payload.serializer(), this.popString().also { destroy() })
+        Json.decodeFromString(Payload.serializer(), this.popString().also { destroy() })
     } catch (e: SerializationException) {
         logger.warn("Could not create Payload for received ZMsg", e)
         null
     }
 }
 
-fun ZMsg.toPayloadAndId(json: Json = Json(JsonConfiguration.Stable)): Pair<String, Payload>? {
+fun ZMsg.toPayloadAndId(): Pair<String, Payload>? {
     return try {
         val clientIdentifier = this.popString()
-        val payload = this.toPayload(json)!!
+        val payload = this.toPayload()!!
         Pair(clientIdentifier, payload)
     } catch (e: Exception) {
         logger.error("Could not create payload and id from ZMsg", e)

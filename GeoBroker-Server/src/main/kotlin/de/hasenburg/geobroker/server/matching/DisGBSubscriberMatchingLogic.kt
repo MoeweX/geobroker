@@ -28,20 +28,20 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
     }
 
     override fun processCONNECT(clientIdentifier: String, payload: CONNECTPayload, clients: Socket,
-                                brokers: Socket, json: Json) {
+                                brokers: Socket) {
 
-        if (!weAreResponsible(clientIdentifier, payload.location, clients, json)) {
+        if (!weAreResponsible(clientIdentifier, payload.location, clients)) {
             return  // we are not responsible, client has been notified
         }
 
         val payloadResponse = connectClientAtLocalBroker(clientIdentifier, payload.location, clientDirectory, logger)
-        val response = payloadResponse.toZMsg(json, clientIdentifier)
+        val response = payloadResponse.toZMsg(clientIdentifier)
 
         sendResponse(response, clients)
     }
 
     override fun processDISCONNECT(clientIdentifier: String, payload: DISCONNECTPayload, clients: Socket,
-                                   brokers: Socket, json: Json) {
+                                   brokers: Socket) {
 
         val success = clientDirectory.removeClient(clientIdentifier)
         if (!success) {
@@ -54,10 +54,10 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
     }
 
     override fun processPINGREQ(clientIdentifier: String, payload: PINGREQPayload, clients: Socket,
-                                brokers: Socket, json: Json) {
+                                brokers: Socket) {
 
         // check whether client has moved to another broker area
-        if (!weAreResponsible(clientIdentifier, payload.location, clients, json)) {
+        if (!weAreResponsible(clientIdentifier, payload.location, clients)) {
             return  // we are not responsible, client has been notified
         }
 
@@ -66,13 +66,13 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
                 clientDirectory,
                 logger)
 
-        val response = PINGRESPPayload(reasonCode).toZMsg(json, clientIdentifier)
+        val response = PINGRESPPayload(reasonCode).toZMsg(clientIdentifier)
 
         sendResponse(response, clients)
     }
 
     override fun processSUBSCRIBE(clientIdentifier: String, payload: SUBSCRIBEPayload, clients: Socket,
-                                  brokers: Socket, json: Json) {
+                                  brokers: Socket) {
 
         val reasonCode = subscribeAtLocalBroker(clientIdentifier,
                 clientDirectory,
@@ -81,13 +81,13 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
                 payload.geofence,
                 logger)
 
-        val response = SUBACKPayload(reasonCode).toZMsg(json, clientIdentifier)
+        val response = SUBACKPayload(reasonCode).toZMsg(clientIdentifier)
 
         sendResponse(response, clients)
     }
 
     override fun processUNSUBSCRIBE(clientIdentifier: String, payload: UNSUBSCRIBEPayload, clients: Socket,
-                                    brokers: Socket, json: Json) {
+                                    brokers: Socket) {
 
         val reasonCode = unsubscribeAtLocalBroker(clientIdentifier,
                 clientDirectory,
@@ -95,13 +95,13 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
                 payload.topic,
                 logger)
 
-        val response = UNSUBACKPayload(reasonCode).toZMsg(json, clientIdentifier)
+        val response = UNSUBACKPayload(reasonCode).toZMsg(clientIdentifier)
 
         sendResponse(response, clients)
     }
 
     override fun processPUBLISH(clientIdentifier: String, payload: PUBLISHPayload, clients: Socket,
-                                brokers: Socket, json: Json) {
+                                brokers: Socket) {
 
         val reasonCode: ReasonCode
         val publisherLocation = clientDirectory.getClientLocation(clientIdentifier)
@@ -118,7 +118,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
                         otherBroker.brokerId,
                         clientIdentifier)
                 // send message to BrokerCommunicator who takes care of the rest
-                BrokerForwardPublishPayload(payload, publisherLocation).toZMsg(json, otherBroker.brokerId).send(brokers)
+                BrokerForwardPublishPayload(payload, publisherLocation).toZMsg(otherBroker.brokerId).send(brokers)
 
             }
 
@@ -130,8 +130,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
                         clientDirectory,
                         topicAndGeofenceMapper,
                         clients,
-                        logger,
-                        json)
+                        logger)
             }
 
             reasonCode = if (otherBrokers.size > 0 && ourReasonCode == ReasonCode.NoMatchingSubscribers) {
@@ -145,7 +144,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
         }
 
         // send response to publisher
-        val response = PUBACKPayload(reasonCode).toZMsg(json, clientIdentifier)
+        val response = PUBACKPayload(reasonCode).toZMsg(clientIdentifier)
         logger.trace("Sending response with reason code $reasonCode")
         sendResponse(response, clients)
     }
@@ -155,23 +154,23 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
      ****************************************************************/
 
     override fun processBrokerForwardDisconnect(otherBrokerId: String, payload: BrokerForwardDisconnectPayload,
-                                                clients: Socket, brokers: Socket, json: Json) {
+                                                clients: Socket, brokers: Socket) {
         logger.warn("Unsupported operation, message is discarded")
     }
 
     override fun processBrokerForwardPingreq(otherBrokerId: String, payload: BrokerForwardPingreqPayload,
-                                             clients: Socket, brokers: Socket, json: Json) {
+                                             clients: Socket, brokers: Socket) {
         logger.warn("Unsupported operation, message is discarded")
     }
 
     override fun processBrokerForwardSubscribe(otherBrokerId: String, payload: BrokerForwardSubscribePayload,
-                                               clients: Socket, brokers: Socket, json: Json) {
+                                               clients: Socket, brokers: Socket) {
         logger.warn("Unsupported operation, message is discarded")
     }
 
     override fun processBrokerForwardUnsubscribe(otherBrokerId: String,
                                                  payload: BrokerForwardUnsubscribePayload, clients: Socket,
-                                                 brokers: Socket, json: Json) {
+                                                 brokers: Socket) {
         logger.warn("Unsupported operation, message is discarded")
     }
 
@@ -182,7 +181,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
      * to the original client.
      */
     override fun processBrokerForwardPublish(otherBrokerId: String, payload: BrokerForwardPublishPayload,
-                                             clients: Socket, brokers: Socket, json: Json) {
+                                             clients: Socket, brokers: Socket) {
 
         // the id is determined by ZeroMQ based on the first frame, so here it is the id of the forwarding broker
         logger.debug("Processing BrokerForwardPublish from broker {}, message is {}",
@@ -196,8 +195,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
                     clientDirectory,
                     topicAndGeofenceMapper,
                     clients,
-                    logger,
-                    json)
+                    logger)
         } else {
             ReasonCode.ProtocolError // the publisher location was missing, so cannot match
         }
@@ -206,7 +204,7 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
         // with the response that we have generated anyways (needs to go via the clients socket as response has to
         // go out of the ZMQProcess_Server
         logger.trace("Sending response with reason code $reasonCode")
-        val response = PUBACKPayload(reasonCode).toZMsg(json, otherBrokerId)
+        val response = PUBACKPayload(reasonCode).toZMsg(otherBrokerId)
         sendResponse(response, clients)
     }
 
@@ -223,14 +221,13 @@ class DisGBAtSubscriberMatchingLogic(private val clientDirectory: ClientDirector
      *
      * @return true, if this broker is responsible, otherwise false
      */
-    private fun weAreResponsible(clientIdentifier: String, clientLocation: Location?, clients: Socket,
-                                 json: Json): Boolean {
+    private fun weAreResponsible(clientIdentifier: String, clientLocation: Location?, clients: Socket): Boolean {
 
         if (!brokerAreaManager.checkIfOurAreaContainsLocation(clientLocation)) {
             // get responsible broker
             val repBroker = brokerAreaManager.getOtherBrokerContainingLocation(clientLocation)
 
-            val response = DISCONNECTPayload(ReasonCode.WrongBroker, repBroker).toZMsg(json, clientIdentifier)
+            val response = DISCONNECTPayload(ReasonCode.WrongBroker, repBroker).toZMsg(clientIdentifier)
             logger.debug("Not responsible for client {}, responsible broker is {}", clientIdentifier, repBroker)
 
             sendResponse(response, clients)

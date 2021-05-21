@@ -17,7 +17,7 @@
             <AppenderRef ref="Console"/>
             <AppenderRef ref="File"/>
         </Logger>
-        <Logger name="de.hasenburg.geobroker.server.matching.DisGBSubscriberMatchingLogicKt" level="trace"
+        <Logger name="de.hasenburg.geobroker.server.matching.DisGBSubscriberMatchingLogicKt" level="debug"
                 additivity="false">
             <AppenderRef ref="Console"/>
             <AppenderRef ref="File"/>

@@ -5,7 +5,6 @@ import de.hasenburg.geobroker.commons.model.spatial.Geofence
 import de.hasenburg.geobroker.commons.model.spatial.Location
 import de.hasenburg.geobroker.server.storage.TopicAndGeofenceMapper
 import de.hasenburg.geobroker.server.storage.client.ClientDirectory
-import kotlinx.serialization.json.Json
 import org.apache.commons.lang3.tuple.ImmutablePair
 import org.apache.logging.log4j.Logger
 import org.zeromq.ZMQ.Socket
@@ -18,38 +17,34 @@ import org.zeromq.ZMQ.Socket
  */
 interface IMatchingLogic {
 
-    fun processCONNECT(clientIdentifier: String, payload: Payload.CONNECTPayload, clients: Socket, brokers: Socket,
-                       json: Json)
+    fun processCONNECT(clientIdentifier: String, payload: Payload.CONNECTPayload, clients: Socket, brokers: Socket)
 
     fun processDISCONNECT(clientIdentifier: String, payload: Payload.DISCONNECTPayload, clients: Socket,
-                          brokers: Socket, json: Json)
+                          brokers: Socket)
 
-    fun processPINGREQ(clientIdentifier: String, payload: Payload.PINGREQPayload, clients: Socket, brokers: Socket,
-                       json: Json)
+    fun processPINGREQ(clientIdentifier: String, payload: Payload.PINGREQPayload, clients: Socket, brokers: Socket)
 
-    fun processSUBSCRIBE(clientIdentifier: String, payload: Payload.SUBSCRIBEPayload, clients: Socket, brokers: Socket,
-                         json: Json)
+    fun processSUBSCRIBE(clientIdentifier: String, payload: Payload.SUBSCRIBEPayload, clients: Socket, brokers: Socket)
 
     fun processUNSUBSCRIBE(clientIdentifier: String, payload: Payload.UNSUBSCRIBEPayload, clients: Socket,
-                           brokers: Socket, json: Json)
+                           brokers: Socket)
 
-    fun processPUBLISH(clientIdentifier: String, payload: Payload.PUBLISHPayload, clients: Socket, brokers: Socket,
-                       json: Json)
+    fun processPUBLISH(clientIdentifier: String, payload: Payload.PUBLISHPayload, clients: Socket, brokers: Socket)
 
     fun processBrokerForwardDisconnect(otherBrokerId: String, payload: Payload.BrokerForwardDisconnectPayload,
-                                       clients: Socket, brokers: Socket, json: Json)
+                                       clients: Socket, brokers: Socket)
 
     fun processBrokerForwardPingreq(otherBrokerId: String, payload: Payload.BrokerForwardPingreqPayload,
-                                    clients: Socket, brokers: Socket, json: Json)
+                                    clients: Socket, brokers: Socket)
 
     fun processBrokerForwardSubscribe(otherBrokerId: String, payload: Payload.BrokerForwardSubscribePayload,
-                                      clients: Socket, brokers: Socket, json: Json)
+                                      clients: Socket, brokers: Socket)
 
     fun processBrokerForwardUnsubscribe(otherBrokerId: String, payload: Payload.BrokerForwardUnsubscribePayload,
-                                        clients: Socket, brokers: Socket, json: Json)
+                                        clients: Socket, brokers: Socket)
 
     fun processBrokerForwardPublish(otherBrokerId: String, payload: Payload.BrokerForwardPublishPayload,
-                                    clients: Socket, brokers: Socket, json: Json)
+                                    clients: Socket, brokers: Socket)
 
 }
 
@@ -142,7 +137,7 @@ fun unsubscribeAtLocalBroker(clientIdentifier: String,
  */
 fun publishMessageToLocalClients(publisherLocation: Location, publishPayload: Payload.PUBLISHPayload,
                                  clientDirectory: ClientDirectory, topicAndGeofenceMapper: TopicAndGeofenceMapper,
-                                 clients: Socket, logger: Logger, json: Json): ReasonCode {
+                                 clients: Socket, logger: Logger): ReasonCode {
 
     logger.debug("Publishing topic {} to all subscribers", publishPayload.topic)
 
@@ -160,7 +155,7 @@ fun publishMessageToLocalClients(publisherLocation: Location, publishPayload: Pa
     for (subscriptionId in subscriptionIds) {
         val subscriberClientIdentifier = subscriptionId.left
         logger.debug("Client {} is a subscriber", subscriberClientIdentifier)
-        val toPublish = publishPayload.toZMsg(json, subscriberClientIdentifier)
+        val toPublish = publishPayload.toZMsg(subscriberClientIdentifier)
         logger.trace("Publishing $toPublish")
         toPublish.send(clients)
     }

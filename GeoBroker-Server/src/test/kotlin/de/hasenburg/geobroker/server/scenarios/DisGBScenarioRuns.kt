@@ -20,6 +20,7 @@ import org.apache.logging.log4j.LogManager
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Test
 
 private var logger = LogManager.getLogger()
@@ -495,7 +496,7 @@ class DisGBScenarioRuns {
     private fun sendCONNECT(client: SimpleClient, l: Location, disconnect: Boolean = false) {
 
         client.send(CONNECTPayload(l))
-        val responsePayload = client.receiveWithTimeout(1000)
+        val responsePayload = client.receiveWithTimeout(10000)
 
         if (!disconnect) {
             assertEquals(CONNACKPayload(ReasonCode.Success), responsePayload)

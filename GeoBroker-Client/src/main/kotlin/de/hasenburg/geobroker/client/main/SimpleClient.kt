@@ -26,7 +26,6 @@ private val logger = LogManager.getLogger()
 class SimpleClient(ip: String, port: Int, socketHWM: Int = 1000, val identity: String = "SimpleClient-" + System.nanoTime()) {
 
     private val spDealer = SPDealer(ip, port, socketHWM)
-    private val json = Json(JsonConfiguration.Stable)
 
     fun tearDownClient() {
         if (spDealer.isActive) {
@@ -39,7 +38,7 @@ class SimpleClient(ip: String, port: Int, socketHWM: Int = 1000, val identity: S
      * Returns true, if successful, otherwise false.
      */
     fun send(payload: Payload): Boolean {
-        val zMsg = payload.toZMsg(json, clientIdentifier = identity)
+        val zMsg = payload.toZMsg(clientIdentifier = identity)
         return spDealer.toSent.offer(zMsg)
     }
 
@@ -50,7 +49,7 @@ class SimpleClient(ip: String, port: Int, socketHWM: Int = 1000, val identity: S
     fun receive(): Payload {
         return runBlocking {
             val zMsgTP = spDealer.wasReceived.receive()
-            zMsgTP.msg.toPayloadAndId(json)!!.second
+            zMsgTP.msg.toPayloadAndId()!!.second
         }
     }
 
@@ -62,7 +61,7 @@ class SimpleClient(ip: String, port: Int, socketHWM: Int = 1000, val identity: S
         return runBlocking {
             withTimeoutOrNull(timeout.toLong()) {
                 val zMsgTP = spDealer.wasReceived.receive()
-                zMsgTP.msg.toPayloadAndId(json)!!.second
+                zMsgTP.msg.toPayloadAndId()!!.second
             }
         }
     }

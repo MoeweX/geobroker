@@ -3,7 +3,11 @@ package de.hasenburg.geobroker.commons.model.spatial
 import de.hasenburg.geobroker.commons.exceptions.RuntimeShapeException
 import de.hasenburg.geobroker.commons.model.spatial.SpatialContextK.GEO
 import kotlinx.serialization.*
-import kotlinx.serialization.internal.StringDescriptor
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonConfiguration
 import org.apache.logging.log4j.LogManager
@@ -153,19 +157,19 @@ class Geofence(@Serializable(with = ShapeWKTSerializer::class) @SerialName("wkt"
  ****************************************************************/
 
 fun Geofence.toJson(): String {
-    return Json(JsonConfiguration.Stable).stringify(Geofence.serializer(), this)
+    return Json.encodeToString(Geofence.serializer(), this)
 }
 
 /**
  * @throws [kotlinx.serialization.json.JsonDecodingException]
  */
 fun String.toGeofence(): Geofence {
-    return Json(JsonConfiguration.Stable).parse(Geofence.serializer(), this)
+    return Json.decodeFromString(Geofence.serializer(), this)
 }
 
 object ShapeWKTSerializer : KSerializer<Shape> {
 
-    override val descriptor: SerialDescriptor = StringDescriptor
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("Geofence", PrimitiveKind.STRING)
 
     override fun serialize(encoder: Encoder, obj: Shape) {
         encoder.encodeString(GEO.formats.wktWriter.toString(obj))
