@@ -118,7 +118,6 @@ class DisGBScenarioRuns {
         assertTrue(mg3.contains(cl3))
     }
 
-    @Ignore
     @Test
     fun subscriberMatchingScenario() {
         val paris = DisGBSubscriberMatchingServerLogic()
@@ -207,7 +206,6 @@ class DisGBScenarioRuns {
         assertEquals(0, berlinCD.numberOfClients)
     }
 
-    @Ignore
     @Test
     fun publisherMatchingScenario() {
         val paris = DisGBPublisherMatchingServerLogic()
@@ -498,7 +496,7 @@ class DisGBScenarioRuns {
     private fun sendCONNECT(client: SimpleClient, l: Location, disconnect: Boolean = false) {
 
         client.send(CONNECTPayload(l))
-        val responsePayload = client.receiveWithTimeout(1000)
+        val responsePayload = client.receiveWithTimeout(10000)
 
         if (!disconnect) {
             assertEquals(CONNACKPayload(ReasonCode.Success), responsePayload)
